@@ -128,21 +128,22 @@ Each TokenChain has a discrete address space.
 
 _Figure 2: The THORChain Address Space; here for Rune (T0)._
 
-The prefix deconflicts the address space with all other protocols. The TokenIndex deconflicts the token from other on-chain tokens, where Rune is T0, the first on-chain token is T1 etc.  THORChain supports the full integer space of 264.  The Separator separates the TokenIndex (which may be variable length) and the public address, derived from a SHA256 hash of a private key. 
-Alice, who has a public address for her Rune, T0xAlice, will also have a matched address on every other TokenChain that she has tokens for. Her single private key unlocks all addresses. If Alice is sent a new token; her new address is automatically created.  
+The prefix deconflicts the address space with all other protocols. The TokenIndex deconflicts the token from other on-chain tokens, where Rune is `T0`, the first on-chain token is `T1` etc.  The Separator separates the TokenIndex (which may be variable length) and the public address, derived from a SHA256 hash of a private key. 
+Alice, who has a public address for her Rune, `T0xAlice`, will also have a matched address on every other TokenChain that she has tokens for. Her single private key unlocks all addresses. If Alice is sent a new token; her new address is automatically created.  
 
-T0xAlice -> Rune address for Alice
+`T0xAlice -> Rune address for Alice
 T1xAlice -> T1 address for Alice
 T5xAlice -> T5 address for Alice
-TnxAlice -> Tn address for Alice
+TnxAlice -> Tn address for Alice`
+
 Deconflicting address spaces in multiple chains have the following advantages:
-Discrete transactions for each token, with discrete mem-pools. 
-Each token has a clear and distinct lineage. 
-Each TokenChain inherits a genesis account, which contains and performs cornerstone functionality for the network. 
+- Discrete transactions for each token, with discrete mem-pools. 
+- Each token has a clear and distinct lineage. 
+- Each TokenChain inherits a genesis account, which contains and performs cornerstone functionality for the network. 
 
 Tokenchains can represent tokens internal to Thorchain or external tokens (like Bitcoin or Ethereum).  These tokens can be traded within Thorchain but represent actual external tokens stored within a Thorchain bridge.  
 
-The UX for trading BTC on Asgardex involves user selecting a bridge, transferring the BTC to a wallet controlled by that bridge, and specifying in the data field for that BTC transaction which Thorchain wallet they want the corresponding Thorchain proxy bitcoin (tBTC) stored in.  Bitcoin sent to a bridge without a corresponding tBTC wallet address should be sent back automatically.  Once this happens, on-chain trading can occur.  To withdraw BTC, users specify a bridge and a BTC wallet and then initiate a tBTC transfer from their wallet to the bridge wallet.  The bridge then moves the BTC to the corresponding BTC wallet.  Likewise, tBTC sent without the right data fields and formatting will be returned. 
+The UX for trading `BTC` on ASGARDEX involves user selecting a bridge, transferring the `BTC` to a wallet controlled by that bridge, and specifying in the data field for that `BTC` transaction which Thorchain wallet they want the corresponding Thorchain proxy bitcoin `tBTC` stored in.  Bitcoin sent to a bridge without a corresponding `tBTC` wallet address should be sent back automatically.  Once this happens, on-chain trading can occur.  To withdraw `BTC`, users specify a bridge and a `BTC` wallet and then initiate a `tBTC` transfer from their wallet to the bridge wallet.  The bridge then moves the `BTC` to the corresponding BTC wallet.  Likewise, `tBTC` sent without the right data fields and formatting will be returned. 
 
 ### MerkleChain
 The MerkleChain tracks and syncs the network state by hashing and merkelizing the latest transactions for each TokenChain in the network. The following is the overview of this mechanism:
@@ -168,39 +169,28 @@ THORChain’s primary performance metric of TPS is most dependent on the bottlen
  Sharding is possible in THORChain as separate mempools for each TokenChain are maintained by unique address spaces. This allows pending transactions to easily be segregated. The GasLimit is capped for THORChain to allow the network to track saturation and signal for splitting Validator Sets.  If the GasLimit approaches upper limits (above `90%` for `100` blocks), then a separate Validator Set will form to meet the scaling demands. In this case, the next 100 highest staked Validators will be selected to form another Validator Set. The primary Validator Set (Validators `1-100`) will evict all TokenChains bar the TokenChain with the highest gas demands and the MerkleChain from their mempool. The secondary Validator Set (101-200) will then maintain all other TokenChains. Further, if the secondary Validator Set approaches its GasLimit, it will also then evict all but the highest TokenChain, and nominate the Tertiary TokenChain, and so on. The MerkleChain stores and tracks multiple Validator Sets. In this way a hierarchy of Validator Sets are established, each tracking their immediate child.
 At any stage if a Validator Set’s GasLimit reduces below `10%` saturation for longer than `100` blocks then the set is instantly dissolved into its parent set. If a parent set signals to dissolve before its child, then the Master VS re-shuffles all child VSs to re-establish an unbroken hierarchy and prevent disruption. In this way THORChain can scale so that it can always cater for the demands of the network. 
 
-1
->90% Saturation
-Validator Set (VS1) start signalling to split
-2
-100 Blocks
+|Seq|Event|Action
+|:---:|:---:|:---|
+|1|>90% Saturation|Validator Set (VS1) start signalling to split
+|2|100 Blocks
+|3|101st Block|A new Validator Set (VS2) commissioned
+|4|<10% Saturation on both Chains|VS1 and VS2 signal to merge
+|5|100 Blocks
+|6|101st Block|VS2 decommissioned and VS1 returns to process both chains. 
 
+_Table: Order for splitting and merging_
 
-3
-101st Block
-A new Validator Set (VS2) commissioned
-4
-<10% Saturation on both Chains
-VS1 and VS2 signal to merge
-5
-100 Blocks
-
-
-6
-101st Block
-VS2 decommissioned and VS1 returns to process both chains. 
-
-Table: Order for splitting and merging
 The Master VS, using the functions of the MerkleChain and processing subservient tokenChain MerkleRoots, will continue to ensure that the network is synced and interoperable. Subservient tokenChains will be less secure than the Master VS’s MerkleChain and RuneChain as the Validators who service their mempools will have less stake. 
 
-Figure: Segregated Validator Sets
+_Figure: Segregated Validator Sets_
 There are a number of unanswered questions around network security, performance and the characteristics of having multiple Validator Sets that will require further research and development, however the fundamentals of how it could be achieved are outlined here.  Additional research to our plan for implementing multiple validator sets via sharding is in a separate paper.
-
+
 ## On-chain Governance 
 
 ### Overview
 On-chain governance on THORChain is known as “Validator Signalling” by virtue of the fact that it is a continual process performed by validators, and that votes are more aptly referred to as signals. Validator Signalling is covered extensively in the Validator Signalling Whitepaper. An overview is provided here.
 Any block producer can propose a change in the core software and consensus rules structured as a data packet:
-{description, newCode, diffPatch}
+`{description, newCode, diffPatch}`
  All other validators vote to accept the change and if it reaches supermajority consensus the updated code can be immediately brought in to operation. The proposing and agreeing validators run the compiled core software on standby, so that once approved, the core software is live to produce the very next block. 
 The types of updates that can be rolled out are essentially unlimited and could be:
 Consensus rules such as supermajority thresholds, or voting rules (relating to on-chain governance itself)
@@ -211,14 +201,14 @@ Changes to state, such as amending exploited or unused accounts.
  
 ### Key Aspects
 Economically Enforced Participation. Voter participation is enforced by in-protocol slashing rules. Not voting on a proposed update or poll will result in a Validator’s stake being slashed and redistributed to other Validators who do vote. There is a grace period of n blocks allowing Validators time to poll the community (or their staking pool) and take up a position before casting a vote. 
-Empowered Minorities. Quadratic polling is implemented inside a validator’s staking pool. Each member that stakes with a Validator can cast votes proportional to their stake, where each vote is a single whole unit, and increases with the number of subsequent votes. 1 vote costs 1 token, 2 votes cost 3 tokens (1 + 2), 3 votes cost 5 tokens (1 + 2 + 3) etc. This appropriately removes the biases that whales can have on voting, preventing a plutocracy. It also enables and empowers the minority to know their vote is meaningful and represented.A Validator can submit votes on behalf of non-voting stakers in their pool but the vote is quadratically weighted as above. Thus non-voting stakers are empowered to easily swing their Validator’s final vote as their individual vote has more comparative weight than the Validator who representatively voted for them using their tokens. 
+Empowered Minorities. Quadratic polling is implemented inside a validator’s staking pool. Each member that stakes with a Validator can cast votes proportional to their stake, where each vote is a single whole unit, and increases with the number of subsequent votes. `1 vote` costs `1 token`, `2 votes` cost `3 tokens (1 + 2)`, `3 votes` cost `5 tokens (1 + 2 + 3)` etc. This appropriately removes the biases that large holders can have on voting, preventing a plutocracy. It also enables and empowers the minority to know their vote is meaningful and represented.A Validator can submit votes on behalf of non-voting stakers in their pool but the vote is quadratically weighted as above. Thus non-voting stakers are empowered to easily swing their Validator’s final vote as their individual vote has more comparative weight than the Validator who representatively voted for them using their tokens. 
 Flexibility. Any staker can change their vote at any time to signal differently. Delegators who switch staking pools to swing vote a different Validator are bound by bonding periods and can effectively only switch once.  
 A carefully designed on-chain governance solution (which itself can update) will see THORChain become a forkless self-amending ledger and increase the likelihood of persistence well into the future. 
-
+
 ## Tokens 
 
 ### Rune Characteristics
-The Rune is the token of the ecosystem and resides on Address Space T0. Initial supply will be an arbitrary but finite number. The following are the uses of Rune:
+The Rune is the token of the ecosystem and resides on Address Space `T0`. Initial supply will be an arbitrary but finite number. The following are the uses of Rune:
 Validators are required to stake Rune to be part of the Validator Sets. Once staked the Rune are bonded for a period of time to prevent nothing-at-stake attacks.   
 All network transaction fees (gas) are paid in Rune. Fees may be transaction fees, trading fees, bridge fees and liquidity fees, imposed by the different elements of the ecosystem.
 Liquidity is always backed by Rune in the Continuous Liquidity Pools; so the Rune functions as ecosystem settlement currency. 
@@ -226,135 +216,86 @@ The Flash Network requires Rune as liquidity to join Liquidity Hubs and fees are
 Block rewards for Layer 1 Validator Sets and Layer 2 Liquidity Nodes are paid in Rune. 
 
 ### Block Rewards and Emission
-THORChain is a predictable inflationary currency that aims to create a price-competitive ecosystem, driving transaction fees to zero.  Inflation is the hidden tax designed to reward those that stake to either secure the network, provide bridge support or add either Layer 1 or Layer 2 liquidity. Noting the current inflation rates of Ethereum, Bitcoin, EOS and Cosmos, an acceptable starting inflation of 5% is proposed. As the Rune is designed to be a settlement currency, instead of a store of value, holding Rune without staking it in the ecosystem is economically discouraged. In all other cases, the Rune is held for as long as it is necessary to settle the payment. 
-Block Rewards are issued with 50% to Validator Sets and 50% to the Layer 2 Liquidity Nodes. Each Validator in the Validator Set will receive rewards/(100*Sets). Liquidity Nodes will receive rewards in accordance with the Layer 2 Incentivisation Plan which rewards for liquidity and reliability. 
+THORChain is a predictable inflationary currency that aims to create a price-competitive ecosystem, driving transaction fees to zero.  Inflation is the hidden tax designed to reward those that stake to either secure the network, provide bridge support or add either Layer 1 or Layer 2 liquidity. Noting the current inflation rates of Ethereum, Bitcoin, EOS and Cosmos, an acceptable starting inflation of `5%` is proposed. As the Rune is designed to be a settlement currency, instead of a store of value, holding Rune without staking it in the ecosystem is economically discouraged. In all other cases, the Rune is held for as long as it is necessary to settle the payment. 
+Block Rewards are issued with `50%` to Validator Sets and `50%` to the Layer 2 Liquidity Nodes. Each Validator in the Validator Set will receive 
+![rewards](https://latex.codecogs.com/gif.latex?rewards/%28100*Sets%29)
+
+Liquidity Nodes will receive rewards in accordance with the Layer 2 Incentivisation Plan which rewards for liquidity and reliability. 
 If Layer 2 is not launched alongside the mainnet, then Layer 2 rewards may be hard-coded to pay back to the Foundation to prevent a stalemate whereby validators refuse to launch the Layer 2 Incentivisation Plan for the incorrect perception that they are being diluted or penalised. 
 
 ### Fees
 THORChain retains the concept of gas fees and a gas limit for each TokenChain’s blocks. The GasLimit is designed to solicit Validator Set splitting when required to scale. Gas fees are paid for each transaction type; of which there are several distinct types. Each transaction type is hard-coded in the protocol so gas estimates can be made. 
 Layer 1 Liquidity Fees are collected when utilising Continuous Liquidity Pools (CLPs), and are a function of liquidity in the CLP. The higher the slips incurred in CLP’s, the more fees are charged, thereby attracting more users to offer liquidity to the pool. Adding liquidity depth reduces slip and thus reduces the fees collected. Liquidity makers can withdraw their liquidity at any stage, including their collected fees. Self-interested liquidity makers will likely bootstrap new CLPs, collect fees, and then withdraw just their initial stake to continue to earn fees in the CLP indefinitely. 
 Layer 2 Trading Fees are paid to Liquidity Nodes for providing liquidity to Liquidity Hubs. The fee for using each Hub is the average of each fee nominated by each Node as they join. There may be multiple Hubs for each Rune Pair, thereby encouraging a price competitive network, where traders will use the Hub with the lowest average fees. Nodes are free to join any Hub they wish, or create their own. All Liquidity Nodes are paid from the Block Reward, but are weighted to their pro-rata liquidity and time online:
- reward = liquidity * time online/(total Network Liquidity)
- By paying trading fees and block rewards to Liquidity Hubs, nodes are incentivised to be liquid, online, reliable and there is no limit to the number of nodes; thus the network becomes quickly decentralised with many channels.  This is outlined in more detail in the Flash Network paper. 
+![rewards](https://latex.codecogs.com/gif.latex?reward%20%3D%20%5Cfrac%7Bliquidity%20*time%20online%7D%7Btotal%20Network%20Liquidity%7D)
+
+By paying trading fees and block rewards to Liquidity Hubs, nodes are incentivised to be liquid, online, reliable and there is no limit to the number of nodes; thus the network becomes quickly decentralised with many channels.  This is outlined in more detail in the Flash Network paper. 
 
 ### TokenChain
-Each TokenChain is created in a special genesis transaction (GenTX) on the primary Rune chain (T0). Once created, the TokenChain is initiated in the next block with a Genesis Account (GenAcc). The GenACC is both the on-chain specification for the characteristics of the token, as well as the account that hosts the token’s Continuous Liquidity Pool (defined later). GenTXs require a fee to be paid in Rune; which is an effective anti-sybil measure to spamming the network with new tokens. 
+Each TokenChain is created in a special genesis transaction `GenTX` on the primary Rune chain `T0`. Once created, the TokenChain is initiated in the next block with a Genesis Account `GenAcc`. The `GenACC` is both the on-chain specification for the characteristics of the token, as well as the account that hosts the token’s Continuous Liquidity Pool (defined later). `GenTXs` require a fee to be paid in Rune; which is an effective anti-sybil measure to spamming the network with new tokens. 
 Figure: The Genesis Account for Token1
-The GenAcc stores the following information about the Token which can be publicly queried and displayed on order books, wallets and exchanges:
+The `GenAcc` stores the following information about the Token which can be publicly queried and displayed on order books, wallets and exchanges:
 
-Ticker
-TKN1
-Ticker to display
-Name
-Token1
-Name to display
-Supply
-100,000,000
-Total Supply (100m)
-Decimals
-18
-Decimals
-Reserve
-1.0
-A parameter to specify the fractional reserve of the CLP (default is 1.0).
-Owner
-Self
-If self; the details above are immutable as there is no private key for the genesis account. 
+Ticker| TKN1 |Ticker to display
+|:---|:---|:---|
+Name|Token1|Name to display
+Supply|100,000,000|Total Supply (100m)
+Decimals|18|Decimals
+Reserve|1.0|A parameter to specify the fractional reserve of the CLP (default is 1.0).
+Owner|Self|If self; the details above are immutable as there is no private key for the genesis account. 
 
-Table: Fixed Supply Token
+_Table: Fixed Supply Token_
+
 If the Account Owner is SELF then the token details are immutable and cannot be changed, as is expected in most digital assets. The GenAcc doubles as an easily identifiable continuous liquidity pool (CLP) for that token and with protocol-level security. The CLP can be interacted with by sending transactions to it from any other wallet. In this case the transaction will execute the liquidity transactions discussed further. 
 If there is an external Account Owner specified, then that Account Owner can change any characteristic of the token, including Supply by proxy. They cannot change the TokenIndex which is permanent and identifies the TokenChain. These tokens are known as variable supply tokens as the account owner is permitted to change the supply of the token. This is necessary for tokenised assets, security tokens and even pegged tokens, whereby the account owner can be a single owner or multi-sig owner that is permitted to change the token characteristics in line with external non-THORChain logic. 
 Account owners can even hand over control of the GenAcc to other accounts, including accounts without a private key; effectively turning the token into a fixed supply immutable token.  
 
-Ticker
-TKN1
-Ticker to display
-Name
-Token1
-Name to display
-Supply
-100,000,000
-Total Supply (100m)
-Decimals
-18
-Decimals
-Reserve
-1.0
-A parameter to specify the fractional reserve of the CLP (default is 1.0).
-Owner
-T1xa1b2c3d4e5f6
-Owner can be another address which will allow mutable token details, necessary for Asset/Security/Pegged Tokens.
+Ticker| TKN1 |Ticker to display
+|:---|:---|:---|
+Name|Token1|Name to display
+Supply|100,000,000|Total Supply (100m)
+Decimals|18|Decimals
+Reserve|1.0|A parameter to specify the fractional reserve of the CLP (default is 1.0).
+Owner|`T1xa1b2c3d4e5f6`|Owner can be another address which will allow mutable token details, necessary for Asset/Security/Pegged Tokens.
 
-Table: Variable Supply Token
- A minimum GenTX initiation fee can be set (100 * GasPrice) to prevent token spam, but stopping runaway token initiation cost. 
+_Table: Variable Supply Token_
+
+A minimum `GenTX` initiation fee can be set `(100 * GasPrice)` to prevent token spam, but stopping runaway token initiation cost. 
 
 ### Rune Generation
 THORChain allows a unique mechanism of generating both the full supply of a token, as well as its on-chain CLP at the same time.  The special GenTX which creates a new TokenChain requires a non-zero amount of Rune to be transacted. This non-zero amount pays for the GenTX transaction fee, as well as funding the CLP for the first time by trapping the Rune inside the GenACC alongside the newly minted tokens; this sets the initial price of the token. 
 The token owner will subsequently transact in a specific amount of Rune to emit the full token amount to their custody. The following will happen in the case that 100 Rune was the GenTX, and 1mn tokens were created (decimals not included):
 
-Genesis Emission
-TX in (Rune)
-Rune Locked
-Tokens Locked
-Price (RUNE)
-Tokens Emitted
-GenTX
-(100 Rune)
-100
-1,000,000
-0.0001
--
-Subsequent CLP Transaction
-90
-190
-100,000
-0.001
-900,000
-99
-199
-10,000
-0.01
-990,000
-99.9
-199.9
-1,000
-0.1
-999,000
-99.99
-199.99
-100
-1.0
-999,900
-99.999
-199.999
-10
-10
-999,990
-99.9999
-199.9999
-1
-100
-999,999
+**Genesis Emission**
+TX in (Rune)|Rune Locked|Tokens Locked|Price (RUNE)|Tokens Emitted
+|:---|:---|:---|:---|:---|
+GenTX|(100 Rune)|100|1,000,000|0.0001|-
 
-Table: Creating and emitting a new token. There are two transactions; (1) the GenTx and (2) the subsequent CLPTX that emits a specified amount of tokens. They can be performed in one request. 
+**Subsequent CLP Transaction**
+TX in (Rune)|Rune Locked|Tokens Locked|Price (RUNE)|Tokens Emitted
+|:---|:---|:---|:---|:---|
+90|190|100,000|0.001|900,000
+99|199|10,000|0.01|990,000
+99.9|199.9|1,000|0.1|999,000
+99.99|199.99|100|1.0999,900
+99.999|199.999|10|10|999,990
+99.9999|199.9999|1|100|999,999
+
+_Table: Creating and emitting a new token. There are two transactions; (1) the GenTx and (2) the subsequent CLPTX that emits a specified amount of tokens. They can be performed in one request._ 
+
 The locked Rune and tokens that remain in the GenAcc can never be fully emitted, thus the pricing of the tokens are set from the first block. If initial pricing or liquidity is unsatisfactory, special one-way Liquidity Transactions can be performed to correct pricing and add liquidity. 
 It is imagined that the developer community will build software that allows creating tokens to be performed with an easy to understand user experience. The following is an example of how the creation of the token can be done in one client-side order:
 
-Parameter
-Field
-Notes
-Token Parameter
-{Ticker: TKN1, Name: Token, Supply: 100m, Decimals: 18, Owner: SELF}
-Create a data packet to attach to GenTX.
-CLP Parameter
-{Reserve: 1.0, InitialPrice: 0.001, InitialLiquidity: 1000 Rune, InitialEmission: 99%}
-Set and calculate the initial price, liquidity and emission of the token in the CLPTX.
+|Parameter|Field|Notes|
+|:---|:---|:---|
+Token Parameter|`{Ticker: TKN1, Name: Token, Supply: 100m, Decimals: 18, Owner: SELF}`|Create a data packet to attach to GenTX.
+CLP Parameter|`{Reserve: 1.0, InitialPrice: 0.001, InitialLiquidity: 1000 Rune, InitialEmission: 99%}`|Set and calculate the initial price, liquidity and emission of the token in the CLPTX.
 
-Table: Parameters to create a new token
+_Table: Parameters to create a new token_
 
 ### THORChain Bridges
-THORChain will have native cross-compatibility with UTXO, Account and Contract-based cryptocurrencies. The heart of this is are Trustless Two-Way-Pegs (2WP) known as the Layer 1 Bridges, and multi-signature accounts. The core Validator Set (100 staked Validators) are signatories to 67/100 multi-sig accounts to external chains, and a 2 / 3 signature threshold on THORChain. This allows Bitcoin, Ethereum (and their forks) as well as ERC-20 tokens to be seamlessly moved onto the THORChain ecosystem and off again.   The external coin is moved into a multi-sig account, signed by the Validator Set. After observed finality, the Validator Set create a signature threshold to mint new tokens in THORChain via CLPs. BLS signature thresholds are used to prevent issues during Validator Set re-orgs, as only a threshold of signatures is required to be achieved. The reverse occurs to move the coin off the ecosystem. BLS signature threshold theory has been extensively researched by DFinity. The benefits of signature thresholds is that it only requires a threshold of signatures from a super-set, and not specifically a certain sub-set from that super-set. This translates to flexibility in who can be part of a sub-set, and tolerates validators leaving and re-entering the Validator Set, which could be a frequent occurrence in a healthy and competitive environment of validators. 
-Cryptonote Coins such as Monero and Loki do not support m of n multi-signature, but can support n of n or n-1 of n. It is possible to support these coins, however there is a risk in a Validator Set re-org that more than one of the signatories is replaced. If the evicted Validators do not stay online, then the Cryptonote coins that require their signature will remain locked indefinitely on THORChain. There is no risk of theft, and indeed the user can trade from tXMR to tBTC and exit on the Bitcoin bridge safely, putting this inconvenience on a low significance. A mitigation plan to this is to re-shuffle validators immediately if just 1 validator is lost. The BiFrost paper contains additional research on Thorchain’s bridge protocol research.
+THORChain will have native cross-compatibility with UTXO, Account and Contract-based cryptocurrencies. The heart of this is are Trustless Two-Way-Pegs (2WP) known as the Layer 1 Bridges, and multi-signature accounts. The core Validator Set (`100` staked Validators) are signatories to `67/100` multi-sig accounts to external chains, and a `2 / 3` signature threshold on THORChain. This allows Bitcoin, Ethereum (and their forks) as well as ERC-20 tokens to be seamlessly moved onto the THORChain ecosystem and off again.   The external coin is moved into a multi-sig account, signed by the Validator Set. After observed finality, the Validator Set create a signature threshold to mint new tokens in THORChain via CLPs. BLS signature thresholds are used to prevent issues during Validator Set re-orgs, as only a threshold of signatures is required to be achieved. The reverse occurs to move the coin off the ecosystem. BLS signature threshold theory has been extensively researched by DFinity. The benefits of signature thresholds is that it only requires a threshold of signatures from a super-set, and not specifically a certain sub-set from that super-set. This translates to flexibility in who can be part of a sub-set, and tolerates validators leaving and re-entering the Validator Set, which could be a frequent occurrence in a healthy and competitive environment of validators. 
+Cryptonote Coins such as Monero and Loki do not support `m of n` multi-signature, but can support `n of n` or `n-1 of n`. It is possible to support these coins, however there is a risk in a Validator Set re-org that more than one of the signatories is replaced. If the evicted Validators do not stay online, then the Cryptonote coins that require their signature will remain locked indefinitely on THORChain. There is no risk of theft, and indeed the user can trade from `tXMR` to `tBTC` and exit on the Bitcoin bridge safely, putting this inconvenience on a low significance. A mitigation plan to this is to re-shuffle validators immediately if just `1` validator is lost. The BiFrost paper contains additional research on Thorchain’s bridge protocol research.
 
 ## Continuous liquidity pools
 ### Solving Liquidity 
@@ -366,60 +307,62 @@ THORChain integrates two on-chain liquidity strategies; an adaption of Bancor’
 ### CLPs
 
 The CLP is arguably one of the most important features of THORChain. By building in on-chain liquidity the ecosystem receives the following benefits:
-Provides “always-on” trustless liquidity to all tokens in the ecosystem. 
-Improves the user experience for low-liquidity tokens. 
-Functions as source of trustless on-chain price feeds to power all aspects of the ecosystem, including advanced trading types.
-Generates arbitrage opportunities, further increasing token liquidity. 
-Allows users to trade tokens at trustless prices, without relying on centralised third-parties. 
-Provides trustless price-anchors to the Layer 2 Flash Network, allowing instant trading at the layer 2 level. 
+- Provides “always-on” trustless liquidity to all tokens in the ecosystem. 
+- Improves the user experience for low-liquidity tokens. 
+- Functions as source of trustless on-chain price feeds to power all aspects of the ecosystem, including advanced trading types.
+- Generates arbitrage opportunities, further increasing token liquidity. 
+- Allows users to trade tokens at trustless prices, without relying on centralised third-parties. 
+- Provides trustless price-anchors to the Layer 2 Flash Network, allowing instant trading at the layer 2 level. 
 
-Figure: The CLP is the genesis account.
+_Figure: The CLP is the genesis account._
 
 ### CLP Transactions
 
-The GenAcc is the CLP for each TokenChain, holding both Rune and the full supply of the created tokens as locked liquidity. The account owner can not move the tokens; they can only interact with the GenAcc on-chain command. There are six valid transaction types:
-Rune In. Anyone can send Rune to the GenAcc. The GenAcc will emit TKN1 (minus a fee), sent to the sender’s TKN1 address 
-TKN1 In. Anyone can send the specific token to the GenAcc. The GenAcc will emit Rune (minus a fee), sent to the sender’s Rune address.
-Figure: CLP Transactions
-Rune LiquidityTx. Anyone can add Rune to the locked liquidity in the GenAcc, and no TKN1 will be emitted. This is a special transaction that registers the sender’s address as well as the balance sent in order to track and pay them pro-rata liquidity fees. 
-TKN1 LiquidityTx. Anyone can add TKN1 to the locked liquidity in the GenAcc, and no Rune will be emitted. Again, the sender’s address and balance will be registered for payment of  liquidity fees. 
-Figure: Adding liquidity to a CLP
-Rune LiquidityWithdrawTx. Anyone that added liquidity to the CLP is permitted to withdraw up to the maximum of their initial liquidity and earned fees. 
-TKN1 LiquidityWithdrawTx. Again, anyone can withdraw their staked Token1 liquidity up to the maximum. 
-Rune FeeWithdrawTx. Anyone that added liquidity to the CLP is permitted to withdraw their earned fees. 
-TKN1 FeeWithdrawTx. Again, anyone can withdraw their earned fees. 
+The `GenAcc` is the CLP for each TokenChain, holding both Rune and the full supply of the created tokens as locked liquidity. The account owner can not move the tokens; they can only interact with the `GenAcc` on-chain command. There are six valid transaction types:
+**Rune In**. Anyone can send Rune to the `GenAcc`. The `GenAcc` will emit `TKN1` (minus a fee), sent to the sender’s `TKN1` address 
+**`TKN1` In**. Anyone can send the specific token to the `GenAcc`. The `GenAcc` will emit Rune (minus a fee), sent to the sender’s Rune address.
 
-Importantly, the Locked Liquidity will only emit tokens at the internal price; inferred by the locked RUNE:TKN1 ratio. If 10 Rune is locked alongside 1000 TKN1; then the price of 1 TKN1 is 0.01 RUNE, and tokens will be emitted at this internal price. The emission rate factors in slip which is the price of the token after the emission occurs, governed by the following equation. 
-tokensEmitted=tokens*((1+txRUNERUNE)ReserveRatio-1)
-Reserve Ratio can be adjusted to be lower than 100% to prevent large slip rates and is akin to fractional reserves.
+_Figure: CLP Transactions_
+
+**Rune LiquidityTx**. Anyone can add Rune to the locked liquidity in the `GenAcc`, and no `TKN1` will be emitted. This is a special transaction that registers the sender’s address as well as the balance sent in order to track and pay them pro-rata liquidity fees. 
+
+**`TKN1` LiquidityTx**. Anyone can add TKN1 to the locked liquidity in the GenAcc, and no Rune will be emitted. Again, the sender’s address and balance will be registered for payment of  liquidity fees. 
+
+_Figure: Adding liquidity to a CLP_
+
+**Rune LiquidityWithdrawTx**. Anyone that added liquidity to the CLP is permitted to withdraw up to the maximum of their initial liquidity and earned fees. 
+
+**TKN1 LiquidityWithdrawTx**. Again, anyone can withdraw their staked Token1 liquidity up to the maximum. 
+Rune FeeWithdrawTx. Anyone that added liquidity to the CLP is permitted to withdraw their earned fees. 
+
+**`TKN1` FeeWithdrawTx**. Again, anyone can withdraw their earned fees. 
+
+Importantly, the Locked Liquidity will only emit tokens at the internal price; inferred by the locked `RUNE:TKN1` ratio. If `10 RUNE` is locked alongside `1000 TKN1`; then the price of `1 TKN1` is `0.01 RUNE`, and tokens will be emitted at this internal price. The emission rate factors in slip which is the price of the token after the emission occurs, governed by the following equation. 
+
+![tokenEmitted](https://latex.codecogs.com/gif.latex?%5Clarge%20tokensEmitted%3Dtokens*%28%281&plus;%5Cfrac%7BtxRUNE%7D%7BRUNE%7D%29%5E%7BReserveRatio%7D-1%29)
+
+Reserve Ratio can be adjusted to be lower than `100%` to prevent large slip rates and is akin to fractional reserves.
  
 ### Liquidity Fees
 
-The Liquidity Fee is a function of slip; the rate at which the price will change in a transaction that emits Rune or Tokens. Importantly, there will always be a slip, as every transaction (no matter how small) will change the ratio between locked Rune and Tokens, so the subsequent change in ratio defines a new price. To couple fees with slip and thereby encourage more self-interested users to add liquidity in CLPs that need it most (high volume and low liquidity CLPs), fees are paid out as 0.1*slip*transactionSize
-Liquidity Depth
-Transaction
-Slip
-Liquidity Fee
-1m Rune
-100 Rune
-0.01%
-0.001 Rune
-100,000 Rune
-1000 Rune
-1%
-1 Rune
-1000 Rune
-500 Rune
-50%
-25 Rune
+The Liquidity Fee is a function of slip; the rate at which the price will change in a transaction that emits Rune or Tokens. Importantly, there will always be a slip, as every transaction (no matter how small) will change the ratio between locked Rune and Tokens, so the subsequent change in ratio defines a new price. To couple fees with slip and thereby encourage more self-interested users to add liquidity in CLPs that need it most (high volume and low liquidity CLPs), fees are paid out as: 
 
-Table: Example Liquidity Fees
+![eqn](https://latex.codecogs.com/gif.latex?%5Clarge%200.1*slip*transactionSize)
 
-Trustless On-chain Price Feeds
-On-chain Arbitrage. Any interaction with the GenAcc will emit the opposite pair at a slip-factored internal price. The slip that is caused by a large emission may move the GenAcc pricing away from fair market price. In this case, self-interested arbitrageurs will immediately correct the price by performing a reverse transaction. 
+Liquidity Depth|Transaction|Slip|Liquidity Fee
+|:---|:---|:---|:---|
+1m Rune|100 Rune|0.01%|0.001 Rune
+100,000 Rune|1000 Rune|1%|1 Rune
+1000 Rune|500 Rune|50%|25 Rune
+
+_Table: Example Liquidity Fees_
+
+### Trustless On-chain Price Feeds
+
+**On-chain Arbitrage**. Any interaction with the GenAcc will emit the opposite pair at a slip-factored internal price. The slip that is caused by a large emission may move the GenAcc pricing away from fair market price. In this case, self-interested arbitrageurs will immediately correct the price by performing a reverse transaction. 
 
 
-Figure: On-chain Arbitrage
+_Figure: On-chain Arbitrage_
 
 Price Oracle. Token pricing in the GenAcc should always the fair market price, else self-interested arbitrageurs would have taken action. After large price movements there may be a delay, but large price movements cause large Liquidity Fees which self-corrects by attracting more liquidity. Thus the THORChain network can employ token pricing trustlessly throughout the ecosystem based on GenAcc pricing. 
 Trustless token pricing could be employed by future versions of the protocol in the following ways:
