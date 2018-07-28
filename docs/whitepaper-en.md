@@ -1,17 +1,12 @@
-
 # THORChain
 
 ## A lightning fast decentralised exchange protocol
 devs@thorchain.org
 
-
 ### Abstract 
 >THORChain is a highly optimised multi-chain using pBFT consensus to achieve sub-second block finality. Tokens are traded on single chains, known as tokenChains with discrete address spaces. Multi-set sharding is proposed to allow byzantine resistant scaling. The native protocol facilitates on-chain trading and order matching at the protocol level, supporting both limit and market orders. Continuous liquidity pools ensure liquidity is always available for any token pair, and double as the source of trustless on-chain price feeds, a cornerstone of the protocol. Fee incentives are designed to continually attract on-chain liquidity. On-chain token generation is built-in for both fixed and variable supply tokens, with the potential for auditable collateralized stablecoins. Two-way pegs with UTXO, account and contract-based cryptocurrencies allow most existing cryptocurrencies to seamlessly move on and off THORChain. Transparent developer incentivisation strategies allow wallet and exchange developers to be funded at the protocol level which will encourage a vibrant developer community. On-chain governance and smart updates with enforced voting and quadratic polling ensures THORChain is an adaptive and iterative platform that grows with its needs without contentious hard forks. THORChain is built to be compatible with the Flash Network; a layer 2 payment channel network. 
 
-
-
 ## Overview
-
 
 [Introduction](#introduction)	
 - Centralized and Decentralized Exchanges	
@@ -79,7 +74,7 @@ devs@thorchain.org
 |Item | Definition | 
 |:---:|:------------|
 |ASGARDEX | A Decentralised Exchange built on THORChain 
-|Bifröst Protocol||Bridges built to other networks (two-way-pegs).
+|Bifröst Protocol|Bridges built to other networks (two-way-pegs).
 |CLP|Continuous Liquidity Pool
 |DEX|Decentralised Exchange
 |ECDSA|Elliptical Curve Digital Signature Algorithm
@@ -97,7 +92,6 @@ devs@thorchain.org
 |UTXO |Unspent Transaction Output
 |VRF|Verifiably Random Function|
 
-
 ## Introduction
 
 ### Centralized and Decentralized Exchanges
@@ -112,14 +106,13 @@ Finally, exchanges allow traders to profit from predicting the future behavior o
 **Decentralized Exchanges**. Of course, the above is only true to the extent that other sources of power are also decentralized.  One clear target for decentralization is the exchange itself.  Centralized exchanges can hold undue power over users.  This allow them to engage in many of the regressive practices that cryptocurrency enthusiasts dislike in the fiat world.  
 Some hold users’ funds without explanation or recourse.  A decentralized alternative will allow users to maintain self-sovereign rights to their assets at all times.  Some centralized exchanges bar users, currencies, or transactions because of local law in their domicile.  A decentralized alternative has no central operator upon which a nation state can impose restrictions.  A decentralized alternative with public code can benefit from perpetual public security audits and publicly driven code changes.  All things being equal, decentralized exchanges (DEXes) more adequately capture the ethos of cryptocurrencies than centralized ones.
 All things are not yet equal, however.  Decentralized exchanges need feature and performance parity with centralized exchanges to successfully compete.  Binance, one of the most popular centralized exchanges, processes over 1 million transactions per second.  Forkdelta, a popular decentralized exchange, routinely has transactions that take minutes.  Bittrex, another popular centralized exchange, has a well-designed UI honed by design specialists and a simple-to-use UX.  Barterdex, a DEX, has an obtuse UI and requires several cumbersome steps in its UX.  Centralized cryptocurrency exchanges pride themselves on listing a myriad of different token types.  Most modern DEXes operate within a single cryptocurrency’s ecosystem (for example, stellar for Stellardex and ether for Etherdelta) allowing users to trade only tokens in one protocol.  
-	To avoid some of these constraints, some DEXes take partial steps to toward decentralization but centralize key aspects of the system (like order books and matching engines).  This is a nice attempt but these services do not provide censorship resistance and so do not fulfill the promise of decentralization.  The market needs a decentralized exchange that adheres to the core tenets of decentralization and still provides a world-class exchange experience that meets the feature and performance standards set by centralized exchanges.  
+To avoid some of these constraints, some DEXes take partial steps to toward decentralization but centralize key aspects of the system (like order books and matching engines).  This is a nice attempt but these services do not provide censorship resistance and so do not fulfill the promise of decentralization.  The market needs a decentralized exchange that adheres to the core tenets of decentralization and still provides a world-class exchange experience that meets the feature and performance standards set by centralized exchanges.  
 
 ### THORChain and ASGARDEX
 
 **THORChain**. Thorchain addresses these issues.  With over 1 million transactions per second, Thorchain can power the same traffic as a centralized exchange.  Thorchain decentralizes all aspects of a trade, including order matching and order book population, ensuring censorship resistance.  Most DEXes have less than $10M in daily trading volume but Thorchain will be seeded with several times that amount in liquidity directly from the Thorchain Foundation.  Moreover, Thorchain’s continuous liquidity pool mechanism (borrowed from Bancor) provides fees to users who provide further liquidity, incentivizing even more capacity.  Thorchain’s use of cryptocurrency bridges (under development based on research from Aion, Truebit, PoA, Rootstock, and others) enable it to natively support transactions across cryptocurrency ecosystems.  Users can exchange Bitcoin for Ether or an ERC-20 token for an NEP-5 token directly on a Thorchain DEX.  Bridges are addressed in more detail separately.
 Asgardex (the name for the DEX that will be built on top of THORChain) will have deep liquidity, a publicly available order book, omni-token support for cryptocurrencies compatible with bridges, one million transactions per second, a world-class UI, and refined UX.  ASGARDEX solves the major problems with decentralized exchanges, allowing users to experience the full promise of a secure, transparent, censorship-resistant and fault-tolerant cryptocurrency exchange.
  
-
 ## THORChain Architecture
 
 ### Overview
@@ -128,12 +121,13 @@ TokenChains have a genesis account that describe the characteristics of the toke
 The native token of the ecosystem is Rune and is created at the genesis of the protocol, with all Rune transactions tracked on the first side chain, T0. The Rune is unique as it is the settlement currency of the ecosystem and is stored in all on-chain liquidity pools. 
 The genesis block of every sidechain has a continuous liquidity pool (CLP) that defines a price ratio for Rune and that token. CLPs are explained in more detail later in this paper. For now, consider CLPs as providing a counterparty to anyone wishing to make a Rune-denominated trade. If two users trade between two non-Rune tokens, one of the tokens is automatically converted to Rune before the transaction is complete.
 
-Figure 1: Each token is tracked on a discrete TokenChain. Genesis accounts track Token information and hold on-chain liquidity.
+_Figure 1: Each token is tracked on a discrete TokenChain. Genesis accounts track Token information and hold on-chain liquidity._
 
 ### TokenChains
 Each TokenChain has a discrete address space. 
 
-Figure 2: The THORChain Address Space; here for Rune (T0).
+_Figure 2: The THORChain Address Space; here for Rune (T0)._
+
 The prefix deconflicts the address space with all other protocols. The TokenIndex deconflicts the token from other on-chain tokens, where Rune is T0, the first on-chain token is T1 etc.  THORChain supports the full integer space of 264.  The Separator separates the TokenIndex (which may be variable length) and the public address, derived from a SHA256 hash of a private key. 
 Alice, who has a public address for her Rune, T0xAlice, will also have a matched address on every other TokenChain that she has tokens for. Her single private key unlocks all addresses. If Alice is sent a new token; her new address is automatically created.  
 
@@ -153,24 +147,26 @@ The UX for trading BTC on Asgardex involves user selecting a bridge, transferrin
 ### MerkleChain
 The MerkleChain tracks and syncs the network state by hashing and merkelizing the latest transactions for each TokenChain in the network. The following is the overview of this mechanism:
 The Validator Set collects Merkle Roots from each tokenchain, assembled into a Merkle Tree, and hashed as a single Merkle Root for block n for each TokenChain.  
-The Token Merkle Roots are then collected into another Merkle Tree and a final Master Merkle Root produced. This is then inserted into the MerkleChain block n + 1 by the Validator Set. 
-The Validator Set at the same time then inserts the same Master Merkle Root into every tokenchain at block n + 1.
- The MerkleChain also stores network wide information such as the TokenIndex counter that specifies and deconflicts TokenChains on the network. 
+The Token Merkle Roots are then collected into another Merkle Tree and a final Master Merkle Root produced. This is then inserted into the MerkleChain block `n + 1` by the Validator Set. 
+The Validator Set at the same time then inserts the same Master Merkle Root into every tokenchain at block `n + 1`.
+The MerkleChain also stores network wide information such as the TokenIndex counter that specifies and deconflicts TokenChains on the network. 
+ 
 ### Consensus
 THORChain implements Tendermint, a byzantine fault tolerant state machine replication algorithm. Tendermint has the necessary maturity, performance and security to serve THORChain’s requirements. Tendermint is most useful in that it supports instant finality, which is an indispensible property for a blockchain. Tendermint achieves this by only committing transactions that have already reached super-majority consensus, rather than waiting for consensus to be achieved after a transaction is committed (such as Bitcoin and Ethereum V1). As such, Tendermint can support sub-second block times and process up to 10,000 TPS. 
 Tendermint performance will be sufficient for THORChain initially, but modifications will be required to support the end state of achieving performance parity with centralised exchanges at over 1 million TPS. To achieve this performance, THORChain will need to research and implement various implementations of sharding.
-Validator Set
-Tendermint requires full-nodes as Validators or block producers, and each Validator must have a weight on the network. The weight is determined by their staking, so Tendermint can support Proof-of-Stake out of the box. The first implementation of THORChain has a single Validator Set drawn from all available Validators through an auction; the 100 highest staked Validators form the Validator Set. Validators propose blocks, agree and commit them. To join the Validator Set, a Validator must stake higher than the lowest Validator, and by this process ensures that the Validators with the greatest economic investment secure the network. Staking pools are possible to allow wider participation, and anyone can delegate their stake to a chosen Validator. Validators are paid from the block reward, and are paid evenly regardless of stake held. Proxy stakers are paid pro-rata to the total stake of a Validator; and so by design and self-interest; should choose the Validator with the lowest current stake, but in the Top 100. This encourages proxy stakers to distribute their stake where they have the most earning potential, and thus consequently will ensure a very flat and competitive group of 100, where the minority can easily influence Validator participation in the Validator Set. 
 
-Figure: Validator Set
+**Validator Set**
+Tendermint requires full-nodes as Validators or block producers, and each Validator must have a weight on the network. The weight is determined by their staking, so Tendermint can support Proof-of-Stake out of the box. The first implementation of THORChain has a single Validator Set drawn from all available Validators through an auction; the `100` highest staked Validators form the Validator Set. Validators propose blocks, agree and commit them. To join the Validator Set, a Validator must stake higher than the lowest Validator, and by this process ensures that the Validators with the greatest economic investment secure the network. Staking pools are possible to allow wider participation, and anyone can delegate their stake to a chosen Validator. Validators are paid from the block reward, and are paid evenly regardless of stake held. Proxy stakers are paid pro-rata to the total stake of a Validator; and so by design and self-interest; should choose the Validator with the lowest current stake, but in the top `100`. This encourages proxy stakers to distribute their stake where they have the most earning potential, and thus consequently will ensure a very flat and competitive group of 100, where the minority can easily influence Validator participation in the Validator Set. 
+
+_Figure: Validator Set_
 An in-protocol penalty is required to discourage validators from misbehaving on the network. This is heavily researched in both Casper and Cosmos.  Misbehaviour may be double-signing blocks, being off-line or lack of participation in on-chain voting. The amount that a validator is slashed depends on the severity of the incident and will likely be finalised with on-chain voting prior to mainnet.  If a Validator is slashed to a level below the highest waiting Validator, the dishonest Validator is evicted and the waiting Validator automatically joins the Validator Set. As a result of the flat group, the heavy level of competition and the likelihood that dishonest participation will cause both economic loss to stakes and eviction from the Validator Set, an attacking Validator is heavily discouraged.
-Network security is a consideration for THORChain. Historically on-chain voting as extremely low turn-out, as shown by EOS, CarbonVote and Steemit voting events. Cosmos is attempting to solve this by increasing the rate of inflation of the staked token to increase the incentives to bond tokens to validator stakes (directly or via pools). Inflation pivots between a floor of 7% and a ceiling of 20% to drive holders to bond tokens at a desired bond state of ⅔ of the entire circulating supply. With ⅔ bonded, the network is optimally secure and resistant to cartels and plutocracy. A downside to this that the staked token loses ideal currency properties, and as such Cosmos have introduced a dual-token system, with a secondary token being used to pay for transaction fees. It is not known if Casper V2 will implement such a mechanism and if staking for collators will cause Ether to lose ideal currency properties. 
+Network security is a consideration for THORChain. Historically on-chain voting as extremely low turn-out, as shown by EOS, CarbonVote and Steemit voting events. Cosmos is attempting to solve this by increasing the rate of inflation of the staked token to increase the incentives to bond tokens to validator stakes (directly or via pools). Inflation pivots between a floor of `7%` and a ceiling of `20%` to drive holders to bond tokens at a desired bond state of `2/3` of the entire circulating supply. With ⅔ bonded, the network is optimally secure and resistant to cartels and plutocracy. A downside to this that the staked token loses ideal currency properties, and as such Cosmos have introduced a dual-token system, with a secondary token being used to pay for transaction fees. It is not known if Casper V2 will implement such a mechanism and if staking for collators will cause Ether to lose ideal currency properties. 
 THORChain will adopt a single token for simplicity but research the real-world economics of other Proof-of-Stake chains until mainnet. If a secondary token is implemented, it can be done using THORChain on-chain governance. 
 
 ### Multiple Validator Sets
 THORChain’s primary performance metric of TPS is most dependent on the bottlenecks of the single Validator Set. Adding more validators to a Validator Set will not improve performance, instead it will decrease it.  There is an opportunity given the design of THORChain to investigate a Multiple Validator Set architecture, whereby transactions are sharded to each tokenChain and maintained by separate Validator Sets. By processing the transactions on each tokenChain as separate, the network can perform at a potentially unbounded level. 
- Sharding is possible in THORChain as separate mempools for each TokenChain are maintained by unique address spaces. This allows pending transactions to easily be segregated. The GasLimit is capped for THORChain to allow the network to track saturation and signal for splitting Validator Sets.  If the GasLimit approaches upper limits (above 90% for 100 blocks), then a separate Validator Set will form to meet the scaling demands. In this case, the next 100 highest staked Validators will be selected to form another Validator Set. The primary Validator Set (Validators 1-100) will evict all TokenChains bar the TokenChain with the highest gas demands and the MerkleChain from their mempool. The secondary Validator Set (101-200) will then maintain all other TokenChains. Further, if the secondary Validator Set approaches its GasLimit, it will also then evict all but the highest TokenChain, and nominate the Tertiary TokenChain, and so on. The MerkleChain stores and tracks multiple Validator Sets. In this way a hierarchy of Validator Sets are established, each tracking their immediate child.
-At any stage if a Validator Set’s GasLimit reduces below 10% saturation for longer than 100 blocks then the set is instantly dissolved into its parent set. If a parent set signals to dissolve before its child, then the Master VS re-shuffles all child VSs to re-establish an unbroken hierarchy and prevent disruption. In this way THORChain can scale so that it can always cater for the demands of the network. 
+ Sharding is possible in THORChain as separate mempools for each TokenChain are maintained by unique address spaces. This allows pending transactions to easily be segregated. The GasLimit is capped for THORChain to allow the network to track saturation and signal for splitting Validator Sets.  If the GasLimit approaches upper limits (above `90%` for `100` blocks), then a separate Validator Set will form to meet the scaling demands. In this case, the next 100 highest staked Validators will be selected to form another Validator Set. The primary Validator Set (Validators `1-100`) will evict all TokenChains bar the TokenChain with the highest gas demands and the MerkleChain from their mempool. The secondary Validator Set (101-200) will then maintain all other TokenChains. Further, if the secondary Validator Set approaches its GasLimit, it will also then evict all but the highest TokenChain, and nominate the Tertiary TokenChain, and so on. The MerkleChain stores and tracks multiple Validator Sets. In this way a hierarchy of Validator Sets are established, each tracking their immediate child.
+At any stage if a Validator Set’s GasLimit reduces below `10%` saturation for longer than `100` blocks then the set is instantly dissolved into its parent set. If a parent set signals to dissolve before its child, then the Master VS re-shuffles all child VSs to re-establish an unbroken hierarchy and prevent disruption. In this way THORChain can scale so that it can always cater for the demands of the network. 
 
 1
 >90% Saturation
