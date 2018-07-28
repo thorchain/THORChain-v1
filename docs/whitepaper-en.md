@@ -276,16 +276,6 @@ The token owner will subsequently transact in a specific amount of Rune to emit 
 
 **Genesis Emission**
 
-|Seq|Event|Action
-|:---:|:---:|:---|
-|1|>90% Saturation|Validator Set (VS1) start signalling to split
-|2|100 Blocks
-|3|101st Block|A new Validator Set (VS2) commissioned
-|4|<10% Saturation on both Chains|VS1 and VS2 signal to merge
-|5|100 Blocks
-|6|101st Block|VS2 decommissioned and VS1 returns to process both chains. 
-
-
 |TX in (Rune)|Rune Locked|Tokens Locked|Price (RUNE)|Tokens Emitted
 |:---|:---|:---|:---|:---|
 GenTX|(100 Rune)|100|1,000,000|0.0001
@@ -643,7 +633,9 @@ Users who wish to assign short human-readable names to their accounts to improve
 THORChain has the opportunity to rethink how a name service can be operated such that it achieves both effective allocative and investment efficiency. Names will end up being redistributed to parties who can derive the most value from it, and each name can become an investment to the owner. The principle behind the TNS is a hybrid between Harbinger taxes and staking auctions to prevent name-squatting. 
 If a “squatter” owns a name that another user wishes to purchase, the buyer can simply stake Rune with the squatter’s account, known as “Name Staking” in a special transaction. If the squatter does not hold more than the buyer in their own account, the buyer can purchase the name trustlessly after m blocks. If the squatter does not wish to sell, or cannot afford to hold more in their account, they begin paying a fee to anyone who Name Stakes in their account. The squatter can sell at any time to the highest bidder by simply withdrawing the highest bidders’ stake and the name is trustlessly swapped. A very keen buyer must either be patient to acquire the name, or stake a higher amount to increase the fees the squatter has to pay. There can be multiple Name Squatters in an account. 
 
+
 |Account Owner |Name Staker | Fee
+|:---|:---|:---|
 |10 Rune|20 Rune|20*![\frac{(20-10)}{38*0.01}](https://latex.codecogs.com/gif.latex?%5Cfrac%7B%2820-10%29%7D%7B38*0.01%7D)every `m blocks`
 ||12 Rune|12*![\frac{(20-10)}{38*0.01}](https://latex.codecogs.com/gif.latex?%5Cfrac%7B%2820-10%29%7D%7B38*0.01%7D)every `m blocks`
 ||5 Rune|5*![\frac{(20-10)}{38*0.01}](https://latex.codecogs.com/gif.latex?%5Cfrac%7B%2820-10%29%7D%7B38*0.01%7D)every `m blocks`
