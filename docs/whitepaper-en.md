@@ -197,7 +197,7 @@ Any block producer can propose a change in the core software and consensus rules
 
 `{description, newCode, diffPatch}`
 
- All other validators vote to accept the change and if it reaches supermajority consensus the updated code can be immediately brought in to operation. The proposing and agreeing validators run the compiled core software on standby, so that once approved, the core software is live to produce the very next block. 
+All other validators vote to accept the change and if it reaches supermajority consensus the updated code can be immediately brought in to operation. The proposing and agreeing validators run the compiled core software on standby, so that once approved, the core software is live to produce the very next block. 
 The types of updates that can be rolled out are essentially unlimited and could be:
 Consensus rules such as supermajority thresholds, or voting rules (relating to on-chain governance itself)
 Protocol architecture such as a change to consensus algorithms, integration of sharding, change to the blockchain structure or signature schemes. 
@@ -275,11 +275,23 @@ THORChain allows a unique mechanism of generating both the full supply of a toke
 The token owner will subsequently transact in a specific amount of Rune to emit the full token amount to their custody. The following will happen in the case that 100 Rune was the GenTX, and 1mn tokens were created (decimals not included):
 
 **Genesis Emission**
+
+|Seq|Event|Action
+|:---:|:---:|:---|
+|1|>90% Saturation|Validator Set (VS1) start signalling to split
+|2|100 Blocks
+|3|101st Block|A new Validator Set (VS2) commissioned
+|4|<10% Saturation on both Chains|VS1 and VS2 signal to merge
+|5|100 Blocks
+|6|101st Block|VS2 decommissioned and VS1 returns to process both chains. 
+
+
 |TX in (Rune)|Rune Locked|Tokens Locked|Price (RUNE)|Tokens Emitted
 |:---|:---|:---|:---|:---|
 GenTX|(100 Rune)|100|1,000,000|0.0001
 
 **Subsequent CLP Transaction**
+
 |TX in (Rune)|Rune Locked|Tokens Locked|Price (RUNE)|Tokens Emitted
 |:---|:---|:---|:---|:---|
 90|190|100,000|0.001|900,000
