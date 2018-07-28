@@ -2,6 +2,7 @@
 
 ## A lightning fast decentralised exchange protocol
 devs@thorchain.org
+V0.1 July 2018
 
 ### Abstract 
 >THORChain is a highly optimised multi-chain using pBFT consensus to achieve sub-second block finality. Tokens are traded on single chains, known as tokenChains with discrete address spaces. Multi-set sharding is proposed to allow byzantine resistant scaling. The native protocol facilitates on-chain trading and order matching at the protocol level, supporting both limit and market orders. Continuous liquidity pools ensure liquidity is always available for any token pair, and double as the source of trustless on-chain price feeds, a cornerstone of the protocol. Fee incentives are designed to continually attract on-chain liquidity. On-chain token generation is built-in for both fixed and variable supply tokens, with the potential for auditable collateralized stablecoins. Two-way pegs with UTXO, account and contract-based cryptocurrencies allow most existing cryptocurrencies to seamlessly move on and off THORChain. Transparent developer incentivisation strategies allow wallet and exchange developers to be funded at the protocol level which will encourage a vibrant developer community. On-chain governance and smart updates with enforced voting and quadratic polling ensures THORChain is an adaptive and iterative platform that grows with its needs without contentious hard forks. THORChain is built to be compatible with the Flash Network; a layer 2 payment channel network. 
@@ -118,7 +119,7 @@ Asgardex (the name for the DEX that will be built on top of THORChain) will have
 ### Overview
 THORChain is a multi-blockchain protocol comprised of side chains “TokenChains” and the master “MerkleChain”. The MerkleChain tracks the entire state of the network, storing the latest hash of the Merkle Tree to prevent double-spending and syncing the state of network. All side chains in the protocol are “first-class citizens” with no delineation in security, technology or preference in the Validator Set. 
 TokenChains have a genesis account that describe the characteristics of the token, and solely track transactions for that token. Each TokenChain maintains a discrete address space allowing deconfliction of transaction mempools. TokenChains are account-based in a similar manner to Ethereum (as opposed to UTXO-based where unspent transactions are tracked such as Bitcoin). A nonce tracks the latest state of each account, invalidating all previous account states. 
-The native token of the ecosystem is Rune and is created at the genesis of the protocol, with all Rune transactions tracked on the first side chain, T0. The Rune is unique as it is the settlement currency of the ecosystem and is stored in all on-chain liquidity pools. 
+The native token of the ecosystem is Rune and is created at the genesis of the protocol, with all Rune transactions tracked on the first side chain, `T0`. The Rune is unique as it is the settlement currency of the ecosystem and is stored in all on-chain liquidity pools. 
 The genesis block of every sidechain has a continuous liquidity pool (CLP) that defines a price ratio for Rune and that token. CLPs are explained in more detail later in this paper. For now, consider CLPs as providing a counterparty to anyone wishing to make a Rune-denominated trade. If two users trade between two non-Rune tokens, one of the tokens is automatically converted to Rune before the transaction is complete.
 
 _Figure 1: Each token is tracked on a discrete TokenChain. Genesis accounts track Token information and hold on-chain liquidity._
@@ -218,7 +219,8 @@ Block rewards for Layer 1 Validator Sets and Layer 2 Liquidity Nodes are paid in
 ### Block Rewards and Emission
 THORChain is a predictable inflationary currency that aims to create a price-competitive ecosystem, driving transaction fees to zero.  Inflation is the hidden tax designed to reward those that stake to either secure the network, provide bridge support or add either Layer 1 or Layer 2 liquidity. Noting the current inflation rates of Ethereum, Bitcoin, EOS and Cosmos, an acceptable starting inflation of `5%` is proposed. As the Rune is designed to be a settlement currency, instead of a store of value, holding Rune without staking it in the ecosystem is economically discouraged. In all other cases, the Rune is held for as long as it is necessary to settle the payment. 
 Block Rewards are issued with `50%` to Validator Sets and `50%` to the Layer 2 Liquidity Nodes. Each Validator in the Validator Set will receive 
-![rewards](https://latex.codecogs.com/gif.latex?rewards/%28100*Sets%29)
+
+![rewards=rewardsTotal/(100*Sets)](https://latex.codecogs.com/gif.latex?rewards/%28100*Sets%29)
 
 Liquidity Nodes will receive rewards in accordance with the Layer 2 Incentivisation Plan which rewards for liquidity and reliability. 
 If Layer 2 is not launched alongside the mainnet, then Layer 2 rewards may be hard-coded to pay back to the Foundation to prevent a stalemate whereby validators refuse to launch the Layer 2 Incentivisation Plan for the incorrect perception that they are being diluted or penalised. 
@@ -227,7 +229,7 @@ If Layer 2 is not launched alongside the mainnet, then Layer 2 rewards may be ha
 THORChain retains the concept of gas fees and a gas limit for each TokenChain’s blocks. The GasLimit is designed to solicit Validator Set splitting when required to scale. Gas fees are paid for each transaction type; of which there are several distinct types. Each transaction type is hard-coded in the protocol so gas estimates can be made. 
 Layer 1 Liquidity Fees are collected when utilising Continuous Liquidity Pools (CLPs), and are a function of liquidity in the CLP. The higher the slips incurred in CLP’s, the more fees are charged, thereby attracting more users to offer liquidity to the pool. Adding liquidity depth reduces slip and thus reduces the fees collected. Liquidity makers can withdraw their liquidity at any stage, including their collected fees. Self-interested liquidity makers will likely bootstrap new CLPs, collect fees, and then withdraw just their initial stake to continue to earn fees in the CLP indefinitely. 
 Layer 2 Trading Fees are paid to Liquidity Nodes for providing liquidity to Liquidity Hubs. The fee for using each Hub is the average of each fee nominated by each Node as they join. There may be multiple Hubs for each Rune Pair, thereby encouraging a price competitive network, where traders will use the Hub with the lowest average fees. Nodes are free to join any Hub they wish, or create their own. All Liquidity Nodes are paid from the Block Reward, but are weighted to their pro-rata liquidity and time online:
-![rewards](https://latex.codecogs.com/gif.latex?reward%20%3D%20%5Cfrac%7Bliquidity%20*time%20online%7D%7Btotal%20Network%20Liquidity%7D)
+![rewards=\frac{rewardsTotal}{(100*Sets)}](https://latex.codecogs.com/gif.latex?rewards%3D%5Cfrac%7BrewardsTotal%7D%7B%28100*Sets%29%7D)
 
 By paying trading fees and block rewards to Liquidity Hubs, nodes are incentivised to be liquid, online, reliable and there is no limit to the number of nodes; thus the network becomes quickly decentralised with many channels.  This is outlined in more detail in the Flash Network paper. 
 
@@ -236,7 +238,7 @@ Each TokenChain is created in a special genesis transaction `GenTX` on the prima
 Figure: The Genesis Account for Token1
 The `GenAcc` stores the following information about the Token which can be publicly queried and displayed on order books, wallets and exchanges:
 
-Ticker| TKN1 |Ticker to display
+|Ticker| TKN1 |Ticker to display|
 |:---|:---|:---|
 Name|Token1|Name to display
 Supply|100,000,000|Total Supply (100m)
@@ -250,7 +252,7 @@ If the Account Owner is SELF then the token details are immutable and cannot be 
 If there is an external Account Owner specified, then that Account Owner can change any characteristic of the token, including Supply by proxy. They cannot change the TokenIndex which is permanent and identifies the TokenChain. These tokens are known as variable supply tokens as the account owner is permitted to change the supply of the token. This is necessary for tokenised assets, security tokens and even pegged tokens, whereby the account owner can be a single owner or multi-sig owner that is permitted to change the token characteristics in line with external non-THORChain logic. 
 Account owners can even hand over control of the GenAcc to other accounts, including accounts without a private key; effectively turning the token into a fixed supply immutable token.  
 
-Ticker| TKN1 |Ticker to display
+|Ticker| TKN1 |Ticker to display|
 |:---|:---|:---|
 Name|Token1|Name to display
 Supply|100,000,000|Total Supply (100m)
@@ -267,12 +269,12 @@ THORChain allows a unique mechanism of generating both the full supply of a toke
 The token owner will subsequently transact in a specific amount of Rune to emit the full token amount to their custody. The following will happen in the case that 100 Rune was the GenTX, and 1mn tokens were created (decimals not included):
 
 **Genesis Emission**
-TX in (Rune)|Rune Locked|Tokens Locked|Price (RUNE)|Tokens Emitted
+|TX in (Rune)|Rune Locked|Tokens Locked|Price (RUNE)|Tokens Emitted|
 |:---|:---|:---|:---|:---|
 GenTX|(100 Rune)|100|1,000,000|0.0001|-
 
 **Subsequent CLP Transaction**
-TX in (Rune)|Rune Locked|Tokens Locked|Price (RUNE)|Tokens Emitted
+|TX in (Rune)|Rune Locked|Tokens Locked|Price (RUNE)|Tokens Emitted|
 |:---|:---|:---|:---|:---|
 90|190|100,000|0.001|900,000
 99|199|10,000|0.01|990,000
@@ -339,7 +341,7 @@ Rune FeeWithdrawTx. Anyone that added liquidity to the CLP is permitted to withd
 
 Importantly, the Locked Liquidity will only emit tokens at the internal price; inferred by the locked `RUNE:TKN1` ratio. If `10 RUNE` is locked alongside `1000 TKN1`; then the price of `1 TKN1` is `0.01 RUNE`, and tokens will be emitted at this internal price. The emission rate factors in slip which is the price of the token after the emission occurs, governed by the following equation. 
 
-![tokenEmitted](https://latex.codecogs.com/gif.latex?%5Clarge%20tokensEmitted%3Dtokens*%28%281&plus;%5Cfrac%7BtxRUNE%7D%7BRUNE%7D%29%5E%7BReserveRatio%7D-1%29)
+![tokensEmitted=tokens*((1+\frac{txRUNE}{RUNE})^{ReserveRatio}-1)](https://latex.codecogs.com/gif.latex?tokensEmitted%3Dtokens*%28%281&plus;%5Cfrac%7BtxRUNE%7D%7BRUNE%7D%29%5E%7BReserveRatio%7D-1%29)
 
 Reserve Ratio can be adjusted to be lower than `100%` to prevent large slip rates and is akin to fractional reserves.
  
@@ -347,9 +349,9 @@ Reserve Ratio can be adjusted to be lower than `100%` to prevent large slip rate
 
 The Liquidity Fee is a function of slip; the rate at which the price will change in a transaction that emits Rune or Tokens. Importantly, there will always be a slip, as every transaction (no matter how small) will change the ratio between locked Rune and Tokens, so the subsequent change in ratio defines a new price. To couple fees with slip and thereby encourage more self-interested users to add liquidity in CLPs that need it most (high volume and low liquidity CLPs), fees are paid out as: 
 
-![eqn](https://latex.codecogs.com/gif.latex?%5Clarge%200.1*slip*transactionSize)
+![0.1*slip*transactionSize](https://latex.codecogs.com/gif.latex?%5Clarge%200.1*slip*transactionSize)
 
-Liquidity Depth|Transaction|Slip|Liquidity Fee
+|Liquidity Depth|Transaction|Slip|Liquidity Fee|
 |:---|:---|:---|:---|
 1m Rune|100 Rune|0.01%|0.001 Rune
 100,000 Rune|1000 Rune|1%|1 Rune
@@ -364,202 +366,209 @@ _Table: Example Liquidity Fees_
 
 _Figure: On-chain Arbitrage_
 
-Price Oracle. Token pricing in the GenAcc should always the fair market price, else self-interested arbitrageurs would have taken action. After large price movements there may be a delay, but large price movements cause large Liquidity Fees which self-corrects by attracting more liquidity. Thus the THORChain network can employ token pricing trustlessly throughout the ecosystem based on GenAcc pricing. 
+**Price Oracle**. Token pricing in the GenAcc should always the fair market price, else self-interested arbitrageurs would have taken action. After large price movements there may be a delay, but large price movements cause large Liquidity Fees which self-corrects by attracting more liquidity. Thus the THORChain network can employ token pricing trustlessly throughout the ecosystem based on GenAcc pricing. 
 Trustless token pricing could be employed by future versions of the protocol in the following ways:
-To facilitate advanced order types such as margin trading and stop loss/take profits. 
-Used across THORDApps to allow advanced dApp features around token prices.
-Used to transmit fair market prices to the Layer 2 Payment Network, facilitating instant trades across supported assets. 
-Price Manipulation. The cost of price manipulation is high in THORChain, due to extant economics. The CLPs that are mostly likely to attract manipulation are the most used pairs, however the act of manipulation immediately exposes the manipulator to on-chain arbitrage and high liquidity fees. Sustained manipulation in a CLP will increase volumes across that CLP, increasing the amount of liquidity staked by self-interested liquidity stakers, thereby reducing the effect of manipulation in the long run. 
+- To facilitate advanced order types such as margin trading and stop loss/take profits. 
+- Used across THORDApps to allow advanced dApp features around token prices.
+- Used to transmit fair market prices to the Layer 2 Payment Network, facilitating instant trades across supported assets. 
+
+**Price Manipulation**. The cost of price manipulation is high in THORChain, due to extant economics. The CLPs that are mostly likely to attract manipulation are the most used pairs, however the act of manipulation immediately exposes the manipulator to on-chain arbitrage and high liquidity fees. Sustained manipulation in a CLP will increase volumes across that CLP, increasing the amount of liquidity staked by self-interested liquidity stakers, thereby reducing the effect of manipulation in the long run. 
 
 ## On-chain Trading
 
 ### Account Types
 
 THORChain integrates on-chain trading at the protocol level, fulfilling all aspects of the desired trade experience. THORChain makes use of account-based architecture which offers flexibility over the UTXO model. There are three account types in the ecosystem, created with the appropriate native on-chain command:
-Wallet Account. Wallet Accounts have the following characteristic:
-Store a balance that can only be transferred by the Account Owner.
-Balances are updated with a unique nonce, and old balances are invalidated if a later nonce is published.  
-Figure: The THORChain Wallet for Rune (T0). Alice’s public address is [aaa....aaa]
 
-Trading Account. Trading Accounts have the following characteristic:
-Store a balance that can only be transferred by:
-The Account Owner
-A valid incoming trade, and only after performing the Trade Execution.
-Store a Price; that generates a Trade Execution, such that:
-Trade=Balance*Price
-Store an Expiry time in blocks.
-Store a Host Fee; such that user-facing clients can add an optional fee.
-Store a Host Address to send Host Fees to. 
-All data is updated with a unique nonce, and old data is invalidated if a later nonce is published. 
-Figure: The THORChain Trading Account for Rune (T0). Alice’s public address for the pair (T1) [aaa....aaa] is automatically inserted, but can be specified.
-CLP Account. A CLP is a special account that resides on genesis account of each tokenChain:
-Store an array of stakers (address and commitment amount) to collect fees for.
-Store balances of Rune and Token.
-Store fees for Rune and Token.
-Store Token Data.
-Store CLP Data. 
-Store a nonce.
-Figure: The THORChain CLP Account for TKN1 (T1).
+**Wallet Account**. Wallet Accounts have the following characteristic:
+- Store a balance that can only be transferred by the Account Owner.
+- Balances are updated with a unique nonce, and old balances are invalidated if a later nonce is published.  
+
+_Figure: The THORChain Wallet for Rune (T0). Alice’s public address is [aaa....aaa]_
+
+**Trading Account**. Trading Accounts have the following characteristic:
+- Store a balance that can only be transferred by:
+  - The Account Owner
+  - A valid incoming trade, and only after performing the Trade Execution.
+- Store a Price; that generates a Trade Execution, such that:
+
+![Trade=Balance*Price](https://latex.codecogs.com/gif.latex?Trade%3DBalance*Price)
+
+
+- Store an Expiry time in blocks.
+- Store a Host Fee; such that user-facing clients can add an optional fee.
+- Store a Host Address to send Host Fees to. 
+- All data is updated with a unique nonce, and old data is invalidated if a later nonce is published. 
+
+_Figure: The THORChain Trading Account for Rune (T0). Alice’s public address for the pair (T1) [aaa....aaa] is automatically inserted, but can be specified._
+
+**CLP Account**. A CLP is a special account that resides on genesis account of each tokenChain:
+- Store an array of stakers (address and commitment amount) to collect fees for.
+- Store balances of Rune and Token.
+- Store fees for Rune and Token.
+- Store Token Data.
+- Store CLP Data. 
+- Store a nonce.
+
+_Figure: The THORChain CLP Account for TKN1 (T1)._
 
 ### Transaction Types
 
 Alongside Accounts, THORChain adds unique Transaction types that cover transactions and trades. These are executed as native on-chain commands that perform math on each trade and update account nonces to save state.  
-TX. Send a Balance to a recipient’s wallet. If sent to a CLP, corresponding tokens are emitted to back to the sender’s token wallet. 
-Transfer Rune or TKN. 
-If the recipient does not have the required wallet, it is created using the same publicAddress. 
+**TX**. Send a Balance to a recipient’s wallet. If sent to a CLP, corresponding tokens are emitted to back to the sender’s token wallet. 
+- Transfer Rune or TKN. 
+- If the recipient does not have the required wallet, it is created using the same publicAddress. 
 
 
-Figure: Alice paying Bob on a single chain.
+_Figure: Alice paying Bob on a single chain._
 
 
-Figure: Alice paying Bob across chains. Alice can pay to T0x(bob) or T1x(bob) or T2x(bob); but balance only updated at T1x(bob).
+_Figure: Alice paying Bob across chains. Alice can pay to T0x(bob) or T1x(bob) or T2x(bob); but balance only updated at T1x(bob)._
 
 
-Figure: Alice interacting with TKN1 CLP with T0. She receives TKN1.
+_Figure: Alice interacting with TKN1 CLP with T0. She receives TKN1._
 
-LiqTX. Send a balance to a CLP to add liquidity. Sender’s address is added to collect earned fees. 
-Transfer Rune or TKN. 
-If the incorrect TKN is sent, it will instead be sent to the matching token CLP. This may not be desired, but easily recovered. 
-
-
-Figure: Alice adding liquidity to CLP1.
+**LiqTX**. Send a balance to a CLP to add liquidity. Sender’s address is added to collect earned fees. 
+- Transfer Rune or TKN. 
+- If the incorrect TKN is sent, it will instead be sent to the matching token CLP. This may not be desired, but easily recovered. 
 
 
+_Figure: Alice adding liquidity to CLP1._
+
+**LiqWdTX**. Withdraw liquidity from a CLP. 
+- Call Withdraw on the Account. 
+- If signatures match with Stakers Array, all liquidity is emitted to sender’s address, including earned fees. 
 
 
+_Figure: Alice withdrawing her liquidity + fees._
+
+**FeeWdTX**. Withdraw fee from a CLP. 
+- Call WithdrawFees on the Account. 
+- If signatures match, all fees emitted to sender’s address. 
+
+_Figure: Alice withdrawing her fees._
+
+**GenTX**. The Genesis Transaction is used to create a new Token and TokenChain.
+- Transfer RUNE.
+- Set Ticker and Name.
+- Set Supply. Leave 0 for variable supply.
+- Set Decimals (18 default)
+- Set Reserve Ratio.
+- Set Account Owner, default is Self. 
 
 
+_Figure: Alice creating Token1 TokenChain._
 
+**TradeTx**. The Account Transaction is used to create a Trade Account. 
+- Transfer Rune or TKN. 
+- Set Price. In Rune or TKN.
+- Set Expiry (in blocks). 
+- Set destination account (default is Alice’s token address).
+- Set Host Fee. Optional. 
+- Set Host Account. Optional. 
 
+_Figure: Alice setting a T1 Sell Order for `T0`_
 
-LiqWdTX. Withdraw liquidity from a CLP. 
-Call Withdraw on the Account. 
-If signatures match with Stakers Array, all liquidity is emitted to sender’s address, including earned fees. 
+**WalletTx**. The Account Transaction is used to return a Trade Account to a Wallet Account. 
+- Transfer Rune or TKN. 
 
+_Figure: Alice cancelling her trade._
 
-Figure: Alice withdrawing her liquidity + fees.
+**TradeSolicitTx**. The Trade Transaction is used to solicit a Trade. 
+- Transfer Rune or TKN.
+- Set Price. Desired Price to fill at. 
+- Set Limit. Furthest deviation from Price allowed. Leave blank for Market Order. 
+- Set Expiry (in blocks). Used if the Order is not immediately filled, and becomes a `WalletTX`. 
+- Set Host Fee. Optional. 
+- Set Host Account. Optional.
 
-FeeWdTX. Withdraw fee from a CLP. 
-Call WithdrawFees on the Account. 
-If signatures match, all fees emitted to sender’s address. 
+_Figure: Bob buying Alice’s T1 Sell Order. The transaction is sent across chains from `TO` to `T1`_
 
+**TradeExecuteTx**. The successful outcome of TradeSolicitTx. 
+- Transfer TKN to Buying Party Destination Account.
+- Refund spare Rune back to Buying Party Account.
+- Transfer Rune to Selling Party. 
+- Update nonces
 
-Figure: Alice withdrawing her fees.
-
-
-
-
-
-GenTX. The Genesis Transaction is used to create a new Token and TokenChain.
-Transfer RUNE.
-Set Ticker and Name.
-Set Supply. Leave 0 for variable supply. 
-Set Decimals (up to 18). 
-Set Reserve Ratio.
-Set Account Owner, default is Self. 
-
-
-Figure: Alice creating Token1 TokenChain.
-
-TradeTx. The Account Transaction is used to create a Trade Account. 
-Transfer Rune or TKN. 
-Set Price. In Rune or TKN.
-Set Expiry (in blocks). 
-Set destination account (default is Alice’s token address).
-Set Host Fee. Optional. 
-Set Host Account. Optional. 
-
-
-Figure: Alice setting a T1 Sell Order for T0
-
-
-
-WalletTx. The Account Transaction is used to return a Trade Account to a Wallet Account. 
-Transfer Rune or TKN. 
-
-
-Figure: Alice cancelling her trade.
-
-TradeSolicitTx. The Trade Transaction is used to solicit a Trade. 
-Transfer Rune or TKN.
-Set Price. Desired Price to fill at. 
-Set Limit. Furthest deviation from Price allowed. Leave blank for Market Order. 
-Set Expiry (in blocks). Used if the Order is not immediately filled, and becomes a WalletTX. 
-Set Host Fee. Optional. 
-Set Host Account. Optional.
-
-
-
-Figure: Bob buying Alice’s T1 Sell Order. The transaction is sent across chains from TO to T1
-TradeExecuteTx. The successful outcome of TradeSolicitTx. 
-Transfer TKN to Buying Party Destination Account.
-Refund spare Rune back to Buying Party Account.
-Transfer Rune to Selling Party. 
-Update nonces
-Figure: Bob buys Alice’s T1 Sell Order, is refunded the extra. Alice gets the Rune. 
+_Figure: Bob buys Alice’s T1 Sell Order, is refunded the extra. Alice gets the Rune._
 
 ### Limit and Market Orders
 
-Refund. As transaction fees are non-deterministic and may not be known ahead of time, the final balance sent to an order may create “dust” or excess if the trade amount exceeds the target order. Thus the concept of a Refund is introduced. This Refund becomes a useful mechanism to support other trade types such as Market Orders and Advanced Trading by relaying instead of refunding. 
+**Refund**. As transaction fees are non-deterministic and may not be known ahead of time, the final balance sent to an order may create “dust” or excess if the trade amount exceeds the target order. Thus the concept of a Refund is introduced. This Refund becomes a useful mechanism to support other trade types such as Market Orders and Advanced Trading by relaying instead of refunding. 
 Relaying Refunds from one order to another may be seen as inefficient as it generates additional consequential transactions that rely on the previous being filled, however the benefits are twofold. The first is the trader can “fire and forget” their trade, knowing that it will be executed as intended prior to the expiry specified. The second is that the trade remains trustless as it does not involve client software splitting up a trader’s orders on behalf of them which can be vulnerable to interception attacks. Ultimately it is a better user experience as the trade can be performed in one user-facing action instead of multiple. 
-Limit Order. A trader wishes to spend their entire balance on open orders within a price limit. They specify their starting price as well as a limit, and collect all open orders inside that range, before the order expires. The mechanism of this is to relay the Refund from one order to another until all is fulfilled (or not). 
 
-Figure: Bob issues a limit order. 
-Market Order. A trader may just wish to clear their trade at any market price available. This is done by relaying the Refund from one order to another until all is fulfilled (or not). 
-Figure: Bob issues a market order. 
+**Limit Order**. A trader wishes to spend their entire balance on open orders within a price limit. They specify their starting price as well as a limit, and collect all open orders inside that range, before the order expires. The mechanism of this is to relay the Refund from one order to another until all is fulfilled (or not). 
+
+_Figure: Bob issues a limit order._
+
+**Market Order**. A trader may just wish to clear their trade at any market price available. This is done by relaying the Refund from one order to another until all is fulfilled (or not). 
+
+_Figure: Bob issues a market order._ 
 
 ## User Experience
 ### Wallets
 
 The following is the user experience of interacting with THORChain-based wallets and exchanges.
-Instantiating Wallets. Users create a new wallet by generating some form of off-line entropy that is used to create the private/public key pairs. These key pairs can be represented and secured by seed-words (BIP39), key-stores or even memorable brain wallets. An innovation proposed by FairLayer is to use [email + password] as the source of entropy as it is both unique, memorable and portable. A single private key controls all of a user’s token addresses (one for each tokenChain). Wallets can support Hierarchical Deterministic key generation which allow users to generate n number of private/public key pairs from the same entropy. 
-Maintaining Assets. All of a user’s assets can be viewed inside a single wallet interface. Asset details (name, ticker) can be trustlessly queried from GenAccounts whilst prices for assets can be queried from CLPs. Bridge accounts can also be queried from GenAccounts for tokenised assets (tokenised Bitcoin), so users can easily send external assets across the ecosystem. 
+
+**Instantiating Wallets**. Users create a new wallet by generating some form of off-line entropy that is used to create the private/public key pairs. These key pairs can be represented and secured by seed-words (BIP39), key-stores or even memorable brain wallets. An innovation proposed by FairLayer is to use [email + password] as the source of entropy as it is both unique, memorable and portable. A single private key controls all of a user’s token addresses (one for each tokenChain). Wallets can support Hierarchical Deterministic key generation which allow users to generate n number of private/public key pairs from the same entropy. 
+**Maintaining Assets**. All of a user’s assets can be viewed inside a single wallet interface. Asset details (name, ticker) can be trustlessly queried from GenAccounts whilst prices for assets can be queried from CLPs. Bridge accounts can also be queried from GenAccounts for tokenised assets (tokenised Bitcoin), so users can easily send external assets across the ecosystem. 
 
 ### Trading
 
-Trading a CLP. Users can swap assets from inside their wallets by simply sending to CLPs for each assets. Pricing is shown ahead of time, as well as any expected liquidity fees. The advantage of trading a CLP instead of a public order book is that the swap can be performed immediately, with transparent fees and trustless pricing. 
-Executing a Trade. Users can import their key pairs or entropy to a decentralised exchange built on THORChain. They have immediate access to all of their assets for public trading. 
-Creating & Updating an Order. Users can seamlessly move Rune or any other token into a trade account and create a public Buy or Sell order (depending on the side). The Order can be updated at any time. If performed in a Wallet or on an Exchange front-end, the developer may insert an optional fee for development revenue. This fee is public and encourages price competition.
-Large Orders. Traders and developers have two options for completing large orders. Traders can split up their assets manually and pick off individual orders, sending  a small amount of asset to each discrete order to complete trades. Developers can also build client-side software to split up orders for traders and send these trades to multiple orders but this is not preferred. 
+**Trading a CLP**. Users can swap assets from inside their wallets by simply sending to CLPs for each assets. Pricing is shown ahead of time, as well as any expected liquidity fees. The advantage of trading a CLP instead of a public order book is that the swap can be performed immediately, with transparent fees and trustless pricing. 
+
+**Executing a Trade**. Users can import their key pairs or entropy to a decentralised exchange built on THORChain. They have immediate access to all of their assets for public trading. 
+
+**Creating & Updating an Order**. Users can seamlessly move Rune or any other token into a trade account and create a public Buy or Sell order (depending on the side). The Order can be updated at any time. If performed in a Wallet or on an Exchange front-end, the developer may insert an optional fee for development revenue. This fee is public and encourages price competition.
+
+**Large Orders**. Traders and developers have two options for completing large orders. Traders can split up their assets manually and pick off individual orders, sending  a small amount of asset to each discrete order to complete trades. Developers can also build client-side software to split up orders for traders and send these trades to multiple orders but this is not preferred. 
 
 ### Exchanges
 
 Traders will have access to exchange interfaces that are familiar in experience and features to current exchanges. All exchanges are accessing the same order book and assets, so they all share liquidity. The ASGARDEX exchange is one such exchange to be launched for mainnet but will be open-source and able to be forked easily. This will drive developers to continually innovate instead of building closed-source moats. 
-Viewing Trades. Once orders are served, a block explorer can index trading accounts and display on a public order book. Trade sides are always paired to RUNE; but TKN:TKN markets are also available if specified. In this case the pair is ordered respective of the underlying TokenIndex. The following would be displayed on a client-side exchange, and can be displayed on any client side interface:
-Liquidity Depth.
-Candlestick and Volume charts. 
-Previous Closed Trades.
-CLP Accounts
-Token Information
-Bridge Accounts
-Figure: Reading and displaying the trades. 
-Trading. Traders can access all features of the protocol to perform trades on their assets and leave at any time. Private keys are held on client side and signatures may be queried from hardware wallets. 
+
+**Viewing Trades**. Once orders are served, a block explorer can index trading accounts and display on a public order book. Trade sides are always paired to RUNE; but TKN:TKN markets are also available if specified. In this case the pair is ordered respective of the underlying TokenIndex. The following would be displayed on a client-side exchange, and can be displayed on any client side interface:
+- Liquidity Depth.
+- Candlestick and Volume charts. 
+- Previous Closed Trades.
+- CLP Accounts
+- Token Information
+- Bridge Accounts
+
+_Figure: Reading and displaying the trades._
+
+**Trading**. Traders can access all features of the protocol to perform trades on their assets and leave at any time. Private keys are held on client side and signatures may be queried from hardware wallets. 
 
 ### Exchange and Wallet Funding 
 
 Exchanges and Wallets have client-side access to insert a transparent Hosting Fee and Account to each AccountTX. As each trade is made (maker, taker, CLP trades) the fee is immediately paid to the host account.  
 
-Figure: Exchange inserting their maker fee.
+_Figure: Exchange inserting their maker fee._
+
 This will support the development of excellent user-experiences in exchanges and wallets that use the THORChain protocol. The pricing mechanism only gathers fees from trades originating from each Wallet and Exchange, so it will naturally support apps that are great experiences. The fee mechanism is also price competitive and public, ensuring that users get the best fees. 
-Cross-token Trading
-For Users. The Rune is the settlement currency of THORChain and is paired to all tokens in their CLPs, (no token can exist on THORChain without a CLP being created). Users who wish to trade from one token to another such as T1 to T2 do not have a CLP available that matches T1:T2. Instead they can perform two transactions that settle with Rune; T1:Rune:T2. Which uses the T1:Rune and T2:Rune CLP. In this case the emitted Rune is immediately re-routed to the next CLP. The user can be assured that both prices are trustless and represent fair market price. Fees can also be transparent and known ahead of time, and the entire trade will take 2 blocks to complete. 
-Figure: Routing via two CLPs. 
 
-For Traders. With the mechanism described above, all tokens now have liquidity with each other. This may be sufficient for the needs of traders, but advanced traders may prefer direct order-book markets from one token to another, such as for tBTC:tETH. This is up for users to create by simply specifying a pair that is not in Rune when creating orders. The THORChain order-book explorer will collect orders and pair them appropriately on any DEX built for THORChain. 
+### Cross-token Trading
+**For Users**. The Rune is the settlement currency of THORChain and is paired to all tokens in their CLPs, (no token can exist on THORChain without a CLP being created). Users who wish to trade from one token to another such as `T1` to `T2` do not have a CLP available that matches `T1:T2`. Instead they can perform two transactions that settle with Rune; `T1:Rune:T2`. Which uses the `T1:Rune` and `T2:Rune CLP`. In this case the emitted Rune is immediately re-routed to the next CLP. The user can be assured that both prices are trustless and represent fair market price. Fees can also be transparent and known ahead of time, and the entire trade will take `2` blocks to complete. 
+
+_Figure: Routing via two CLPs._ 
+
+**For Traders**. With the mechanism described above, all tokens now have liquidity with each other. This may be sufficient for the needs of traders, but advanced traders may prefer direct order-book markets from one token to another, such as for `tBTC:tETH`. This is up for users to create by simply specifying a pair that is not in Rune when creating orders. The THORChain order-book explorer will collect orders and pair them appropriately on any DEX built for THORChain. 
 
 
 
 
-Figure: A T1:T2 sell order that is not paired to Rune (T0).
+*Figure: A T1:T2 sell order that is not paired to Rune `T0`*.
 
 ### On-chain Initial Exchange Offerings
 
 THORChain has all the mechanisms to support native on-chain IEOs. The benefits to this instead of a contract-based token is that the token standard is immutable, auditable and no back doors can be built. Additionally, the token would gain instant liquidity with an immediate market. Lastly, users can participate directly from their wallets which minimise interception attacks. The following would be the process for any team to create their own crypto-asset:
-The TokenChain is minted with token details. 
-The project team then emit their token to their own account: liquidity is created and pricing is set. 
-The project then create a number of large public Sell Orders (may be with different price points “bonuses”. 
-Contributors then send Rune to each Sell Order. Projects may also choose to pair to non-Rune tokens (like tBTC or tETH). 
-Contributors receive the new token in their wallet immediately. 
+
+- The TokenChain is minted with token details. 
+- The project team then emit their token to their own account: liquidity is created and pricing is set. 
+- The project then create a number of large public Sell Orders (may be with different price points “bonuses”. 
+- Contributors then send Rune to each Sell Order. Projects may also choose to pair to non-Rune tokens (like `tBTC` or `tETH`). 
+- Contributors receive the new token in their wallet immediately. 
+
 This will herald a new generation of liquid, auditable and trustless cryptoassets. 
 
 
@@ -568,14 +577,16 @@ This will herald a new generation of liquid, auditable and trustless cryptoasset
 ### Validator Staking
 
 A key part of the protocol is that Validators stake or “bond” Rune to be part of the 100 in the Validator Set and agree to be bound by slashing rules. The economic cost of being slashed defines the security of the protocol. With 67% requirement for consensus, the entire protocol’s security can be objectively observed to be:
- 0.67 * totalStaked
+
+![0.67 * totalStaked](https://latex.codecogs.com/gif.latex?0.67%20*%20totalStaked)
+
 Thus THORChain attempts to create the right mechanisms to encourage Rune holders to stake as much of the circulating supply. The following are aspects of this:
-A proposed 5% Annual Inflation encourages Rune holders to reduce the cost of inflation and stake as Validators. 
+A proposed `5%` Annual Inflation encourages Rune holders to reduce the cost of inflation and stake as Validators. 
 An auction-based entry to the Validator Set encourages Rune holders to outbid each other in order to enter. 
-A bonding period of 14 days to lock tokens once accepted as a Validator. This prevents long-range nothing-at-stake attacks.
-An unbonding period of 14 days to prevent a rogue Validator attempting a quick getaway with no repercussions after malicious activity.
+A bonding period of `14` days to lock tokens once accepted as a Validator. This prevents long-range nothing-at-stake attacks.
+An unbonding period of `14` days to prevent a rogue Validator attempting a quick getaway with no repercussions after malicious activity.
 A method to allow delegation of stake to a Validator without the cost of running validator infrastructure. This empowers minority Rune holders to participate in the security of the network. 
-The mechanisms and UX to staking is simple in THORChain making use of the T0 Genesis Account. Ordinarily GenAccounts are CLPs, but in the special case for T0, there is no CLP required as the currency pair is Rune itself. T0 GenAccount stores the token information for Rune, such as current circulating supply, decimals, as well as the name and ticker. Instead of Liquidity Stakers staking to earn Liquidity Fees, Validators Stake in T0 to earn block rewards. The transaction types for this use the same base logic as CLP staking transactions. 
+The mechanisms and UX to staking is simple in THORChain making use of the `T0` Genesis Account. Ordinarily GenAccounts are CLPs, but in the special case for `T0`, there is no CLP required as the currency pair is Rune itself. `T0` GenAccount stores the token information for Rune, such as current circulating supply, decimals, as well as the name and ticker. Instead of Liquidity Stakers staking to earn Liquidity Fees, Validators Stake in `T0` to earn block rewards. The transaction types for this use the same base logic as CLP staking transactions. 
 
 
 
@@ -595,20 +606,20 @@ Owner
 SELF
 Owned by the protocol.
 
-Table: Rune Information. Total Supply updated every block by the Validator Set. 
-The first 100 Validators Auction their way into the Validator Set by staking into T0. The Top 100 are assigned to be Validators, assessed every block. Staking is simply a transaction to T0, where the incoming address is saved in the Staking Array, alongside balance. 
- Figure: A prospective Validator stakes. 
-The Top 100 Validators in the Staking Array Stakers are Validators that secure the protocol, and this is tracked in the Validators array. If a new validator stakes more than the 100th Validator, the old Validator is removed from the Validators array and the new one is added. This can be observed by anyone and is updated every block. A bondPeriod specifies the minimum amount of blocks before a Validator can withdraw stake (14 days). Block Rewards accumulate in T0. When a block reward is issued, the tokenData field is updated to increase total Rune supply commensurately. Staked Validators can withdraw their split share of Block Rewards at anytime (1/100th of the accumulated rewards). Reward entitlements are tracked in the Validators field. 
-
+*Table: Rune Information. Total Supply updated every block by the Validator Set.* 
+
+The first `100` Validators Auction their way into the Validator Set by staking into `T0`. The Top `100` are assigned to be Validators, assessed every block. Staking is simply a transaction to `T0`, where the incoming address is saved in the Staking Array, alongside balance. 
+
+*Figure: A prospective Validator stakes.*
+
+The Top `100` Validators in the Staking Array Stakers are Validators that secure the protocol, and this is tracked in the Validators array. If a new validator stakes more than the `100th` Validator, the old Validator is removed from the Validators array and the new one is added. This can be observed by anyone and is updated every block. A bondPeriod specifies the minimum amount of blocks before a Validator can withdraw stake (`14` days). Block Rewards accumulate in `T0`. When a block reward is issued, the tokenData field is updated to increase total Rune supply commensurately. Staked Validators can withdraw their split share of Block Rewards at anytime (`1/100th` of the accumulated rewards). Reward entitlements are tracked in the Validators field. 
+
 Delegating tokens to an existing Validator (or Staker who wishes to become a Validator) is performed by the Rune holder simply performing a transaction that specifies an address that is already in the Staking Array. Not specifying a Staking Address, or an address that is invalid will result in them contending to be a Validator instead of a Delegator:
 
- Figure: A rune holder delegates to a Staker.
+_Figure: A rune holder delegates to a Staker._
 
 The Delegator’s address is nested against a Staker, storing balance and their address. The Staker has no authority to spend a Delegator’s balance, but it counts towards their total balance. If Delegators add enough balance to a Staker to become a Validator, the Staker enters at the next block. Delegators are entitled  to withdraw their share of rewards at any time, pro-rata against what has been accumulated towards their Validator’s address. Delegators are bound to the bonding period and unbonding period of their parent Validator. 
-Withdrawing Stake and Rewards is via the same logic that allows Liquidity Stakers to withdraw Liquidity and Fees in CLPs, covered in § 6.2. Voting and Validator Signalling is covered in the Validator Signalling Whitepaper. 
-
-
-
+Withdrawing Stake and Rewards is via the same logic that allows Liquidity Stakers to withdraw Liquidity and Fees in CLPs, covered in `§ 6.2`. Voting and Validator Signalling is covered in the Validator Signalling Whitepaper. 
 
 ## Other Features
 
@@ -616,12 +627,13 @@ Withdrawing Stake and Rewards is via the same logic that allows Liquidity Staker
 
 ### THORChain Name Service (TNS)
 
-Users who wish to assign short human-readable names to their accounts to improve the user experience around payments, such as @satoshi, can use the TNS. Short names are unique, stored on-chain and indexed in the MerkleChain. 
-The user names their account by performing a naming transaction. 
-Their chosen name alice is checked against the MerkleChain for uniqueness and stored. 
-A single name can be used for all of their asset accounts, but can be specified, such as alice.rune, alice.btc, alice.0 by setting either the index or the ticker as a suffix. 
-Sending RUNE to alice.btc will forward it to alice.rune regardless. 
-Figure: Alice’s Rune Account is alice.rune
+Users who wish to assign short human-readable names to their accounts to improve the user experience around payments, such as *@satoshi*, can use the TNS. Short names are unique, stored on-chain and indexed in the MerkleChain. 
+- The user names their account by performing a naming transaction. 
+- Their chosen name alice is checked against the MerkleChain for uniqueness and stored. 
+- A single name can be used for all of their asset accounts, but can be specified, such as `alice.rune`, `alice.btc`, `alice.0` by setting either the index or the ticker as a suffix. 
+- Sending RUNE to `alice.btc` will forward it to `alice.rune` regardless. 
+
+*Figure: Alice’s Rune Account is alice.rune*
 
 THORChain has the opportunity to rethink how a name service can be operated such that it achieves both effective allocative and investment efficiency. Names will end up being redistributed to parties who can derive the most value from it, and each name can become an investment to the owner. The principle behind the TNS is a hybrid between Harbinger taxes and staking auctions to prevent name-squatting. 
 If a “squatter” owns a name that another user wishes to purchase, the buyer can simply stake Rune with the squatter’s account, known as “Name Staking” in a special transaction. If the squatter does not hold more than the buyer in their own account, the buyer can purchase the name trustlessly after m blocks. If the squatter does not wish to sell, or cannot afford to hold more in their account, they begin paying a fee to anyone who Name Stakes in their account. The squatter can sell at any time to the highest bidder by simply withdrawing the highest bidders’ stake and the name is trustlessly swapped. A very keen buyer must either be patient to acquire the name, or stake a higher amount to increase the fees the squatter has to pay. There can be multiple Name Squatters in an account. 
@@ -648,109 +660,109 @@ Total:
 38 Rune
 0.1 Rune every m blocks
  
-Table: If out-staked, the Owner pays a Fee based on the difference between their stake and the highest bidder. They can sell the name any time and if they don’t pay the fees the name is open to be acquired. 
-Figure: Name staking to acquire a desired name. 
+*Table: If out-staked, the Owner pays a Fee based on the difference between their stake and the highest bidder. They can sell the name any time and if they don’t pay the fees the name is open to be acquired. *
+
+*Figure: Name staking to acquire a desired name.*
+
 A benefit to this approach is that squatters are always eventually coerced out of the name they are squatting, but at an appropriate price. If the squatter is in fact a disused account, then eventually the account will be emptied via fees and the name can be acquired. 
-Account Recovery
+
+### Account Recovery
+
 Account Permissioning was first described in EOS’s whitepaper. While more granular controls over an account can be helpful, the key aspect is account recovery. Account recovery processes is important for mainstream adoption.
 A user specifies two other types of accounts on their primary account: Recovery and Guardian. Recovery accounts are accounts that can move all funds and TNS name to their account, but are always deactivated. A Guardian account activates Recovery accounts. The recovery process is as follows, relying on primarily out-of-band communication and existing social or trust networks: 
-A user creates an account.
-The user nominates a “Guardian” account (or multiple). The Guardian is notified and signs the request. 
-The user nominates a Recovery account (or multiple). Recovery accounts are notified and sign the request. They are deactivated. 
-The user loses access to their private key. 
-The user contacts their Guardian to activate one of their Recovery accounts.
-The user can then move their funds from their lost account to their activated recovery account, signed from their Recovery address. 
+- A user creates an account.
+- The user nominates a “Guardian” account (or multiple). The Guardian is notified and signs the request. 
+- The user nominates a Recovery account (or multiple). Recovery accounts are notified and sign the request. They are deactivated. 
+- The user loses access to their private key. 
+- The user contacts their Guardian to activate one of their Recovery accounts.
+- The user can then move their funds from their lost account to their activated recovery account, signed from their Recovery address. 
+
 This mechanism is safe as it requires both their Guardian and Recovery accounts being compromised. Additionally, Recovery accounts are specified before the fact, so funds can only move to an address specified by the original owner. 
 
-
-Figure: Guardian and Recovery addresses are stored on-chain
-Figure: A Guardian activates a Recovery Address. The Recovery Address withdraws the balance. 
+*Figure: Guardian and Recovery addresses are stored on-chain.*
+*Figure: A Guardian activates a Recovery Address. The Recovery Address withdraws the balance.* 
 
 ### Multi-sig Accounts
 
 Multi-signature accounts are supported at the protocol level as a key part of managing assets. The account owner simply adds external accounts in special transactions. Once added all future transactions require all parties to sign. The signature is aggregated in the account and the last party performs the transaction. The signature is cleared once the transaction is performed. The default is n of n but this can easily be changed at any time by the parties. 
-Figure: A THORChain multi-sig.
-Smart contracts
+
+*Figure: A THORChain multi-sig.*
+
+### Smart contracts
+
 THORChain may support smart contracts to enhance the ecosystem, but this is not in the primary development pathway. It will most likely integrated by on-chain governance. Any potential smart contract that benefits the protocol as a whole should be added as a native on-chain command instead. THORChain is not intended to be built to be a dApp platform; rather it is focussed on digital assets and the trading of those assets. 
-Additional On-Chain Commands
+
+### Additional On-Chain Commands
 THORChain employs on-chain commands which are lightweight methods hard-coded into the protocol, and called by transactions. Compared with smart contracts, these native on-chain commands do not need Virtual Machine support and are part of the underlying protocol. Whilst smart contracts are generalist and need to be compiled to bytecode, these function as advanced transaction outputs/inputs. Each time a one is executed, the state of an account is updated in accordance with the script. 
 On-chain commands are built into the protocol as standardised methods; however once a standard is agreed upon, it is added into the protocol layer through on-chain governance. The following on-chain commands are tabled to be built into THORChain:
-Security Tokens
-Stablecoins 
-Collectibles (ERC-721)
-Identity (ERC-725, 735)
-Recurring Payments 
-Account Permissioning
-Escrows
 
-
-
-
-
-
+- Security Tokens
+- Stablecoins 
+- Collectibles (ERC-721)
+- Identity (ERC-725, 735)
+- Recurring Payments 
+- Account Permissioning
+- Escrows
 
 ### StableCoins 
 
-THORChain’s macro vision is to create a highly liquid payment network built on a completely trustless structure. An imperative feature for mainstream adoption are stablecoins that are pegged to existing fiat currencies such as USD, YEN, EURO and AUD. The first way to achieve this is to simply tokenise existing stablecoins, while the second is to support the development of stable coins on the platform. The first will naturally be easy if the bridges in § 8 are built. 
+THORChain’s macro vision is to create a highly liquid payment network built on a completely trustless structure. An imperative feature for mainstream adoption are stablecoins that are pegged to existing fiat currencies such as USD, YEN, EURO and AUD. The first way to achieve this is to simply tokenise existing stablecoins, while the second is to support the development of stable coins on the platform. The first will naturally be easy if the bridges in `§ 8` are built. 
 THORChain has all the required features to create StableCoins with auditable supply and collateral using a Variable Supply token and its CLP and full Validator Set participation. The following would be the process:
-A tokenChain tUSD is created by the Validator Set. A Rune:tUSD CLP is created that is variable supply, requiring 2 / 3 signatures from Validators. 
-At each round, Validators propose a price $ that the Rune is valued at. They can infer this by any means possible, most likely by reading APIs off a conglomerate of external exchanges of Rune. Validators can also nominate Rune pricing by watching Bitcoin pricing off external exchanges, and converting to Rune price by the Rune:tBTC price feed. 
-At each round n + 1 the median of nominated prices is stored in the block. Outliers may invoke slashing rules to penalise poor price nomination. 
-As Rune price fluctuates, tUSD supply in the CLP is negatively changed by the Validators. As an example, Rune price decreases by 2%, so tUSD Supply increases by 4%. This causes tUSD to become inflated and cheap. 
-Self-interested arbitrageurs will then send in Rune to buy cheap tUSD, until tUSD returns to 1:1 backed in Assets.
-Additionally, the liquidity fee will increase the staked collateral in the CLP to match volume and reduce slip. 
+- A tokenChain tUSD is created by the Validator Set. A `Rune:tUSD` CLP is created that is variable supply, requiring `2 / 3` signatures from Validators. 
+- At each round, Validators propose a price $ that the Rune is valued at. They can infer this by any means possible, most likely by reading APIs off a conglomerate of external exchanges of Rune. Validators can also nominate Rune pricing by watching Bitcoin pricing off external exchanges, and converting to Rune price by the `Rune:tBTC` price feed. 
+- At each round `n + 1` the median of nominated prices is stored in the block. Outliers may invoke slashing rules to penalise poor price nomination. 
+- As Rune price fluctuates, `tUSD` supply in the CLP is negatively changed by the Validators. As an example, Rune price decreases by `2%`, so tUSD Supply increases by `4%`. This causes `tUSD` to become inflated and cheap. 
+- Self-interested arbitrageurs will then send in Rune to buy cheap `tUSD`, until `tUSD` returns to `1:1` backed in Assets.
+- Additionally, the liquidity fee will increase the staked collateral in the CLP to match volume and reduce slip. 
 
-Figure: Collateralized on-chain StableCoins. 
+*Figure: Collateralized on-chain StableCoins.* 
 
- This process can be repeated for any other fiat currency and is very simple. Once an external price of Rune is set (in the fiat currency), then the protocol deliberately creates arbitrage opportunities by influencing money supply to attract third parties to act in a self-interested manner to restore any price imbalance. By requiring full Validator Set participation in the price nomination the price of the StableCoin can be relied upon with the same assurance as the entire protocol itself.  The pricing/supply feedback loop can be modified to reduce damping and price sensitivity. 
-Token Baskets  & Indexes
+This process can be repeated for any other fiat currency and is very simple. Once an external price of Rune is set (in the fiat currency), then the protocol deliberately creates arbitrage opportunities by influencing money supply to attract third parties to act in a self-interested manner to restore any price imbalance. By requiring full Validator Set participation in the price nomination the price of the StableCoin can be relied upon with the same assurance as the entire protocol itself.  The pricing/supply feedback loop can be modified to reduce damping and price sensitivity. 
+
+### Token Baskets  & Indexes
 A THORChain can go further than a single token being represented in a CLP. With a combination of CLP scripts and trustless price feeds, token baskets and indexes can be created and represented by a single asset. This allows users and traders to carry a single token and know that the token’s price trustlessly represents other assets.   
-A new tokenChain TKNIndex can be created that represents TKN1, TKN2, and TKN3, where the TokenData and CLPData for TKNIndex is linked to the CLPs of the indexed assets. The TKNIndex CLP is bonded to include liquidity in all other CLPs so the price of TKNIndex is thus representative of the linked assets. 
+A new tokenChain `TKNIndex` can be created that represents `TKN1`, `TKN2`, and `TKN3`, where the `TokenData` and `CLPData` for `TKNIndex` is linked to the CLPs of the indexed assets. The `TKNIndex` CLP is bonded to include liquidity in all other CLPs so the price of `TKNIndex` is thus representative of the linked assets. 
 
-Figure: Token Baskets 
+*Figure: Token Baskets*
 
 ### Anonymity
 
 THORChain can implement ZK-proofs to allow re-spawning of accounts to prevent linkability. This is a similar implementation to Komodo and is made using known techniques. tokens are destroyed in one transaction and then trustlessly spawned in a new coinbase transaction. To prevent temporal analysis tracking  identity, Alice can specify a block height delay to the re-spawn of her account. To prevent temporal analysis identifying immediately appearing tokens with immediately disappearing tokens; a variable wait time can be set to increase noise.
 
-
-
-
-
 Figure: Anonymity.
-
+
 ### FIX 4.4 Protocol ABI
 
 FIX 4.4 is the Foreign Information Exchange protocol built for trading desks to place trades such as indications, orders and executions in a standardised and efficient way across a network. It has been adopted as the standard electronic trading protocol and THORChain intends to build for FIX 4.4 compatibility to allow liquidity and access to institutional traders and investors. 
 The following message types are commonly used in FIX 4.4:
-Indication of Interest
-Quote Request
-Quote Response
-Quote
-New Order
-Execution Report
-Allocation Instruction 
-Allocation Report
-Trade Capture Report
-Application Blockchain Interface (ABI) bridges the protocols and allows orders to be generated on Layer 1 or Layer 2 depending on liquidity needs and order types. 
-Figure: FIX 4.4 implementation proposal.
+- Indication of Interest
+- Quote Request
+- Quote Response
+- Quote
+- New Order
+- Execution Report
+- Allocation Instruction 
+- Allocation Report
+- Trade Capture Report
+- Application Blockchain Interface (ABI) bridges the protocols and allows orders to be generated on Layer 1 or Layer 2 depending on liquidity needs and order types. 
+
+*Figure: FIX 4.4 implementation proposal.*
 
 
 ## Conclusion
 THORChain is a lightning fast decentralised exchange with protocol-level trading features to achieve feature parity with the best centralised exchanges of the day; all with full self-sovereign asset management. THORChain solves the fundamental problems of existing decentralised exchanges with a fast on-chain trading experience, on-chain continuous liquidity and correct incentivisation economics for exchange and wallet developers.
-THORChain is built for a new class of decentralised exchanges and transactional networks and will rapidly increase the useability of transacting with crypto-currency assets. 
+THORChain is built for a new class of decentralised exchanges and transactional networks and will rapidly increase the useability of transacting with crypto-currency assets. 
 
 ## References
 
-Anon. (n.d.). Brainwallet. [Online]. Available at: https://en.bitcoin.it/wiki/Brainwallet.
-Ethereum. (n.d.). Reduce ETH issuance before proof-of-stake · Issue #186 · ethereum/EIPsGitHub. [Online]. Available at: https://github.com/ethereum/EIPs/issues/186.
-Interchain Foundation. (2017). Consensus Compare: Casper vs. Tendermint – Cosmos BlogCosmos Blog, Cosmos Blog. [Online]. Available at: https://blog.cosmos.network/consensus-compare-casper-vs-tendermint-6df154ad56ae.
-King, R. (2018). Binance Review - Complete Overview of Binance ExchangeBitDegree Tutorials, BitDegree Tutorials. [Online]. Available at: https://www.bitdegree.org/tutorials/binance-review/.
-Anon. (n.d.). POA Network. [Online]. Available at: https://poa.network/.
-Posner, E. (2014). Quadratic votingERIC POSNER. [Online]. Available at: http://ericposner.com/quadratic-voting/.
-Unchained, C. (2018). Cosmos Validator Economics - Bridging the Economic System of Old into the New Age of BlockchainsCosmos Blog, Cosmos Blog. [Online]. Available at: https://blog.cosmos.network/economics-of-proof-of-stake-bridging-the-economic-system-of-old-into-the-new-age-of-blockchains-3f17824e91db.
-Unchained, C. (2018). Proposed Cosmos Fee Token - Codename Photon – Tendermint – MediumMedium, Augmenting Humanity. [Online]. Available at: https://medium.com/tendermint/proposed-cosmos-fee-token-codename-photon-e0927daf5c4c.
-Unchained, C. (2018). The Technicals of Interoperability-Introducing the Ethereum Peg ZoneCosmos Blog, Cosmos Blog. [Online]. Available at: https://blog.cosmos.network/the-internet-of-blockchains-how-cosmos-does-interoperability-starting-with-the-ethereum-peg-zone-8744d4d2bc3f.
-Anon. (n.d.). What is Tendermint?¶. [Online]. Available at: https://tendermint.readthedocs.io/en/master/introduction.html.
-bitfly.at. (n.d.). Miner Block Gas Limit VotingEvolution of the total Ether supply. [Online]. Available at: https://www.etherchain.org/tools/gasLimitVoting.
-
+- Anon. (n.d.). Brainwallet. [Online]. Available at: https://en.bitcoin.it/wiki/Brainwallet.
+- Ethereum. (n.d.). Reduce ETH issuance before proof-of-stake · Issue #186 · ethereum/EIPsGitHub. [Online]. Available at: https://github.com/ethereum/EIPs/issues/186.
+- Interchain Foundation. (2017). Consensus Compare: Casper vs. Tendermint – Cosmos BlogCosmos Blog, Cosmos Blog. [Online]. Available at: https://blog.cosmos.network/consensus-compare-casper-vs-tendermint-6df154ad56ae.
+- King, R. (2018). Binance Review - Complete Overview of Binance ExchangeBitDegree Tutorials, BitDegree Tutorials. [Online]. Available at: https://www.bitdegree.org/tutorials/binance-review/.
+- Anon. (n.d.). POA Network. [Online]. Available at: https://poa.network/.
+- Posner, E. (2014). Quadratic votingERIC POSNER. [Online]. Available at: http://ericposner.com/quadratic-voting/.
+- Unchained, C. (2018). Cosmos Validator Economics - Bridging the Economic System of Old into the New Age of BlockchainsCosmos Blog, Cosmos Blog. [Online]. Available at: https://blog.cosmos.network/economics-of-proof-of-stake-bridging-the-economic-system-of-old-into-the-new-age-of-blockchains-3f17824e91db.
+- Unchained, C. (2018). Proposed Cosmos Fee Token - Codename Photon – Tendermint – MediumMedium, Augmenting Humanity. [Online]. Available at: https://medium.com/tendermint/proposed-cosmos-fee-token-codename-photon-e0927daf5c4c.
+- Unchained, C. (2018). The Technicals of Interoperability-Introducing the Ethereum Peg ZoneCosmos Blog, Cosmos Blog. [Online]. Available at: https://blog.cosmos.network/the-internet-of-blockchains-how-cosmos-does-interoperability-starting-with-the-ethereum-peg-zone-8744d4d2bc3f.
+- Anon. (n.d.). What is Tendermint?¶. [Online]. Available at: https://tendermint.readthedocs.io/en/master/introduction.html.
+- bitfly.at. (n.d.). Miner Block Gas Limit VotingEvolution of the total Ether supply. [Online]. Available at: https://www.etherchain.org/tools/gasLimitVoting.
