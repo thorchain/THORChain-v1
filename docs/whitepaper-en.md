@@ -636,13 +636,13 @@ If a “squatter” owns a name that another user wishes to purchase, the buyer 
 
 |Account Owner |Name Staker | Fee
 |:---|:---|:---|
-|10 Rune|20 Rune|20*![\frac{(20-10)}{38*0.01}](https://latex.codecogs.com/gif.latex?%5Cfrac%7B%2820-10%29%7D%7B38*0.01%7D)every `m blocks`
-||12 Rune|12*![\frac{(20-10)}{38*0.01}](https://latex.codecogs.com/gif.latex?%5Cfrac%7B%2820-10%29%7D%7B38*0.01%7D)every `m blocks`
-||5 Rune|5*![\frac{(20-10)}{38*0.01}](https://latex.codecogs.com/gif.latex?%5Cfrac%7B%2820-10%29%7D%7B38*0.01%7D)every `m blocks`
-||1 Rune|1*![\frac{(20-10)}{38*0.01}](https://latex.codecogs.com/gif.latex?%5Cfrac%7B%2820-10%29%7D%7B38*0.01%7D)every `m blocks`
+|10 Rune|20 Rune|20 * ![\frac{(20-10)}{38*0.01}](https://latex.codecogs.com/gif.latex?%5Cfrac%7B%2820-10%29%7D%7B38*0.01%7D)every `m blocks`
+||12 Rune|12 * ![\frac{(20-10)}{38*0.01}](https://latex.codecogs.com/gif.latex?%5Cfrac%7B%2820-10%29%7D%7B38*0.01%7D)every `m blocks`
+||5 Rune|5 * ![\frac{(20-10)}{38*0.01}](https://latex.codecogs.com/gif.latex?%5Cfrac%7B%2820-10%29%7D%7B38*0.01%7D)every `m blocks`
+||1 Rune|1 * ![\frac{(20-10)}{38*0.01}](https://latex.codecogs.com/gif.latex?%5Cfrac%7B%2820-10%29%7D%7B38*0.01%7D)every `m blocks`
 |Total:|38 Rune|`0.1 Rune` every `m blocks`
  
-*Table: If out-staked, the Owner pays a Fee based on the difference between their stake and the highest bidder. They can sell the name any time and if they don’t pay the fees the name is open to be acquired. *
+*Table: If out-staked, the Owner pays a Fee based on the difference between their stake and the highest bidder. They can sell the name any time and if they don’t pay the fees the name is open to be acquired.*
 
 *Figure: Name staking to acquire a desired name.*
 
