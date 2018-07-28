@@ -132,10 +132,13 @@ _Figure 2: The THORChain Address Space; here for Rune (T0)._
 The prefix deconflicts the address space with all other protocols. The TokenIndex deconflicts the token from other on-chain tokens, where Rune is `T0`, the first on-chain token is `T1` etc.  The Separator separates the TokenIndex (which may be variable length) and the public address, derived from a SHA256 hash of a private key. 
 Alice, who has a public address for her Rune, `T0xAlice`, will also have a matched address on every other TokenChain that she has tokens for. Her single private key unlocks all addresses. If Alice is sent a new token; her new address is automatically created.  
 
-`T0xAlice -> Rune address for Alice
-T1xAlice -> T1 address for Alice
-T5xAlice -> T5 address for Alice
-TnxAlice -> Tn address for Alice`
+`T0xAlice -> Rune address for Alice`
+
+`T1xAlice -> T1 address for Alice`
+
+`T5xAlice -> T5 address for Alice`
+
+`TnxAlice -> Tn address for Alice`
 
 Deconflicting address spaces in multiple chains have the following advantages:
 - Discrete transactions for each token, with discrete mem-pools. 
@@ -191,7 +194,9 @@ There are a number of unanswered questions around network security, performance 
 ### Overview
 On-chain governance on THORChain is known as “Validator Signalling” by virtue of the fact that it is a continual process performed by validators, and that votes are more aptly referred to as signals. Validator Signalling is covered extensively in the Validator Signalling Whitepaper. An overview is provided here.
 Any block producer can propose a change in the core software and consensus rules structured as a data packet:
+
 `{description, newCode, diffPatch}`
+
  All other validators vote to accept the change and if it reaches supermajority consensus the updated code can be immediately brought in to operation. The proposing and agreeing validators run the compiled core software on standby, so that once approved, the core software is live to produce the very next block. 
 The types of updates that can be rolled out are essentially unlimited and could be:
 Consensus rules such as supermajority thresholds, or voting rules (relating to on-chain governance itself)
@@ -201,9 +206,9 @@ Changes to the token structure such as supply or inflation.
 Changes to state, such as amending exploited or unused accounts.  
  
 ### Key Aspects
-Economically Enforced Participation. Voter participation is enforced by in-protocol slashing rules. Not voting on a proposed update or poll will result in a Validator’s stake being slashed and redistributed to other Validators who do vote. There is a grace period of n blocks allowing Validators time to poll the community (or their staking pool) and take up a position before casting a vote. 
-Empowered Minorities. Quadratic polling is implemented inside a validator’s staking pool. Each member that stakes with a Validator can cast votes proportional to their stake, where each vote is a single whole unit, and increases with the number of subsequent votes. `1 vote` costs `1 token`, `2 votes` cost `3 tokens (1 + 2)`, `3 votes` cost `5 tokens (1 + 2 + 3)` etc. This appropriately removes the biases that large holders can have on voting, preventing a plutocracy. It also enables and empowers the minority to know their vote is meaningful and represented.A Validator can submit votes on behalf of non-voting stakers in their pool but the vote is quadratically weighted as above. Thus non-voting stakers are empowered to easily swing their Validator’s final vote as their individual vote has more comparative weight than the Validator who representatively voted for them using their tokens. 
-Flexibility. Any staker can change their vote at any time to signal differently. Delegators who switch staking pools to swing vote a different Validator are bound by bonding periods and can effectively only switch once.  
+**Economically Enforced Participation**. Voter participation is enforced by in-protocol slashing rules. Not voting on a proposed update or poll will result in a Validator’s stake being slashed and redistributed to other Validators who do vote. There is a grace period of n blocks allowing Validators time to poll the community (or their staking pool) and take up a position before casting a vote. 
+**Empowered Minorities**. Quadratic polling is implemented inside a validator’s staking pool. Each member that stakes with a Validator can cast votes proportional to their stake, where each vote is a single whole unit, and increases with the number of subsequent votes. `1 vote` costs `1 token`, `2 votes` cost `3 tokens (1 + 2)`, `3 votes` cost `5 tokens (1 + 2 + 3)` etc. This appropriately removes the biases that large holders can have on voting, preventing a plutocracy. It also enables and empowers the minority to know their vote is meaningful and represented.A Validator can submit votes on behalf of non-voting stakers in their pool but the vote is quadratically weighted as above. Thus non-voting stakers are empowered to easily swing their Validator’s final vote as their individual vote has more comparative weight than the Validator who representatively voted for them using their tokens. 
+**Flexibility**. Any staker can change their vote at any time to signal differently. Delegators who switch staking pools to swing vote a different Validator are bound by bonding periods and can effectively only switch once.  
 A carefully designed on-chain governance solution (which itself can update) will see THORChain become a forkless self-amending ledger and increase the likelihood of persistence well into the future. 
 
 ## Tokens 
@@ -218,7 +223,7 @@ Block rewards for Layer 1 Validator Sets and Layer 2 Liquidity Nodes are paid in
 
 ### Block Rewards and Emission
 THORChain is a predictable inflationary currency that aims to create a price-competitive ecosystem, driving transaction fees to zero.  Inflation is the hidden tax designed to reward those that stake to either secure the network, provide bridge support or add either Layer 1 or Layer 2 liquidity. Noting the current inflation rates of Ethereum, Bitcoin, EOS and Cosmos, an acceptable starting inflation of `5%` is proposed. As the Rune is designed to be a settlement currency, instead of a store of value, holding Rune without staking it in the ecosystem is economically discouraged. In all other cases, the Rune is held for as long as it is necessary to settle the payment. 
-Block Rewards are issued with `50%` to Validator Sets and `50%` to the Layer 2 Liquidity Nodes. Each Validator in the Validator Set will receive 
+Block Rewards are issued with `50%` to Validator Sets and `50%` to the Layer 2 Liquidity Nodes. Each Validator in the Validator Set will receive:
 
 ![rewards=rewardsTotal/(100*Sets)](https://latex.codecogs.com/gif.latex?rewards/%28100*Sets%29)
 
@@ -229,6 +234,7 @@ If Layer 2 is not launched alongside the mainnet, then Layer 2 rewards may be ha
 THORChain retains the concept of gas fees and a gas limit for each TokenChain’s blocks. The GasLimit is designed to solicit Validator Set splitting when required to scale. Gas fees are paid for each transaction type; of which there are several distinct types. Each transaction type is hard-coded in the protocol so gas estimates can be made. 
 Layer 1 Liquidity Fees are collected when utilising Continuous Liquidity Pools (CLPs), and are a function of liquidity in the CLP. The higher the slips incurred in CLP’s, the more fees are charged, thereby attracting more users to offer liquidity to the pool. Adding liquidity depth reduces slip and thus reduces the fees collected. Liquidity makers can withdraw their liquidity at any stage, including their collected fees. Self-interested liquidity makers will likely bootstrap new CLPs, collect fees, and then withdraw just their initial stake to continue to earn fees in the CLP indefinitely. 
 Layer 2 Trading Fees are paid to Liquidity Nodes for providing liquidity to Liquidity Hubs. The fee for using each Hub is the average of each fee nominated by each Node as they join. There may be multiple Hubs for each Rune Pair, thereby encouraging a price competitive network, where traders will use the Hub with the lowest average fees. Nodes are free to join any Hub they wish, or create their own. All Liquidity Nodes are paid from the Block Reward, but are weighted to their pro-rata liquidity and time online:
+
 ![rewards=\frac{rewardsTotal}{(100*Sets)}](https://latex.codecogs.com/gif.latex?rewards%3D%5Cfrac%7BrewardsTotal%7D%7B%28100*Sets%29%7D)
 
 By paying trading fees and block rewards to Liquidity Hubs, nodes are incentivised to be liquid, online, reliable and there is no limit to the number of nodes; thus the network becomes quickly decentralised with many channels.  This is outlined in more detail in the Flash Network paper. 
@@ -269,12 +275,12 @@ THORChain allows a unique mechanism of generating both the full supply of a toke
 The token owner will subsequently transact in a specific amount of Rune to emit the full token amount to their custody. The following will happen in the case that 100 Rune was the GenTX, and 1mn tokens were created (decimals not included):
 
 **Genesis Emission**
-|TX in (Rune)|Rune Locked|Tokens Locked|Price (RUNE)|Tokens Emitted|
+|TX in (Rune)|Rune Locked|Tokens Locked|Price (RUNE)|Tokens Emitted
 |:---|:---|:---|:---|:---|
-GenTX|(100 Rune)|100|1,000,000|0.0001|-
+GenTX|(100 Rune)|100|1,000,000|0.0001
 
 **Subsequent CLP Transaction**
-|TX in (Rune)|Rune Locked|Tokens Locked|Price (RUNE)|Tokens Emitted|
+|TX in (Rune)|Rune Locked|Tokens Locked|Price (RUNE)|Tokens Emitted
 |:---|:---|:---|:---|:---|
 90|190|100,000|0.001|900,000
 99|199|10,000|0.01|990,000
@@ -288,7 +294,7 @@ _Table: Creating and emitting a new token. There are two transactions; (1) the G
 The locked Rune and tokens that remain in the GenAcc can never be fully emitted, thus the pricing of the tokens are set from the first block. If initial pricing or liquidity is unsatisfactory, special one-way Liquidity Transactions can be performed to correct pricing and add liquidity. 
 It is imagined that the developer community will build software that allows creating tokens to be performed with an easy to understand user experience. The following is an example of how the creation of the token can be done in one client-side order:
 
-|Parameter|Field|Notes|
+|Parameter|Field|Notes
 |:---|:---|:---|
 Token Parameter|`{Ticker: TKN1, Name: Token, Supply: 100m, Decimals: 18, Owner: SELF}`|Create a data packet to attach to GenTX.
 CLP Parameter|`{Reserve: 1.0, InitialPrice: 0.001, InitialLiquidity: 1000 Rune, InitialEmission: 99%}`|Set and calculate the initial price, liquidity and emission of the token in the CLPTX.
@@ -339,7 +345,7 @@ Rune FeeWithdrawTx. Anyone that added liquidity to the CLP is permitted to withd
 
 **`TKN1` FeeWithdrawTx**. Again, anyone can withdraw their earned fees. 
 
-Importantly, the Locked Liquidity will only emit tokens at the internal price; inferred by the locked `RUNE:TKN1` ratio. If `10 RUNE` is locked alongside `1000 TKN1`; then the price of `1 TKN1` is `0.01 RUNE`, and tokens will be emitted at this internal price. The emission rate factors in slip which is the price of the token after the emission occurs, governed by the following equation. 
+Importantly, the Locked Liquidity will only emit tokens at the internal price; inferred by the locked `RUNE:TKN1` ratio. If `10 RUNE` is locked alongside `1000 TKN1`; then the price of `1 TKN1` is `0.01 RUNE`, and tokens will be emitted at this internal price. The emission rate factors in slip which is the price of the token after the emission occurs, governed by the following equation:
 
 ![tokensEmitted=tokens*((1+\frac{txRUNE}{RUNE})^{ReserveRatio}-1)](https://latex.codecogs.com/gif.latex?tokensEmitted%3Dtokens*%28%281&plus;%5Cfrac%7BtxRUNE%7D%7BRUNE%7D%29%5E%7BReserveRatio%7D-1%29)
 
@@ -351,7 +357,7 @@ The Liquidity Fee is a function of slip; the rate at which the price will change
 
 ![0.1*slip*transactionSize](https://latex.codecogs.com/gif.latex?%5Clarge%200.1*slip*transactionSize)
 
-|Liquidity Depth|Transaction|Slip|Liquidity Fee|
+|Liquidity Depth|Transaction|Slip|Liquidity Fee
 |:---|:---|:---|:---|
 1m Rune|100 Rune|0.01%|0.001 Rune
 100,000 Rune|1000 Rune|1%|1 Rune
@@ -571,9 +577,6 @@ THORChain has all the mechanisms to support native on-chain IEOs. The benefits t
 
 This will herald a new generation of liquid, auditable and trustless cryptoassets. 
 
-
-
-
 ### Validator Staking
 
 A key part of the protocol is that Validators stake or “bond” Rune to be part of the 100 in the Validator Set and agree to be bound by slashing rules. The economic cost of being slashed defines the security of the protocol. With 67% requirement for consensus, the entire protocol’s security can be objectively observed to be:
@@ -588,23 +591,13 @@ An unbonding period of `14` days to prevent a rogue Validator attempting a quick
 A method to allow delegation of stake to a Validator without the cost of running validator infrastructure. This empowers minority Rune holders to participate in the security of the network. 
 The mechanisms and UX to staking is simple in THORChain making use of the `T0` Genesis Account. Ordinarily GenAccounts are CLPs, but in the special case for `T0`, there is no CLP required as the currency pair is Rune itself. `T0` GenAccount stores the token information for Rune, such as current circulating supply, decimals, as well as the name and ticker. Instead of Liquidity Stakers staking to earn Liquidity Fees, Validators Stake in `T0` to earn block rewards. The transaction types for this use the same base logic as CLP staking transactions. 
 
-
-
-Ticker
-RUNE
-Ticker to display
-Name
-Rune
-Name to display
-Supply
-1,050,000,000
-Total Supply after 1 year at 5% inflation.
-Decimals
-18
-Decimals
-Owner
-SELF
-Owned by the protocol.
+|Ticker| `RUNE` |Ticker to display|
+|:---|:---|:---|
+Name|Rune|Name to display
+Supply|100,050,000|Total Supply after 1 year at `5%` inflation.
+Decimals|18|Decimals
+Reserve|1.0|A parameter to specify the fractional reserve of the CLP (default is 1.0).
+Owner|Self|Owned by the Protocol
 
 *Table: Rune Information. Total Supply updated every block by the Validator Set.* 
 
@@ -638,27 +631,12 @@ Users who wish to assign short human-readable names to their accounts to improve
 THORChain has the opportunity to rethink how a name service can be operated such that it achieves both effective allocative and investment efficiency. Names will end up being redistributed to parties who can derive the most value from it, and each name can become an investment to the owner. The principle behind the TNS is a hybrid between Harbinger taxes and staking auctions to prevent name-squatting. 
 If a “squatter” owns a name that another user wishes to purchase, the buyer can simply stake Rune with the squatter’s account, known as “Name Staking” in a special transaction. If the squatter does not hold more than the buyer in their own account, the buyer can purchase the name trustlessly after m blocks. If the squatter does not wish to sell, or cannot afford to hold more in their account, they begin paying a fee to anyone who Name Stakes in their account. The squatter can sell at any time to the highest bidder by simply withdrawing the highest bidders’ stake and the name is trustlessly swapped. A very keen buyer must either be patient to acquire the name, or stake a higher amount to increase the fees the squatter has to pay. There can be multiple Name Squatters in an account. 
 
-Account Owner
-Name Staker
-Fee
-10 Rune
-20 Rune
-20 * (20-10)38*0.01every m blocks
-
-
-12 Rune
-12 * (20-10)38*0.01every m blocks
-
-
-5 Rune
-5* (20-10)38*0.01every m blocks
-
-
-1 Rune
-1 * (20-10)38*0.01every m blocks
-Total:
-38 Rune
-0.1 Rune every m blocks
+|Account Owner |Name Staker | Fee
+|10 Rune|20 Rune|20*![\frac{(20-10)}{38*0.01}](https://latex.codecogs.com/gif.latex?%5Cfrac%7B%2820-10%29%7D%7B38*0.01%7D)every `m blocks`
+||12 Rune|12*![\frac{(20-10)}{38*0.01}](https://latex.codecogs.com/gif.latex?%5Cfrac%7B%2820-10%29%7D%7B38*0.01%7D)every `m blocks`
+||5 Rune|5*![\frac{(20-10)}{38*0.01}](https://latex.codecogs.com/gif.latex?%5Cfrac%7B%2820-10%29%7D%7B38*0.01%7D)every `m blocks`
+||1 Rune|1*![\frac{(20-10)}{38*0.01}](https://latex.codecogs.com/gif.latex?%5Cfrac%7B%2820-10%29%7D%7B38*0.01%7D)every `m blocks`
+|Total:|38 Rune|`0.1 Rune` every `m blocks`
  
 *Table: If out-staked, the Owner pays a Fee based on the difference between their stake and the highest bidder. They can sell the name any time and if they don’t pay the fees the name is open to be acquired. *
 
