@@ -1,6 +1,6 @@
 # Yggdrasil-Protocol
 
-The Yggdrasil Protocol is a new form of sharding for THORChain. Read the whitepaper here: [THORChain Whitepaper](hhttps://github.com/thorchain/Resources/tree/master/Whitepapers/THORChain)
+The Yggdrasil Protocol is a new form of sharding for THORChain. Read the whitepaper here: [THORChain Whitepaper](https://github.com/thorchain/Resources/tree/master/Whitepapers/THORChain)
 
 ## Getting Started
 
