@@ -235,7 +235,7 @@ THORChain retains the concept of gas fees and a gas limit for each TokenChain’
 Layer 1 Liquidity Fees are collected when utilising Continuous Liquidity Pools (CLPs), and are a function of liquidity in the CLP. The higher the slips incurred in CLP’s, the more fees are charged, thereby attracting more users to offer liquidity to the pool. Adding liquidity depth reduces slip and thus reduces the fees collected. Liquidity makers can withdraw their liquidity at any stage, including their collected fees. Self-interested liquidity makers will likely bootstrap new CLPs, collect fees, and then withdraw just their initial stake to continue to earn fees in the CLP indefinitely. 
 Layer 2 Trading Fees are paid to Liquidity Nodes for providing liquidity to Liquidity Hubs. The fee for using each Hub is the average of each fee nominated by each Node as they join. There may be multiple Hubs for each Rune Pair, thereby encouraging a price competitive network, where traders will use the Hub with the lowest average fees. Nodes are free to join any Hub they wish, or create their own. All Liquidity Nodes are paid from the Block Reward, but are weighted to their pro-rata liquidity and time online:
 
-![rewards=\frac{rewardsTotal}{(100*Sets)}](https://latex.codecogs.com/gif.latex?rewards%3D%5Cfrac%7BrewardsTotal%7D%7B%28100*Sets%29%7D)
+![rewards=\frac{rewardsTotal}{(100*Sets)}](http://quicklatex.com/cache3/a0/ql_d86f3f504dbf143e5bf0a4dc5ed9a0a0_l3.png)
 
 By paying trading fees and block rewards to Liquidity Hubs, nodes are incentivised to be liquid, online, reliable and there is no limit to the number of nodes; thus the network becomes quickly decentralised with many channels.  This is outlined in more detail in the Flash Network paper. 
 
@@ -427,6 +427,12 @@ Alongside Accounts, THORChain adds unique Transaction types that cover transacti
 - Transfer Rune or TKN. 
 - If the recipient does not have the required wallet, it is created using the same publicAddress. 
 
+<!-- graph LR
+    subgraph Alice pays Bob  
+A(Alice <br/> Acc: T0xaaa...aaa <br/>Balance: 5<br/> Nonce: x ) B(Bob <br/>Acc: T0xaaa...aaa <br/>Balance: 0<br/> Nonce: y ) 
+    end --!>
+
+![image](https://mermaidjs.github.io/mermaid-live-editor/#/view/eyJjb2RlIjoiZ3JhcGggTFJcbiAgICBzdWJncmFwaCBBbGljZSBwYXlzIEJvYiAgXG5BKEFsaWNlIDxici8-IEFjYzogVDB4YWFhLi4uYWFhIDxici8-QmFsYW5jZTogNTxici8-IE5vbmNlOiB4ICkgLS0-QihCb2IgPGJyLz5BY2M6IFQweGFhYS4uLmFhYSA8YnIvPkJhbGFuY2U6IDA8YnIvPiBOb25jZTogeSApIFxuICAgIGVuZFxuXG5cblxuXG5cblxuIiwibWVybWFpZCI6eyJ0aGVtZSI6ImRlZmF1bHQifX0)
 
 _Figure: Alice paying Bob on a single chain._
 
