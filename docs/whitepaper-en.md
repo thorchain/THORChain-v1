@@ -427,10 +427,7 @@ Alongside Accounts, THORChain adds unique Transaction types that cover transacti
 - Transfer Rune or TKN. 
 - If the recipient does not have the required wallet, it is created using the same publicAddress. 
 
-<!-- graph LR
-    subgraph Alice pays Bob  
-A(Alice <br/> Acc: T0xaaa...aaa <br/>Balance: 5<br/> Nonce: x ) B(Bob <br/>Acc: T0xaaa...aaa <br/>Balance: 0<br/> Nonce: y ) 
-    end --!>
+
 
 ![image](https://mermaidjs.github.io/mermaid-live-editor/#/view/eyJjb2RlIjoiZ3JhcGggTFJcbiAgICBzdWJncmFwaCBBbGljZSBwYXlzIEJvYiAgXG5BKEFsaWNlIDxici8-IEFjYzogVDB4YWFhLi4uYWFhIDxici8-QmFsYW5jZTogNTxici8-IE5vbmNlOiB4ICkgLS0-QihCb2IgPGJyLz5BY2M6IFQweGFhYS4uLmFhYSA8YnIvPkJhbGFuY2U6IDA8YnIvPiBOb25jZTogeSApIFxuICAgIGVuZFxuXG5cblxuXG5cblxuIiwibWVybWFpZCI6eyJ0aGVtZSI6ImRlZmF1bHQifX0)
 
