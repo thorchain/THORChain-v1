@@ -25,21 +25,29 @@ tba
 
 ## Running the tests
 
+```
 tba
+```
 
 ### Break down into end to end tests
 
+```
 tba
+```
 
 
 ### And coding style tests
 
+```
 tba
+```
 
 
 ## Deployment
 
+```
 tba
+```
 
 ## Built With
 
@@ -50,15 +58,20 @@ Please read [CONTRIBUTING.md](https://github.com/thorchain/Resources/blob/master
 
 ## Versioning
 
+```
 tba
+```
 
 ## Authors
 
+**thorchaindevs** *Initial Commit* [thorchainadmin](https://github.com/thorchainadmin)
 
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE.md](https://github.com/thorchain/THORChain/blob/master/LICENSE.md) file for details
 
 ## Acknowledgments
+
+
 
 
