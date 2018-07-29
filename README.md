@@ -1,6 +1,6 @@
-# Yggdrasil-Protocol
+# THORChain
 
-The Yggdrasil Protocol is a new form of sharding for THORChain. Read the whitepaper here: [THORChain Whitepaper](https://github.com/thorchain/Resources/tree/master/Whitepapers/THORChain)
+THORChain is a lightning fast decentralised exchange protocol. Read the whitepaper here: [THORChain Whitepaper](https://github.com/thorchain/Resources/tree/master/Whitepapers/THORChain)
 
 ## Getting Started
 
@@ -57,7 +57,7 @@ tba
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details
+This project is licensed under the MIT License - see the [LICENSE.md](https://github.com/thorchain/THORChain/blob/master/LICENSE.md) file for details
 
 ## Acknowledgments
 
