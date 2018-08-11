@@ -10,3 +10,30 @@
 
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out
+
+# OS
+.DS_Store
+*.swp
+*.swo
+
+# Build
+vendor
+build
+tools/bin/*
+docs/_build
+
+# Testing
+coverage.txt
+profile.out
+
+# IDE
+.idea/
+*.iml
+.vscode
+.idea
+
+# Graphviz
+dependency-graph.png
+
+# Secrets
+secrets
