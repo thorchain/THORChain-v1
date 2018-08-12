@@ -2,55 +2,74 @@
 
 THORChain is a lightning fast decentralised exchange protocol. Read the whitepaper here: [THORChain Whitepaper](https://github.com/thorchain/Resources/tree/master/Whitepapers/THORChain)
 
+This app is based on the [Cosmos SDK](https://github.com/cosmos/cosmos-sdk).
+
 ## Getting Started
 
 These instructions will get you a copy of the project up and running on your local machine for development and testing purposes. See deployment for notes on how to deploy the project on a live system.
 
 ### Prerequisites
 
-What things you need to install the software and how to install them
+What things you need to install the software and how to install them:
 
-```
-tba
-```
+* Install Go and set GOPATH: [https://golang.org/doc/install](https://golang.org/doc/install)
 
 ### Installing
 
 A step by step series of examples that tell you how to get a development env running
 
-```
-tba
+Thorchain can be installed to `$GOPATH/src/github.com/thorchain/THORChain` like a normal Go program:
+
+```sh
+go get github.com/thorchain/THORChain
 ```
 
+Then install dependencies:
+
+```sh
+cd $GOPATH/src/github.com/thorchain/THORChain
+make get_tools
+make get_vendor_deps
+make install
+```
+
+Verify that everything worked by running:
+
+```sh
+thorchaind version
+```
+
+and:
+
+```sh
+thorchaincli version
+```
 
 ## Running the tests
 
-```
-tba
+```sh
+make test
 ```
 
 ### Break down into end to end tests
 
+```sh
+make test_cli
 ```
-tba
-```
-
 
 ### And coding style tests
 
+```sh
+make test_lint
 ```
-tba
-```
-
 
 ## Deployment
 
-```
-tba
+```sh
+make build-linux
 ```
 
 ## Built With
-
 
 ## Contributing
 
@@ -58,9 +77,7 @@ Please read [CONTRIBUTING.md](https://github.com/thorchain/Resources/blob/master
 
 ## Versioning
 
-```
-tba
-```
+Update `version/version.go` before building.
 
 ## Authors
 
@@ -72,6 +89,4 @@ This project is licensed under the MIT License - see the [LICENSE.md](https://gi
 
 ## Acknowledgments
 
-
-
-
+tbd
