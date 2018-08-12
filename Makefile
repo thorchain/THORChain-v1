@@ -111,17 +111,17 @@ benchmark:
 ########################################
 ### Local validator nodes using docker and docker-compose
 
-# build-docker-thorchaindnode:
-# 	$(MAKE) -C networks/local
+build-docker-thorchaind-node:
+	$(MAKE) -C networks/local
 
-# # Run a 4-node testnet locally
-# localnet-start: localnet-stop
-# 	@if ! [ -f build/node0/thorchaind/config/genesis.json ]; then docker run --rm -v $(CURDIR)/build:/thorchaind:Z tendermint/thorchaindnode testnet --v 4 --o . --starting-ip-address 192.168.10.2 ; fi
-# 	docker-compose up
+# Run a 4-node testnet locally
+localnet-start: localnet-stop
+	@if ! [ -f build/node0/thorchaind/config/genesis.json ]; then docker run --rm -v $(CURDIR)/build:/thorchaind:Z thorchain/thorchaindnode testnet --v 4 --o . --starting-ip-address 192.168.10.2 ; fi
+	docker-compose -f ./networks/local/docker-compose.yml up
 
-# # Stop testnet
-# localnet-stop:
-# 	docker-compose down
+# Stop testnet
+localnet-stop:
+	docker-compose -f ./networks/local/docker-compose.yml down
 
 ########################################
 ### Remote validator nodes using terraform and ansible
@@ -153,8 +153,8 @@ benchmark:
 # To avoid unintended conflicts with file names, always add to .PHONY
 # unless there is a reason not to.
 # https://www.gnu.org/software/make/manual/html_node/Phony-Targets.html
-.PHONY: build build_examples install install_examples install_debug dist \
+.PHONY: build install install_debug dist \
 check_tools get_tools get_vendor_deps draw_deps test test_cli test_unit \
-test_cover test_lint benchmark devdoc_init devdoc devdoc_save devdoc_update \
+test_cover test_lint benchmark \
 build-linux build-docker-thorchaindnode localnet-start localnet-stop remotenet-start \
 remotenet-stop remotenet-status format check-ledger
