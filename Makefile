@@ -126,29 +126,29 @@ localnet-stop:
 ########################################
 ### Remote validator nodes using terraform and ansible
 
-# TESTNET_NAME?=remotetestnet
-# SERVERS?=4
-# SSH_KEY_NAME?="$(TESTNET_NAME)-deployer"
-# SSH_PRIVATE_FILE?="$(HOME)/.ssh/id_rsa"
-# SSH_PUBLIC_FILE?="$(HOME)/.ssh/id_rsa.pub"
-# BINARY=$(CURDIR)/build/thorchaind
+TESTNET_NAME?=remotetestnet
+SERVERS?=4
+SSH_KEY_NAME?="$(TESTNET_NAME)-deployer"
+SSH_PRIVATE_FILE?="$(HOME)/.ssh/id_rsa"
+SSH_PUBLIC_FILE?="$(HOME)/.ssh/id_rsa.pub"
+BINARY=$(CURDIR)/build/thorchaind
 
-# remotenet-start:
-# 	@if [ -z "$(AWS_SECRET_KEY)" ]; then echo "AWS_SECRET_KEY environment variable not set." ; false ; fi
-# 	@if [ -z "$(AWS_ACCESS_KEY)" ]; then echo "AWS_ACCESS_KEY environment variable not set." ; false ; fi
-# 	@if ! [ -f $(SSH_PUBLIC_FILE) ]; then ssh-keygen ; fi
-# 	@if [ -z "`file $(BINARY) | grep 'ELF 64-bit'`" ]; then echo "Please build a linux binary using 'make build-linux'." ; false ; fi
-# 	cd networks/remote-aws/terraform && terraform init && terraform apply -var TESTNET_NAME="$(TESTNET_NAME)" -var SERVERS="$(SERVERS)" -var AWS_SECRET_KEY="$(AWS_SECRET_KEY)" -var AWS_ACCESS_KEY="$(AWS_ACCESS_KEY)" -var SSH_KEY_NAME="$(SSH_KEY_NAME)" -var SSH_PRIVATE_FILE="$(SSH_PRIVATE_FILE)" -var SSH_PUBLIC_FILE="$(SSH_PUBLIC_FILE)"
-# 	cd networks/remote-aws/terraform && ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i /usr/local/bin/terraform-inventory -e BINARY=$(BINARY) -e TESTNET_NAME="$(TESTNET_NAME)" ../ansible/setup-validators.yml
-# 	cd networks/remote-aws/terraform && ansible-playbook -i /usr/local/bin/terraform-inventory -e TESTNET_NAME="$(TESTNET_NAME)" ../ansible/start.yml
+remotenet-start:
+	@if [ -z "$(AWS_SECRET_KEY)" ]; then echo "AWS_SECRET_KEY environment variable not set." ; false ; fi
+	@if [ -z "$(AWS_ACCESS_KEY)" ]; then echo "AWS_ACCESS_KEY environment variable not set." ; false ; fi
+	@if ! [ -f $(SSH_PUBLIC_FILE) ]; then ssh-keygen ; fi
+	@if [ -z "`file $(BINARY) | grep 'ELF 64-bit'`" ]; then echo "Please build a linux binary using 'make build-linux'." ; false ; fi
+	cd networks/remote/terraform && terraform init && terraform apply -var TESTNET_NAME="$(TESTNET_NAME)" -var SERVERS="$(SERVERS)" -var AWS_SECRET_KEY="$(AWS_SECRET_KEY)" -var AWS_ACCESS_KEY="$(AWS_ACCESS_KEY)" -var SSH_KEY_NAME="$(SSH_KEY_NAME)" -var SSH_PRIVATE_FILE="$(SSH_PRIVATE_FILE)" -var SSH_PUBLIC_FILE="$(SSH_PUBLIC_FILE)"
+	cd networks/remote/terraform && ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i /usr/local/bin/terraform-inventory -e BINARY=$(BINARY) -e TESTNET_NAME="$(TESTNET_NAME)" ../ansible/setup-validators.yml
+	cd networks/remote/terraform && ansible-playbook -i /usr/local/bin/terraform-inventory -e TESTNET_NAME="$(TESTNET_NAME)" ../ansible/start.yml
 
-# remotenet-stop:
-# 	@if [ -z "$(AWS_SECRET_KEY)" ]; then echo "AWS_SECRET_KEY environment variable not set." ; false ; fi
-# 	@if [ -z "$(AWS_ACCESS_KEY)" ]; then echo "AWS_ACCESS_KEY environment variable not set." ; false ; fi
-# 	cd networks/remote-aws/terraform && terraform destroy -var AWS_SECRET_KEY="$(AWS_SECRET_KEY)" -var AWS_ACCESS_KEY="$(AWS_ACCESS_KEY)" -var SSH_KEY_NAME="$(SSH_KEY_NAME)" -var SSH_PRIVATE_FILE="$(SSH_PRIVATE_FILE)" -var SSH_PUBLIC_FILE="$(SSH_PUBLIC_FILE)"
+remotenet-stop:
+	@if [ -z "$(AWS_SECRET_KEY)" ]; then echo "AWS_SECRET_KEY environment variable not set." ; false ; fi
+	@if [ -z "$(AWS_ACCESS_KEY)" ]; then echo "AWS_ACCESS_KEY environment variable not set." ; false ; fi
+	cd networks/remote/terraform && terraform destroy -var AWS_SECRET_KEY="$(AWS_SECRET_KEY)" -var AWS_ACCESS_KEY="$(AWS_ACCESS_KEY)" -var SSH_KEY_NAME="$(SSH_KEY_NAME)" -var SSH_PRIVATE_FILE="$(SSH_PRIVATE_FILE)" -var SSH_PUBLIC_FILE="$(SSH_PUBLIC_FILE)"
 
-# remotenet-status:
-# 	cd networks/remote-aws/terraform && ansible-playbook -i /usr/local/bin/terraform-inventory ../ansible/status.yml
+remotenet-status:
+	cd networks/remote/terraform && ansible-playbook -i /usr/local/bin/terraform-inventory ../ansible/status.yml
 
 # To avoid unintended conflicts with file names, always add to .PHONY
 # unless there is a reason not to.
