@@ -48,4 +48,3 @@
   become_user: thorchaind
   args:
     creates: /home/thorchaind/.thorchaind/config/genesis.json
-
