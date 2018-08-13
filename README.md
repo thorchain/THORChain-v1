@@ -2,7 +2,7 @@
 
 THORChain is a lightning fast decentralised exchange protocol. Read the whitepaper here: [THORChain Whitepaper](https://github.com/thorchain/Resources/tree/master/Whitepapers/THORChain)
 
-This app is based on the [Cosmos SDK](https://github.com/cosmos/cosmos-sdk).
+This project is based on work done for the [Cosmos SDK](https://github.com/cosmos/cosmos-sdk) by the Cosmos/Tendermint team. 
 
 ## Getting Started
 
