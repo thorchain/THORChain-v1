@@ -142,6 +142,10 @@ remotenet-start:
 	cd networks/remote/terraform && ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i /usr/local/bin/terraform-inventory -e BINARY=$(BINARY) -e TESTNET_NAME="$(TESTNET_NAME)" ../ansible/setup-validators.yml
 	cd networks/remote/terraform && ansible-playbook -i /usr/local/bin/terraform-inventory -e TESTNET_NAME="$(TESTNET_NAME)" ../ansible/start.yml
 
+remotenet-reset-with-genesis:
+	@if ! [ -f $(GENESIS_FILE) ]; then echo "GENESIS environment variable not set." ; false ; fi
+	cd networks/remote/terraform && ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i /usr/local/bin/terraform-inventory -e GENESIS_FILE=$(GENESIS_FILE) ../ansible/reset-validators-with-genesis.yml
+
 remotenet-stop:
 	@if [ -z "$(AWS_SECRET_KEY)" ]; then echo "AWS_SECRET_KEY environment variable not set." ; false ; fi
 	@if [ -z "$(AWS_ACCESS_KEY)" ]; then echo "AWS_ACCESS_KEY environment variable not set." ; false ; fi

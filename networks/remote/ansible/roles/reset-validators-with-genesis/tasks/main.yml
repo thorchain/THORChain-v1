@@ -1,0 +1,18 @@
+---
+
+- name: Reset everything
+  command: "/usr/bin/thorchaind unsafe_reset_all"
+  become: yes
+  become_user: thorchaind
+
+- name: Delete genesis
+  file: "path={{item}} state=absent"
+  with_items:
+  - /home/thorchaind/.thorchaind/config/genesis.json
+
+- name: Copy existing genesis file to validators
+  copy:
+    src: "{{GENESIS_FILE}}"
+    dest: /home/thorchaind/.thorchaind/config/genesis.json
+  become: yes
+  become_user: thorchaind
