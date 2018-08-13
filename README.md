@@ -89,4 +89,4 @@ This project is licensed under the MIT License - see the [LICENSE.md](https://gi
 
 ## Acknowledgments
 
-tbd
+Thanks to the [Interchain Foundation (ICF)](https://cosmos.network/) for [Cosmos SDK](https://github.com/cosmos/cosmos-sdk) and [Tendermint, Inc](https://tendermint.com/) for [Tendermint](https://github.com/tendermint/tendermint).
