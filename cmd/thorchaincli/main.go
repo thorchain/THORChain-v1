@@ -18,6 +18,7 @@ import (
 	ibccmd "github.com/cosmos/cosmos-sdk/x/ibc/client/cli"
 	slashingcmd "github.com/cosmos/cosmos-sdk/x/slashing/client/cli"
 	stakecmd "github.com/cosmos/cosmos-sdk/x/stake/client/cli"
+	clpcmd "github.com/thorchain/THORChain/x/clp/client/cli"
 )
 
 // rootCmd is the entry point for this binary
@@ -121,6 +122,19 @@ func main() {
 		)...)
 	rootCmd.AddCommand(
 		govCmd,
+	)
+
+	//Add CLP commands
+	clpCmd := &cobra.Command{
+		Use:   "clp",
+		Short: "CLP Subcommands",
+	}
+	clpCmd.AddCommand(
+		client.PostCommands(
+			clpcmd.TestTxCmd(cdc),
+		)...)
+	rootCmd.AddCommand(
+		clpCmd,
 	)
 
 	//Add auth and bank commands

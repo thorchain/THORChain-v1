@@ -20,6 +20,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/ibc"
 	"github.com/cosmos/cosmos-sdk/x/slashing"
 	"github.com/cosmos/cosmos-sdk/x/stake"
+
+	clp "github.com/thorchain/THORChain/x/clp"
 )
 
 const (
@@ -45,6 +47,7 @@ type ThorchainApp struct {
 	keySlashing      *sdk.KVStoreKey
 	keyGov           *sdk.KVStoreKey
 	keyFeeCollection *sdk.KVStoreKey
+	keyCLP           *sdk.KVStoreKey
 
 	// Manage getting and setting accounts
 	accountMapper       auth.AccountMapper
@@ -54,6 +57,7 @@ type ThorchainApp struct {
 	stakeKeeper         stake.Keeper
 	slashingKeeper      slashing.Keeper
 	govKeeper           gov.Keeper
+	clpKeeper           clp.Keeper
 }
 
 // NewThorchainApp returns a reference to an initialized ThorchainApp.
@@ -73,6 +77,7 @@ func NewThorchainApp(logger log.Logger, db dbm.DB, traceStore io.Writer, baseApp
 		keySlashing:      sdk.NewKVStoreKey("slashing"),
 		keyGov:           sdk.NewKVStoreKey("gov"),
 		keyFeeCollection: sdk.NewKVStoreKey("fee"),
+		keyCLP:           sdk.NewKVStoreKey("clp"),
 	}
 
 	// define the accountMapper
@@ -89,6 +94,7 @@ func NewThorchainApp(logger log.Logger, db dbm.DB, traceStore io.Writer, baseApp
 	app.slashingKeeper = slashing.NewKeeper(app.cdc, app.keySlashing, app.stakeKeeper, app.RegisterCodespace(slashing.DefaultCodespace))
 	app.govKeeper = gov.NewKeeper(app.cdc, app.keyGov, app.coinKeeper, app.stakeKeeper, app.RegisterCodespace(gov.DefaultCodespace))
 	app.feeCollectionKeeper = auth.NewFeeCollectionKeeper(app.cdc, app.keyFeeCollection)
+	app.clpKeeper = clp.NewKeeper(app.keyCLP, app.coinKeeper, app.RegisterCodespace(clp.DefaultCodespace))
 
 	// register message routes
 	app.Router().
@@ -96,7 +102,8 @@ func NewThorchainApp(logger log.Logger, db dbm.DB, traceStore io.Writer, baseApp
 		AddRoute("ibc", ibc.NewHandler(app.ibcMapper, app.coinKeeper)).
 		AddRoute("stake", stake.NewHandler(app.stakeKeeper)).
 		AddRoute("slashing", slashing.NewHandler(app.slashingKeeper)).
-		AddRoute("gov", gov.NewHandler(app.govKeeper))
+		AddRoute("gov", gov.NewHandler(app.govKeeper)).
+		AddRoute("clp", clp.NewHandler(app.clpKeeper))
 
 	// initialize BaseApp
 	app.SetInitChainer(app.initChainer)
@@ -121,6 +128,7 @@ func MakeCodec() *wire.Codec {
 	slashing.RegisterWire(cdc)
 	gov.RegisterWire(cdc)
 	auth.RegisterWire(cdc)
+	clp.RegisterWire(cdc)
 	sdk.RegisterWire(cdc)
 	wire.RegisterCrypto(cdc)
 	return cdc
