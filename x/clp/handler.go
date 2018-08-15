@@ -20,9 +20,9 @@ func NewHandler(keeper Keeper) sdk.Handler {
 	}
 }
 
-// Handle MsgQuiz This is the engine of your module
+// Handle MsgTest This is the engine of your module
 func handleMsgTest(k Keeper, ctx sdk.Context, msg MsgTest) sdk.Result {
-	// k.setTrend(ctx, msg.Cool)
+	k.setTest(ctx, msg.Test)
 	fmt.Println("test message being handled!")
 	return sdk.Result{}
 }

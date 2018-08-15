@@ -110,7 +110,7 @@ func NewThorchainApp(logger log.Logger, db dbm.DB, traceStore io.Writer, baseApp
 	app.SetBeginBlocker(app.BeginBlocker)
 	app.SetEndBlocker(app.EndBlocker)
 	app.SetAnteHandler(auth.NewAnteHandler(app.accountMapper, app.feeCollectionKeeper))
-	app.MountStoresIAVL(app.keyMain, app.keyAccount, app.keyIBC, app.keyStake, app.keySlashing, app.keyGov, app.keyFeeCollection)
+	app.MountStoresIAVL(app.keyMain, app.keyAccount, app.keyIBC, app.keyStake, app.keySlashing, app.keyGov, app.keyFeeCollection, app.keyCLP)
 	err := app.LoadLatestVersion(app.keyMain)
 	if err != nil {
 		cmn.Exit(err.Error())
@@ -184,6 +184,12 @@ func (app *ThorchainApp) initChainer(ctx sdk.Context, req abci.RequestInitChain)
 
 	gov.InitGenesis(ctx, app.govKeeper, gov.DefaultGenesisState())
 
+	// CLP inital load
+	err = clp.InitGenesis(ctx, app.clpKeeper, genesisState.CLPGenesis)
+	if err != nil {
+		panic(err) // TODO https://github.com/cosmos/cosmos-sdk/issues/468
+		//	return sdk.ErrGenesisParse("").TraceCause(err, "")
+	}
 	return abci.ResponseInitChain{}
 }
 
@@ -201,8 +207,9 @@ func (app *ThorchainApp) ExportAppStateAndValidators() (appState json.RawMessage
 	app.accountMapper.IterateAccounts(ctx, appendAccount)
 
 	genState := GenesisState{
-		Accounts:  accounts,
-		StakeData: stake.WriteGenesis(ctx, app.stakeKeeper),
+		Accounts:   accounts,
+		StakeData:  stake.WriteGenesis(ctx, app.stakeKeeper),
+		CLPGenesis: clp.WriteGenesis(ctx, app.clpKeeper),
 	}
 	appState, err = wire.MarshalJSONIndent(app.cdc, genState)
 	if err != nil {
