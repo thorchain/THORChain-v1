@@ -1,6 +1,8 @@
 package clp
 
 import (
+	"fmt"
+
 	"github.com/spf13/cobra"
 	"github.com/thorchain/THORChain/x/clp"
 
@@ -37,6 +39,25 @@ func TestTxCmd(cdc *wire.Codec) *cobra.Command {
 				return err
 			}
 
+			return nil
+		},
+	}
+}
+
+// get test data
+func GetTestCmd(cdc *wire.Codec) *cobra.Command {
+	return &cobra.Command{
+		Use:   "get_test",
+		Short: "Get test",
+		RunE: func(cmd *cobra.Command, args []string) error {
+
+			ctx := context.NewCoreContextFromViper()
+
+			res, err := ctx.QueryStore(clp.GetTestKey(), "clp")
+			if err != nil {
+				return err
+			}
+			fmt.Println("Test value is: %v", string(res))
 			return nil
 		},
 	}
