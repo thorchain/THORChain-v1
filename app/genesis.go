@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/pflag"
 	"github.com/tendermint/tendermint/crypto"
 	tmtypes "github.com/tendermint/tendermint/types"
+	"github.com/thorchain/THORChain/x/clp"
 
 	"github.com/cosmos/cosmos-sdk/server"
 	"github.com/cosmos/cosmos-sdk/server/config"
@@ -24,8 +25,9 @@ var (
 
 // State to Unmarshal
 type GenesisState struct {
-	Accounts  []GenesisAccount   `json:"accounts"`
-	StakeData stake.GenesisState `json:"stake"`
+	Accounts   []GenesisAccount   `json:"accounts"`
+	StakeData  stake.GenesisState `json:"stake"`
+	CLPGenesis clp.Genesis        `json:"clp"`
 }
 
 // GenesisAccount doesn't need pubkey or sequence
@@ -197,12 +199,13 @@ func ThorchainAppGenState(cdc *wire.Codec, appGenTxs []json.RawMessage) (genesis
 
 // ThorchainAppGenState but with JSON
 func ThorchainAppGenStateJSON(cdc *wire.Codec, appGenTxs []json.RawMessage) (appState json.RawMessage, err error) {
-
 	// create the final app state
 	genesisState, err := ThorchainAppGenState(cdc, appGenTxs)
 	if err != nil {
 		return nil, err
 	}
+
 	appState, err = wire.MarshalJSONIndent(cdc, genesisState)
+
 	return
 }

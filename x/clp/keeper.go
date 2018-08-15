@@ -14,7 +14,35 @@ type Keeper struct {
 	codespace sdk.CodespaceType
 }
 
+// Key for storing the test message!
+var testKey = []byte("TestKey")
+
 // NewKeeper - Returns the Keeper
 func NewKeeper(key sdk.StoreKey, bankKeeper bank.Keeper, codespace sdk.CodespaceType) Keeper {
 	return Keeper{key, bankKeeper, codespace}
+}
+
+// GetTest - returns the current test
+func (k Keeper) GetTest(ctx sdk.Context) string {
+	store := ctx.KVStore(k.storeKey)
+	valueBytes := store.Get(testKey)
+	return string(valueBytes)
+}
+
+// Implements sdk.AccountMapper.
+func (k Keeper) setTest(ctx sdk.Context, newTestValue string) {
+	store := ctx.KVStore(k.storeKey)
+	store.Set(testKey, []byte(newTestValue))
+}
+
+// InitGenesis - store the genesis trend
+func InitGenesis(ctx sdk.Context, k Keeper, data Genesis) error {
+	k.setTest(ctx, data.Test)
+	return nil
+}
+
+// WriteGenesis - output the genesis trend
+func WriteGenesis(ctx sdk.Context, k Keeper) Genesis {
+	test := k.GetTest(ctx)
+	return Genesis{test}
 }

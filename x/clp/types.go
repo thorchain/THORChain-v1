@@ -8,6 +8,11 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
+// genesis state - specify genesis test
+type Genesis struct {
+	Test string `json:"test"`
+}
+
 // Test type
 type MsgTest struct {
 	Sender sdk.AccAddress
@@ -25,12 +30,11 @@ func NewMsgTest(sender sdk.AccAddress, test string) MsgTest {
 // enforce the msg type at compile time
 var _ sdk.Msg = MsgTest{}
 
-// Get MsgTest Type
+//Get MsgTest Type
 func (msg MsgTest) Type() string { return "clp" }
 
 //Get Test Signers
 func (msg MsgTest) GetSigners() []sdk.AccAddress {
-	fmt.Println("getting test signers")
 	return []sdk.AccAddress{msg.Sender}
 }
 
