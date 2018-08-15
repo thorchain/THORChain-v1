@@ -17,6 +17,11 @@ type Keeper struct {
 // Key for storing the test message!
 var testKey = []byte("TestKey")
 
+//Get Test Key
+func GetTestKey() []byte {
+	return testKey
+}
+
 // NewKeeper - Returns the Keeper
 func NewKeeper(key sdk.StoreKey, bankKeeper bank.Keeper, codespace sdk.CodespaceType) Keeper {
 	return Keeper{key, bankKeeper, codespace}
