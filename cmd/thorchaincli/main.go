@@ -133,6 +133,10 @@ func main() {
 		client.PostCommands(
 			clpcmd.TestTxCmd(cdc),
 		)...)
+	clpCmd.AddCommand(
+		client.GetCommands(
+			clpcmd.GetTestCmd(cdc),
+		)...)
 	rootCmd.AddCommand(
 		clpCmd,
 	)
