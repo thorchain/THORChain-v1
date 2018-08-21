@@ -57,7 +57,7 @@ func GetTestCmd(cdc *wire.Codec) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			fmt.Println("Test value is: %v", string(res))
+			fmt.Printf("Test value is: %v \n", string(res))
 			return nil
 		},
 	}

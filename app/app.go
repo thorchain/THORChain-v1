@@ -184,7 +184,7 @@ func (app *ThorchainApp) initChainer(ctx sdk.Context, req abci.RequestInitChain)
 
 	gov.InitGenesis(ctx, app.govKeeper, gov.DefaultGenesisState())
 
-	// CLP inital load
+	// CLP initial load
 	err = clp.InitGenesis(ctx, app.clpKeeper, genesisState.CLPGenesis)
 	if err != nil {
 		panic(err) // TODO https://github.com/cosmos/cosmos-sdk/issues/468
