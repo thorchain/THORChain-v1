@@ -49,7 +49,7 @@ install_debug:
 	go install $(BUILD_FLAGS) ./cmd/thorchaindebug
 
 recreate: check-ledger
-	rm -rf ~/.thorchain*
+	rm -rf ~/.thorchaind
 	make install
 	thorchaind init --name local_validator --chain-id test-chain-local
 	thorchaind start
