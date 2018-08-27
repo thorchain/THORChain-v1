@@ -6,6 +6,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/thorchain/THORChain/x/clp"
+	clpTypes "github.com/thorchain/THORChain/x/clp/types"
 
 	"github.com/cosmos/cosmos-sdk/client/context"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -32,7 +33,7 @@ func CreateTxCmd(cdc *wire.Codec) *cobra.Command {
 			ticker := args[0]
 			name := args[1]
 			reserveRatio, err := strconv.Atoi(args[2])
-			msg := clp.NewMsgCreate(from, ticker, name, reserveRatio)
+			msg := clpTypes.NewMsgCreate(from, ticker, name, reserveRatio)
 
 			// get account name
 			addressName := ctx.FromAddressName
@@ -69,7 +70,7 @@ func GetCmd(cdc *wire.Codec) *cobra.Command {
 			}
 			cdc := wire.NewCodec()
 			wire.RegisterCrypto(cdc)
-			clp := new(clp.CLP)
+			clp := new(clpTypes.CLP)
 			err2 := cdc.UnmarshalBinary(res, &clp)
 			if err2 != nil {
 				return err2

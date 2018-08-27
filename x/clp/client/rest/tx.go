@@ -7,6 +7,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/crypto/keys"
 	"github.com/gorilla/mux"
 	"github.com/thorchain/THORChain/x/clp"
+	clpTypes "github.com/thorchain/THORChain/x/clp/types"
 
 	"github.com/cosmos/cosmos-sdk/client/context"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -41,7 +42,7 @@ func init() {
 }
 
 func buildCreateMsg(from sdk.AccAddress, m sendBody) sdk.Msg {
-	return clp.NewMsgCreate(from, m.Ticker, m.TokenName, m.ReserveRatio)
+	return clpTypes.NewMsgCreate(from, m.Ticker, m.TokenName, m.ReserveRatio)
 }
 
 // SendRequestHandlerFn - http request handler to send coins to a address

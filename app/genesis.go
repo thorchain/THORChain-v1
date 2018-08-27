@@ -7,7 +7,7 @@ import (
 	"github.com/spf13/pflag"
 	"github.com/tendermint/tendermint/crypto"
 	tmtypes "github.com/tendermint/tendermint/types"
-	"github.com/thorchain/THORChain/x/clp"
+	clpTypes "github.com/thorchain/THORChain/x/clp/types"
 
 	"github.com/cosmos/cosmos-sdk/server"
 	"github.com/cosmos/cosmos-sdk/server/config"
@@ -27,7 +27,7 @@ var (
 type GenesisState struct {
 	Accounts   []GenesisAccount   `json:"accounts"`
 	StakeData  stake.GenesisState `json:"stake"`
-	CLPGenesis clp.Genesis        `json:"clp"`
+	CLPGenesis clpTypes.Genesis   `json:"clp"`
 }
 
 // GenesisAccount doesn't need pubkey or sequence

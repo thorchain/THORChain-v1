@@ -1,4 +1,4 @@
-package clp
+package types
 
 import (
 	"encoding/json"
@@ -6,10 +6,6 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
-
-// genesis state - specify genesis
-type Genesis struct {
-}
 
 // Create type
 type MsgCreate struct {
@@ -59,26 +55,4 @@ func (msg MsgCreate) GetSignBytes() []byte {
 		panic(err)
 	}
 	return sdk.MustSortJSON(b)
-}
-
-// CLP can mint new coins
-type CLP struct {
-	Creator      sdk.AccAddress `json:"creator"`
-	Ticker       string         `json:"ticker"`
-	Name         string         `json:"name"`
-	ReserveRatio int            `json:"reserveRatio"`
-}
-
-func NewCLP(sender sdk.AccAddress, ticker string, name string, reserveRatio int) CLP {
-	return CLP{
-		Creator:      sender,
-		Ticker:       ticker,
-		Name:         name,
-		ReserveRatio: reserveRatio,
-	}
-}
-
-// String provides a human-readable representation of a coin
-func (clp CLP) String() string {
-	return fmt.Sprintf("%v%v%v%v", clp.Creator, clp.Ticker, clp.Name, clp.ReserveRatio)
 }

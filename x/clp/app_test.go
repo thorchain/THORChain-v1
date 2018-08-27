@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 	abci "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/crypto/ed25519"
+	"github.com/thorchain/THORChain/x/clp/types"
 )
 
 var (
@@ -17,25 +18,25 @@ var (
 	pub1  = priv1.PubKey()
 	addr1 = sdk.AccAddress(pub1.Address())
 
-	createMsg1 = MsgCreate{
+	createMsg1 = types.MsgCreate{
 		Sender:       addr1,
 		Ticker:       "eth",
 		Name:         "ethereum",
 		ReserveRatio: 100,
 	}
-	createMsg2 = MsgCreate{
+	createMsg2 = types.MsgCreate{
 		Sender:       addr1,
 		Ticker:       "btc",
 		Name:         "bitcoin",
 		ReserveRatio: 50,
 	}
-	createMsg3 = MsgCreate{
+	createMsg3 = types.MsgCreate{
 		Sender:       addr1,
 		Ticker:       "eth",
 		Name:         "ethereum2",
 		ReserveRatio: 100,
 	}
-	createMsg4 = MsgCreate{
+	createMsg4 = types.MsgCreate{
 		Sender:       addr1,
 		Ticker:       "cos",
 		Name:         "cosmos",

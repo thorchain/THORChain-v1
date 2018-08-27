@@ -4,6 +4,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/wire"
 	"github.com/cosmos/cosmos-sdk/x/bank"
+	"github.com/thorchain/THORChain/x/clp/types"
 )
 
 // Keeper - handlers sets/gets of custom variables for your module
@@ -26,21 +27,21 @@ func NewKeeper(key sdk.StoreKey, baseCoinTicker string, bankKeeper bank.Keeper, 
 }
 
 // InitGenesis - store the genesis trend
-func InitGenesis(ctx sdk.Context, k Keeper, data Genesis) error {
+func InitGenesis(ctx sdk.Context, k Keeper, data types.Genesis) error {
 	return nil
 }
 
 // WriteGenesis - output the genesis trend
-func WriteGenesis(ctx sdk.Context, k Keeper) Genesis {
-	return Genesis{}
+func WriteGenesis(ctx sdk.Context, k Keeper) types.Genesis {
+	return types.Genesis{}
 }
 
 // GetCLP - returns the clp
-func (k Keeper) GetCLP(ctx sdk.Context, ticker string) *CLP {
+func (k Keeper) GetCLP(ctx sdk.Context, ticker string) *types.CLP {
 	store := ctx.KVStore(k.storeKey)
 	valueBytes := store.Get(MakeCLPStoreKey(ticker))
 
-	clp := new(CLP)
+	clp := new(types.CLP)
 	k.cdc.UnmarshalBinary(valueBytes, &clp)
 
 	return clp
@@ -74,13 +75,13 @@ func (k Keeper) create(ctx sdk.Context, sender sdk.AccAddress, ticker string, na
 	if reserveRatio <= 0 || reserveRatio > 100 {
 		return ErrInvalidReserveRatio(DefaultCodespace).TraceSDK("")
 	}
-	clp := NewCLP(sender, ticker, name, reserveRatio)
+	clp := types.NewCLP(sender, ticker, name, reserveRatio)
 	k.SetCLP(ctx, clp)
 	return nil
 }
 
 // Trade with CLP.
-func (k Keeper) tradeRune(ctx sdk.Context, sender sdk.AccAddress, ticker string, baseCoinAmount int64) sdk.Error {
+func (k Keeper) tradeBase(ctx sdk.Context, sender sdk.AccAddress, ticker string, baseCoinAmount int64) sdk.Error {
 	if baseCoinAmount <= 0 {
 		return ErrNotEnoughCoins(DefaultCodespace).TraceSDK("")
 	}
@@ -101,7 +102,7 @@ func (k Keeper) tradeRune(ctx sdk.Context, sender sdk.AccAddress, ticker string,
 }
 
 // Implements sdk.AccountMapper.
-func (k Keeper) SetCLP(ctx sdk.Context, clp CLP) {
+func (k Keeper) SetCLP(ctx sdk.Context, clp types.CLP) {
 	ticker := clp.Ticker
 	store := ctx.KVStore(k.storeKey)
 	bz, err := k.cdc.MarshalBinary(clp)
