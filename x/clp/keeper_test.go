@@ -31,7 +31,7 @@ func setupKeepers(clpKey *sdk.KVStoreKey, ctx sdk.Context) (Keeper, *amino.Codec
 	auth.RegisterBaseAccount(cdc)
 	accountMapper := auth.NewAccountMapper(cdc, clpKey, auth.ProtoBaseAccount)
 	bankKeeper := bank.NewKeeper(accountMapper)
-	clpKeeper := NewKeeper(clpKey, bankKeeper, DefaultCodespace)
+	clpKeeper := NewKeeper(clpKey, "rune", bankKeeper, DefaultCodespace)
 	address := sdk.AccAddress([]byte("address1"))
 	account := accountMapper.NewAccountWithAddress(ctx, address)
 	accountMapper.SetAccount(ctx, account)
@@ -43,6 +43,8 @@ func TestCoolKeeperCreate(t *testing.T) {
 	ctx := setupContext(clpKey)
 	keeper, cdc, _, _ := setupKeepers(clpKey, ctx)
 
+	baseTokenTicker := "rune"
+	baseTokenName := "Rune"
 	ticker := "eth"
 	name := "ethereum"
 	reserveRatio := 1
@@ -60,6 +62,7 @@ func TestCoolKeeperCreate(t *testing.T) {
 	//Test happy path creation
 	err1 := keeper.create(ctx, addr1, ticker, name, reserveRatio)
 	require.Nil(t, err1)
+
 	//Get created CLP and confirm values are correct
 	newClp := keeper.GetCLP(ctx, ticker)
 	require.Equal(t, newClp, validCLPString)
@@ -73,6 +76,10 @@ func TestCoolKeeperCreate(t *testing.T) {
 	require.Error(t, err4)
 	err5 := keeper.create(ctx, addr1, ticker3, name3, reserveRatio3)
 	require.Error(t, err5)
+
+	//Test cannot create CLP for base token
+	err6 := keeper.create(ctx, addr1, baseTokenTicker, baseTokenName, reserveRatio)
+	require.Error(t, err6)
 }
 
 func TestCoolKeeperTradeRune(t *testing.T) {

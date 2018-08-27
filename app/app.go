@@ -58,6 +58,8 @@ type ThorchainApp struct {
 	slashingKeeper      slashing.Keeper
 	govKeeper           gov.Keeper
 	clpKeeper           clp.Keeper
+
+	baseCoinTicker string
 }
 
 // NewThorchainApp returns a reference to an initialized ThorchainApp.
@@ -78,6 +80,7 @@ func NewThorchainApp(logger log.Logger, db dbm.DB, traceStore io.Writer, baseApp
 		keyGov:           sdk.NewKVStoreKey("gov"),
 		keyFeeCollection: sdk.NewKVStoreKey("fee"),
 		keyCLP:           sdk.NewKVStoreKey("clp"),
+		baseCoinTicker:   "rune",
 	}
 
 	// define the accountMapper
@@ -94,7 +97,7 @@ func NewThorchainApp(logger log.Logger, db dbm.DB, traceStore io.Writer, baseApp
 	app.slashingKeeper = slashing.NewKeeper(app.cdc, app.keySlashing, app.stakeKeeper, app.RegisterCodespace(slashing.DefaultCodespace))
 	app.govKeeper = gov.NewKeeper(app.cdc, app.keyGov, app.coinKeeper, app.stakeKeeper, app.RegisterCodespace(gov.DefaultCodespace))
 	app.feeCollectionKeeper = auth.NewFeeCollectionKeeper(app.cdc, app.keyFeeCollection)
-	app.clpKeeper = clp.NewKeeper(app.keyCLP, app.coinKeeper, app.RegisterCodespace(clp.DefaultCodespace))
+	app.clpKeeper = clp.NewKeeper(app.keyCLP, app.baseCoinTicker, app.coinKeeper, app.RegisterCodespace(clp.DefaultCodespace))
 
 	// register message routes
 	app.Router().

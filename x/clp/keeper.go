@@ -8,7 +8,8 @@ import (
 
 // Keeper - handlers sets/gets of custom variables for your module
 type Keeper struct {
-	storeKey sdk.StoreKey // The (unexposed) key used to access the store from the Context.
+	storeKey       sdk.StoreKey // The (unexposed) key used to access the store from the Context.
+	baseCoinTicker string       // The base coin ticker for all clps.
 
 	bankKeeper bank.Keeper
 
@@ -18,10 +19,10 @@ type Keeper struct {
 }
 
 // NewKeeper - Returns the Keeper
-func NewKeeper(key sdk.StoreKey, bankKeeper bank.Keeper, codespace sdk.CodespaceType) Keeper {
+func NewKeeper(key sdk.StoreKey, baseCoinTicker string, bankKeeper bank.Keeper, codespace sdk.CodespaceType) Keeper {
 	cdc := wire.NewCodec()
 	wire.RegisterCrypto(cdc)
-	return Keeper{key, bankKeeper, codespace, cdc}
+	return Keeper{key, baseCoinTicker, bankKeeper, codespace, cdc}
 }
 
 // InitGenesis - store the genesis trend
@@ -64,7 +65,7 @@ func (k Keeper) create(ctx sdk.Context, sender sdk.AccAddress, ticker string, na
 }
 
 // Trade with CLP.
-func (k Keeper) tradeRune(ctx sdk.Context, sender sdk.AccAddress, ticker string, runeAmount int64) sdk.Error {
+func (k Keeper) tradeRune(ctx sdk.Context, sender sdk.AccAddress, ticker string, baseCoinAmount int64) sdk.Error {
 	return nil
 }
 
