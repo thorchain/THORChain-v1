@@ -86,6 +86,11 @@ func (k Keeper) create(ctx sdk.Context, sender sdk.AccAddress, ticker string, na
 	return nil
 }
 
+// Trade with CLP.
+func (k Keeper) tradeRune(ctx sdk.Context, sender sdk.AccAddress, ticker string, runeAmount int64) sdk.Error {
+	return nil
+}
+
 // Implements sdk.AccountMapper.
 func (k Keeper) SetCLP(ctx sdk.Context, clp CLP) {
 	ticker := clp.Ticker
