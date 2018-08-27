@@ -52,6 +52,9 @@ func (k Keeper) ensureNonexistentCLP(ctx sdk.Context, ticker string) sdk.Error {
 
 // Create CLP.
 func (k Keeper) create(ctx sdk.Context, sender sdk.AccAddress, ticker string, name string, reserveRatio int) sdk.Error {
+	if ticker == k.baseCoinTicker {
+		return ErrInvalidTickerName(DefaultCodespace).TraceSDK("")
+	}
 	err := k.ensureNonexistentCLP(ctx, ticker)
 	if err != nil {
 		return err

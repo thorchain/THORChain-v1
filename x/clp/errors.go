@@ -13,6 +13,7 @@ const (
 
 	CodeInvalidReserveRatio CodeType = 141
 	CodeCLPExists           CodeType = 142
+	CodeInvalidTickerName   CodeType = 143
 )
 
 //Reserve ratio error
@@ -23,4 +24,9 @@ func ErrInvalidReserveRatio(codespace sdk.CodespaceType) sdk.Error {
 //Existing CLP error
 func ErrCLPExists(codespace sdk.CodespaceType) sdk.Error {
 	return sdk.NewError(codespace, CodeCLPExists, "clp already exists for this ticker symbol")
+}
+
+//Base ticker name error
+func ErrInvalidTickerName(codespace sdk.CodespaceType) sdk.Error {
+	return sdk.NewError(codespace, CodeInvalidTickerName, "cannot create clp for base ticker symbol")
 }
