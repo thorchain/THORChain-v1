@@ -39,7 +39,7 @@ func QueryAccountRequestHandlerFn(cdc *wire.Codec, decoder auth.AccountDecoder, 
 
 		// the query will return empty if there is no data for this account
 		if len(res) == 0 {
-			w.WriteHeader(http.StatusNoContent)
+			w.WriteHeader(http.StatusNotFound)
 			return
 		}
 		// decode the value

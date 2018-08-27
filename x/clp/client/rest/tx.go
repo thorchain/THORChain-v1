@@ -16,14 +16,12 @@ import (
 
 // RegisterRoutes - Central function to define routes that get registered by the main application
 func registerTxRoutes(ctx context.CoreContext, r *mux.Router, cdc *wire.Codec, kb keys.Keybase) {
-	r.HandleFunc("/clp/test", SendRequestHandlerFn(cdc, kb, ctx, buildTestMsg)).Methods("POST")
 	r.HandleFunc("/clp", SendRequestHandlerFn(cdc, kb, ctx, buildCreateMsg)).Methods("POST")
 }
 
 type sendBody struct {
 	// fees and gas is not used currently
 	// Fees             sdk.Coin  `json="fees"`
-	Test             string `json:"test"`
 	Ticker           string `json:"ticker"`
 	TokenName        string `json:"token_name"`
 	ReserveRatio     int    `json:"reserve_ratio"`
@@ -40,10 +38,6 @@ var msgCdc = wire.NewCodec()
 func init() {
 	bank.RegisterWire(msgCdc)
 	clp.RegisterWire(msgCdc)
-}
-
-func buildTestMsg(from sdk.AccAddress, m sendBody) sdk.Msg {
-	return clp.NewMsgTest(from, m.Test)
 }
 
 func buildCreateMsg(from sdk.AccAddress, m sendBody) sdk.Msg {
