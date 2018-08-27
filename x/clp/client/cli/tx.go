@@ -49,6 +49,40 @@ func CreateTxCmd(cdc *wire.Codec) *cobra.Command {
 	}
 }
 
+// create new clp transaction
+func TradeBaseTxCmd(cdc *wire.Codec) *cobra.Command {
+	return &cobra.Command{
+		Use:   "trade_rune <ticker> <rune_amount>",
+		Short: "Trade rune for a token via CLP",
+		Args:  cobra.ExactArgs(2),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx := context.NewCoreContextFromViper().WithDecoder(authcmd.GetAccountDecoder(cdc))
+
+			// get the from address from the name flag
+			from, err := ctx.GetFromAddress()
+			if err != nil {
+				return err
+			}
+
+			// create the message
+			ticker := args[0]
+			baseCoinAmount, err := strconv.Atoi(args[1])
+			msg := clpTypes.NewMsgTradeBase(from, ticker, baseCoinAmount)
+
+			// get account name
+			addressName := ctx.FromAddressName
+
+			// build and sign the transaction, then broadcast to Tendermint
+			err = ctx.EnsureSignBuildBroadcast(addressName, []sdk.Msg{msg}, cdc)
+			if err != nil {
+				return err
+			}
+
+			return nil
+		},
+	}
+}
+
 // get clp data
 func GetCmd(cdc *wire.Codec) *cobra.Command {
 	return &cobra.Command{

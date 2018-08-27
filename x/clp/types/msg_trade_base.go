@@ -15,7 +15,7 @@ type MsgTradeBase struct {
 }
 
 // new create message
-func NewMsgTradeBase(sender sdk.AccAddress, ticker string, name string, baseCoinAmount int) MsgTradeBase {
+func NewMsgTradeBase(sender sdk.AccAddress, ticker string, baseCoinAmount int) MsgTradeBase {
 	return MsgTradeBase{
 		Sender:         sender,
 		Ticker:         ticker,

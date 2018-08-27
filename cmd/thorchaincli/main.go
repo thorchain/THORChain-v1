@@ -132,6 +132,7 @@ func main() {
 	clpCmd.AddCommand(
 		client.PostCommands(
 			clpcmd.CreateTxCmd(cdc),
+			clpcmd.TradeBaseTxCmd(cdc),
 		)...)
 	clpCmd.AddCommand(
 		client.GetCommands(

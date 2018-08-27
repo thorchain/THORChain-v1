@@ -31,7 +31,7 @@ func ErrCLPExists(codespace sdk.CodespaceType) sdk.Error {
 
 //Non Existing CLP error
 func ErrCLPNotExists(codespace sdk.CodespaceType) sdk.Error {
-	return sdk.NewError(codespace, CodeCLPNotExists, "clp already exists for this ticker symbol")
+	return sdk.NewError(codespace, CodeCLPNotExists, "clp does not exist for this ticker symbol")
 }
 
 //Base ticker name error
