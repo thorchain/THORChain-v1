@@ -41,7 +41,7 @@ func setupKeepers(clpKey *sdk.KVStoreKey, ctx sdk.Context) (Keeper, *amino.Codec
 func TestCoolKeeperCreate(t *testing.T) {
 	clpKey := sdk.NewKVStoreKey("clpTestKey")
 	ctx := setupContext(clpKey)
-	keeper, cdc, _, _ := setupKeepers(clpKey, ctx)
+	keeper, _, _, _ := setupKeepers(clpKey, ctx)
 
 	baseTokenTicker := "rune"
 	baseTokenName := "Rune"
@@ -55,9 +55,6 @@ func TestCoolKeeperCreate(t *testing.T) {
 	name3 := "cosmos"
 	reserveRatio3 := 200
 	validCLP := NewCLP(addr1, ticker, name, reserveRatio)
-	validCLPBytes, err := cdc.MarshalBinary(validCLP)
-	require.Nil(t, err)
-	validCLPString := string(validCLPBytes)
 
 	//Test happy path creation
 	err1 := keeper.create(ctx, addr1, ticker, name, reserveRatio)
@@ -65,7 +62,7 @@ func TestCoolKeeperCreate(t *testing.T) {
 
 	//Get created CLP and confirm values are correct
 	newClp := keeper.GetCLP(ctx, ticker)
-	require.Equal(t, newClp, validCLPString)
+	require.Equal(t, newClp, &validCLP)
 
 	//Test duplicate ticker
 	err2 := keeper.create(ctx, addr1, ticker, name2, reserveRatio)
@@ -101,9 +98,9 @@ func TestCoolKeeperTradeRune(t *testing.T) {
 	coins := bankKeeper.GetCoins(ctx, address)
 	ethAmount := coins.AmountOf("eth").Int64()
 	runeAmount := coins.AmountOf("rune").Int64()
+	require.Nil(t, err1)
 	require.Equal(t, ethAmount, int64(10))
 	require.Equal(t, runeAmount, int64(0))
-	require.Nil(t, err1)
 
 	//Test double trade
 	bankKeeper.SetCoins(ctx, address, sdk.Coins{twentyRune})
