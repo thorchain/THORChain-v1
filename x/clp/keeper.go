@@ -1,6 +1,8 @@
 package clp
 
 import (
+	"math"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/wire"
 	"github.com/cosmos/cosmos-sdk/x/bank"
@@ -93,8 +95,33 @@ func (k Keeper) create(ctx sdk.Context, sender sdk.AccAddress, ticker string, na
 	if err3 != nil {
 		return err3
 	}
+	initialCLPCoins := sdk.Coins{sdk.NewCoin(ticker, initialSupply)}
+	k.bankKeeper.AddCoins(ctx, clpAddress, initialCLPCoins)
 	k.SetCLP(ctx, clp)
 	return nil
+}
+
+//Run Formula for Tokens Issued
+func CalculateTokensIssued(supply int64, baseCoinAmount int64, baseTokenBalance int64, reserveRatio int) int64 {
+	//tokens issued = supply * ((1 + (connectedTokensPaid/balance))^connectorWeight - 1)
+	floatReserveRatio := float64(reserveRatio) / float64(100)
+	tokensIssued := float64(supply) * (math.Pow(float64(1+(float64(baseCoinAmount)/float64(baseTokenBalance))), floatReserveRatio) - 1)
+	// Leaving Debug prints here for future convenience for if decimal token precision is ever implemented
+	// fmt.Printf("supply: %v\n", supply)
+	// fmt.Printf("baseCoinAmount: %v\n", baseCoinAmount)
+	// fmt.Printf("baseTokenBalance: %v\n", baseTokenBalance)
+	// fmt.Printf("reserveRatio: %v\n", reserveRatio)
+	// fmt.Printf("floatReserveRatio: %v\n", floatReserveRatio)
+	// fmt.Printf("float64(supply): %v\n", float64(supply))
+	// fmt.Printf("float64(baseCoinAmount)/float64(baseTokenBalance): %v\n", float64(baseCoinAmount)/float64(baseTokenBalance))
+	// fmt.Printf("1+(float64(baseCoinAmount)/float64(baseTokenBalance)): %v\n", 1+(float64(baseCoinAmount)/float64(baseTokenBalance)))
+	// fmt.Printf("1+(float64(baseCoinAmount)/float64(baseTokenBalance)): %v\n", 1+(float64(baseCoinAmount)/float64(baseTokenBalance)))
+	// fmt.Printf("float64(1+(float64(baseCoinAmount)/float64(baseTokenBalance))): %v\n", float64(1+(float64(baseCoinAmount)/float64(baseTokenBalance))))
+	// fmt.Printf("math.Pow(float64(1+(float64(baseCoinAmount)/float64(baseTokenBalance))), floatReserveRatio): %v\n", math.Pow(float64(1+(float64(baseCoinAmount)/float64(baseTokenBalance))), floatReserveRatio))
+	// fmt.Printf("tokensIssued: %v\n", tokensIssued)
+	// fmt.Printf("math.Round(tokensIssued): %v\n", math.Round(tokensIssued))
+	// fmt.Printf("\n\n")
+	return int64(math.Round(tokensIssued))
 }
 
 // Trade with CLP.
@@ -102,21 +129,35 @@ func (k Keeper) tradeBase(ctx sdk.Context, sender sdk.AccAddress, ticker string,
 	if baseCoinAmount <= 0 {
 		return 0, ErrNotEnoughCoins(DefaultCodespace).TraceSDK("")
 	}
-	err := k.ensureExistentCLP(ctx, ticker)
-	if err != nil {
-		return 0, err
+	clp := k.GetCLP(ctx, ticker)
+	if clp.Ticker == "" {
+		return 0, ErrCLPNotExists(DefaultCodespace).TraceSDK("")
 	}
-	currentCoins := k.bankKeeper.GetCoins(ctx, sender)
-	currentBaseCoinAmount := currentCoins.AmountOf(k.baseCoinTicker).Int64()
-	if currentBaseCoinAmount < baseCoinAmount {
+	currentSenderCoins := k.bankKeeper.GetCoins(ctx, sender)
+	currentSenderBaseCoinAmount := currentSenderCoins.AmountOf(k.baseCoinTicker).Int64()
+	if currentSenderBaseCoinAmount < baseCoinAmount {
 		return 0, ErrNotEnoughCoins(DefaultCodespace).TraceSDK("")
 	}
-	newCoinsAmount := baseCoinAmount
-	newCoins := sdk.Coins{sdk.NewCoin(ticker, newCoinsAmount)}
+	supply := clp.CurrentSupply
+	currentCLPCoins := k.bankKeeper.GetCoins(ctx, clp.AccountAddress)
+	clpBaseTokenBalance := currentCLPCoins.AmountOf(k.baseCoinTicker).Int64()
+	if clpBaseTokenBalance <= 0 {
+		return 0, ErrCLPEmpty(DefaultCodespace).TraceSDK("")
+	}
+	reserveRatio := clp.ReserveRatio
+	newCLPCoinsAmount := CalculateTokensIssued(supply, baseCoinAmount, clpBaseTokenBalance, reserveRatio)
+	newCLPCoins := sdk.Coins{sdk.NewCoin(ticker, newCLPCoinsAmount)}
+
+	//Update CLP Supply
+	clp.CurrentSupply += newCLPCoinsAmount
+	k.SetCLP(ctx, *clp)
+
 	spentBaseCoins := sdk.Coins{sdk.NewCoin(k.baseCoinTicker, baseCoinAmount)}
-	finalCoins := currentCoins.Plus(newCoins).Minus(spentBaseCoins)
-	k.bankKeeper.SetCoins(ctx, sender, finalCoins)
-	return newCoinsAmount, nil
+	k.bankKeeper.AddCoins(ctx, sender, newCLPCoins)
+	k.bankKeeper.SubtractCoins(ctx, sender, spentBaseCoins)
+	k.bankKeeper.AddCoins(ctx, clp.AccountAddress, spentBaseCoins)
+
+	return newCLPCoinsAmount, nil
 }
 
 // Implements sdk.AccountMapper.

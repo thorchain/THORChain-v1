@@ -19,6 +19,7 @@ const (
 	CodeNotEnoughCoins          CodeType = 146
 	CodeInvalidInitialSupply    CodeType = 147
 	CodeInvalidInitialBaseCoins CodeType = 148
+	CodeCLPEmpty                CodeType = 149
 )
 
 //Reserve ratio error
@@ -59,4 +60,9 @@ func ErrInvalidInitialSupply(codespace sdk.CodespaceType) sdk.Error {
 //Not enough initial base coins Error
 func ErrInvalidInitialBaseCoins(codespace sdk.CodespaceType) sdk.Error {
 	return sdk.NewError(codespace, CodeInvalidInitialBaseCoins, "initial base coins sent must be positive")
+}
+
+//CLP too empty Error
+func ErrCLPEmpty(codespace sdk.CodespaceType) sdk.Error {
+	return sdk.NewError(codespace, CodeCLPEmpty, "clp is too empty")
 }
