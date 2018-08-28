@@ -95,7 +95,7 @@ func TestCoolKeeperTradeBase(t *testing.T) {
 
 	//Test happy path trading
 	bankKeeper.SetCoins(ctx, address, sdk.Coins{tenRune})
-	err1 := keeper.tradeBase(ctx, address, ticker, 10)
+	_, err1 := keeper.tradeBase(ctx, address, ticker, 10)
 	coins := bankKeeper.GetCoins(ctx, address)
 	ethAmount := coins.AmountOf("eth").Int64()
 	runeAmount := coins.AmountOf("RUNE").Int64()
@@ -115,7 +115,7 @@ func TestCoolKeeperTradeBase(t *testing.T) {
 
 	//Test invalid trade with nonexistent clp
 	bankKeeper.SetCoins(ctx, address, sdk.Coins{tenRune})
-	err2 := keeper.tradeBase(ctx, address, "btc", 10)
+	_, err2 := keeper.tradeBase(ctx, address, "btc", 10)
 	require.Error(t, err2)
 	coins = bankKeeper.GetCoins(ctx, address)
 	btcAmount := coins.AmountOf("btc").Int64()
@@ -125,7 +125,7 @@ func TestCoolKeeperTradeBase(t *testing.T) {
 
 	// //Test invalid trade with too little rune
 	bankKeeper.SetCoins(ctx, address, sdk.Coins{tenRune})
-	err3 := keeper.tradeBase(ctx, address, ticker, int64(20))
+	_, err3 := keeper.tradeBase(ctx, address, ticker, int64(20))
 	require.Error(t, err3)
 	coins = bankKeeper.GetCoins(ctx, address)
 	ethAmount = coins.AmountOf("eth").Int64()
@@ -135,7 +135,7 @@ func TestCoolKeeperTradeBase(t *testing.T) {
 
 	// //Test invalid trade with negative rune
 	bankKeeper.SetCoins(ctx, address, sdk.Coins{tenRune})
-	err4 := keeper.tradeBase(ctx, address, ticker, int64(-20))
+	_, err4 := keeper.tradeBase(ctx, address, ticker, int64(-20))
 	require.Error(t, err4)
 	coins = bankKeeper.GetCoins(ctx, address)
 	ethAmount = coins.AmountOf("eth").Int64()

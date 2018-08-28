@@ -81,24 +81,25 @@ func (k Keeper) create(ctx sdk.Context, sender sdk.AccAddress, ticker string, na
 }
 
 // Trade with CLP.
-func (k Keeper) tradeBase(ctx sdk.Context, sender sdk.AccAddress, ticker string, baseCoinAmount int64) sdk.Error {
+func (k Keeper) tradeBase(ctx sdk.Context, sender sdk.AccAddress, ticker string, baseCoinAmount int64) (int64, sdk.Error) {
 	if baseCoinAmount <= 0 {
-		return ErrNotEnoughCoins(DefaultCodespace).TraceSDK("")
+		return 0, ErrNotEnoughCoins(DefaultCodespace).TraceSDK("")
 	}
 	err := k.ensureExistentCLP(ctx, ticker)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	currentCoins := k.bankKeeper.GetCoins(ctx, sender)
 	currentBaseCoinAmount := currentCoins.AmountOf(k.baseCoinTicker).Int64()
 	if currentBaseCoinAmount < baseCoinAmount {
-		return ErrNotEnoughCoins(DefaultCodespace).TraceSDK("")
+		return 0, ErrNotEnoughCoins(DefaultCodespace).TraceSDK("")
 	}
-	newCoins := sdk.Coins{sdk.NewCoin(ticker, baseCoinAmount)}
+	newCoinsAmount := baseCoinAmount
+	newCoins := sdk.Coins{sdk.NewCoin(ticker, newCoinsAmount)}
 	spentBaseCoins := sdk.Coins{sdk.NewCoin(k.baseCoinTicker, baseCoinAmount)}
 	finalCoins := currentCoins.Plus(newCoins).Minus(spentBaseCoins)
 	k.bankKeeper.SetCoins(ctx, sender, finalCoins)
-	return nil
+	return newCoinsAmount, nil
 }
 
 // Implements sdk.AccountMapper.
