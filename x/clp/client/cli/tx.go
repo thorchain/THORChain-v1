@@ -111,7 +111,7 @@ func GetCmd(cdc *wire.Codec) *cobra.Command {
 			if err2 != nil {
 				return err2
 			}
-			fmt.Printf("CLP details \nCreator: %s \nTicker: %v \nName: %v \nReserve Ratio: %v \n", clp.Creator, clp.Ticker, clp.Name, clp.ReserveRatio)
+			fmt.Printf("CLP details \nCreator: %s \nTicker: %v \nName: %v \nReserve Ratio: %v \nInitial Supply: %v \nAccount Address: %v \n", clp.Creator, clp.Ticker, clp.Name, clp.ReserveRatio, clp.InitialSupply, clp.AccountAddress.String())
 			return nil
 		},
 	}
