@@ -51,7 +51,7 @@ func getMockApp(t *testing.T) *mock.App {
 	RegisterWire(app.Cdc)
 	clpKey := sdk.NewKVStoreKey("clpAppTestKey")
 	coinKeeper := bank.NewKeeper(app.AccountMapper)
-	clpKeeper := NewKeeper(clpKey, "rune", coinKeeper, app.RegisterCodespace(DefaultCodespace))
+	clpKeeper := NewKeeper(clpKey, "RUNE", coinKeeper, app.RegisterCodespace(DefaultCodespace))
 	app.Router().AddRoute("clp", NewHandler(clpKeeper))
 
 	app.SetInitChainer(getInitChainer(app, clpKeeper))

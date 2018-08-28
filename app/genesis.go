@@ -158,7 +158,7 @@ func ThorchainAppGenState(cdc *wire.Codec, appGenTxs []json.RawMessage) (genesis
 		accAuth := auth.NewBaseAccountWithAddress(genTx.Address)
 		accAuth.Coins = sdk.Coins{
 			{genTx.Name + "Token", sdk.NewInt(1000)},
-			{"rune", sdk.NewInt(freeFermionsAcc)},
+			{"RUNE", sdk.NewInt(freeFermionsAcc)},
 		}
 		acc := NewGenesisAccount(&accAuth)
 		genaccs[i] = acc

@@ -80,7 +80,7 @@ func NewThorchainApp(logger log.Logger, db dbm.DB, traceStore io.Writer, baseApp
 		keyGov:           sdk.NewKVStoreKey("gov"),
 		keyFeeCollection: sdk.NewKVStoreKey("fee"),
 		keyCLP:           sdk.NewKVStoreKey("clp"),
-		baseCoinTicker:   "rune",
+		baseCoinTicker:   "RUNE",
 	}
 
 	// define the accountMapper

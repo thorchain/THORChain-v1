@@ -32,7 +32,7 @@ func setupKeepers(clpKey *sdk.KVStoreKey, ctx sdk.Context) (Keeper, *amino.Codec
 	auth.RegisterBaseAccount(cdc)
 	accountMapper := auth.NewAccountMapper(cdc, clpKey, auth.ProtoBaseAccount)
 	bankKeeper := bank.NewKeeper(accountMapper)
-	clpKeeper := NewKeeper(clpKey, "rune", bankKeeper, DefaultCodespace)
+	clpKeeper := NewKeeper(clpKey, "RUNE", bankKeeper, DefaultCodespace)
 	address := sdk.AccAddress([]byte("address1"))
 	account := accountMapper.NewAccountWithAddress(ctx, address)
 	accountMapper.SetAccount(ctx, account)
@@ -44,7 +44,7 @@ func TestCoolKeeperCreate(t *testing.T) {
 	ctx := setupContext(clpKey)
 	keeper, _, _, _ := setupKeepers(clpKey, ctx)
 
-	baseTokenTicker := "rune"
+	baseTokenTicker := "RUNE"
 	baseTokenName := "Rune"
 	ticker := "eth"
 	name := "ethereum"
@@ -88,8 +88,8 @@ func TestCoolKeeperTradeBase(t *testing.T) {
 	ticker := "eth"
 	name := "ethereum"
 	reserveRatio := 1
-	tenRune := sdk.NewCoin("rune", 10)
-	twentyRune := sdk.NewCoin("rune", 20)
+	tenRune := sdk.NewCoin("RUNE", 10)
+	twentyRune := sdk.NewCoin("RUNE", 20)
 
 	keeper.create(ctx, address, ticker, name, reserveRatio)
 
@@ -98,7 +98,7 @@ func TestCoolKeeperTradeBase(t *testing.T) {
 	err1 := keeper.tradeBase(ctx, address, ticker, 10)
 	coins := bankKeeper.GetCoins(ctx, address)
 	ethAmount := coins.AmountOf("eth").Int64()
-	runeAmount := coins.AmountOf("rune").Int64()
+	runeAmount := coins.AmountOf("RUNE").Int64()
 	require.Nil(t, err1)
 	require.Equal(t, ethAmount, int64(10))
 	require.Equal(t, runeAmount, int64(0))
@@ -109,7 +109,7 @@ func TestCoolKeeperTradeBase(t *testing.T) {
 	keeper.tradeBase(ctx, address, ticker, 10)
 	coins = bankKeeper.GetCoins(ctx, address)
 	ethAmount = coins.AmountOf("eth").Int64()
-	runeAmount = coins.AmountOf("rune").Int64()
+	runeAmount = coins.AmountOf("RUNE").Int64()
 	require.Equal(t, ethAmount, int64(20))
 	require.Equal(t, runeAmount, int64(0))
 
@@ -119,7 +119,7 @@ func TestCoolKeeperTradeBase(t *testing.T) {
 	require.Error(t, err2)
 	coins = bankKeeper.GetCoins(ctx, address)
 	btcAmount := coins.AmountOf("btc").Int64()
-	runeAmount = coins.AmountOf("rune").Int64()
+	runeAmount = coins.AmountOf("RUNE").Int64()
 	require.Equal(t, btcAmount, int64(0))
 	require.Equal(t, runeAmount, int64(10))
 
@@ -129,7 +129,7 @@ func TestCoolKeeperTradeBase(t *testing.T) {
 	require.Error(t, err3)
 	coins = bankKeeper.GetCoins(ctx, address)
 	ethAmount = coins.AmountOf("eth").Int64()
-	runeAmount = coins.AmountOf("rune").Int64()
+	runeAmount = coins.AmountOf("RUNE").Int64()
 	require.Equal(t, ethAmount, int64(0))
 	require.Equal(t, runeAmount, int64(10))
 
@@ -139,7 +139,7 @@ func TestCoolKeeperTradeBase(t *testing.T) {
 	require.Error(t, err4)
 	coins = bankKeeper.GetCoins(ctx, address)
 	ethAmount = coins.AmountOf("eth").Int64()
-	runeAmount = coins.AmountOf("rune").Int64()
+	runeAmount = coins.AmountOf("RUNE").Int64()
 	require.Equal(t, ethAmount, int64(0))
 	require.Equal(t, runeAmount, int64(10))
 
