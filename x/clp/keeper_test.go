@@ -42,7 +42,7 @@ func setupKeepers(clpKey *sdk.KVStoreKey, ctx sdk.Context) (Keeper, *amino.Codec
 func TestCoolKeeperCreate(t *testing.T) {
 	clpKey := sdk.NewKVStoreKey("clpTestKey")
 	ctx := setupContext(clpKey)
-	keeper, _, _, _ := setupKeepers(clpKey, ctx)
+	keeper, _, bankKeeper, address := setupKeepers(clpKey, ctx)
 
 	baseTokenTicker := "RUNE"
 	baseTokenName := "Rune"
@@ -55,29 +55,59 @@ func TestCoolKeeperCreate(t *testing.T) {
 	ticker3 := "cos"
 	name3 := "cosmos"
 	reserveRatio3 := 200
-	validCLP := types.NewCLP(addr1, ticker, name, reserveRatio)
+	initialCoinSupply := int64(1000)
+	initialBaseCoins := int64(5)
+	clpAddress := types.NewCLPAddress(ticker)
+	fiftyRune := sdk.NewCoin("RUNE", 50)
+
+	validCLP := types.NewCLP(address, ticker, name, reserveRatio, initialCoinSupply, clpAddress)
+	bankKeeper.SetCoins(ctx, address, sdk.Coins{fiftyRune})
 
 	//Test happy path creation
-	err1 := keeper.create(ctx, addr1, ticker, name, reserveRatio)
+	err1 := keeper.create(ctx, address, ticker, name, reserveRatio, initialCoinSupply, initialBaseCoins)
 	require.Nil(t, err1)
 
 	//Get created CLP and confirm values are correct
 	newClp := keeper.GetCLP(ctx, ticker)
 	require.Equal(t, newClp, &validCLP)
 
+	//Get account coins and confirm debited and credited correctly
+	addressCoins := bankKeeper.GetCoins(ctx, address)
+	clpCoins := bankKeeper.GetCoins(ctx, clpAddress)
+	addressRuneAmount := addressCoins.AmountOf("RUNE").Int64()
+	clpRuneAmount := clpCoins.AmountOf("RUNE").Int64()
+	require.Equal(t, addressRuneAmount, int64(45))
+	require.Equal(t, clpRuneAmount, int64(5))
+
 	//Test duplicate ticker
-	err2 := keeper.create(ctx, addr1, ticker, name2, reserveRatio)
+	err2 := keeper.create(ctx, address, ticker, name2, reserveRatio, initialCoinSupply, initialBaseCoins)
 	require.Error(t, err2)
 
 	//Test bad ratios
-	err4 := keeper.create(ctx, addr1, ticker2, name2, reserveRatio2)
+	err4 := keeper.create(ctx, address, ticker2, name2, reserveRatio2, initialCoinSupply, initialBaseCoins)
 	require.Error(t, err4)
-	err5 := keeper.create(ctx, addr1, ticker3, name3, reserveRatio3)
+	err5 := keeper.create(ctx, address, ticker3, name3, reserveRatio3, initialCoinSupply, initialBaseCoins)
 	require.Error(t, err5)
 
 	//Test cannot create CLP for base token
-	err6 := keeper.create(ctx, addr1, baseTokenTicker, baseTokenName, reserveRatio)
+	err6 := keeper.create(ctx, address, baseTokenTicker, baseTokenName, reserveRatio, initialCoinSupply, initialBaseCoins)
 	require.Error(t, err6)
+
+	//Test cannot create CLP with bad initial supply
+	err7 := keeper.create(ctx, address, "eth5", "ethereum4", reserveRatio, 0, initialBaseCoins)
+	require.Error(t, err7)
+	err8 := keeper.create(ctx, address, "eth5", "ethereum5", reserveRatio, -5, initialBaseCoins)
+	require.Error(t, err8)
+
+	//Test cannot create CLP with bad initial coins
+	err9 := keeper.create(ctx, address, "eth6", "ethereum6", reserveRatio, initialCoinSupply, 0)
+	require.Error(t, err9)
+	err10 := keeper.create(ctx, address, "eth7", "ethereum7", reserveRatio, initialCoinSupply, -5)
+	require.Error(t, err10)
+
+	//Test cannot create CLP with more initial coins than owned
+	err11 := keeper.create(ctx, address, "eth8", "ethereum8", reserveRatio, initialCoinSupply, 500)
+	require.Error(t, err11)
 }
 
 func TestCoolKeeperTradeBase(t *testing.T) {
@@ -90,8 +120,13 @@ func TestCoolKeeperTradeBase(t *testing.T) {
 	reserveRatio := 1
 	tenRune := sdk.NewCoin("RUNE", 10)
 	twentyRune := sdk.NewCoin("RUNE", 20)
+	initialCoinSupply := int64(1000)
+	initialBaseCoins := int64(5)
+	fiftyRune := sdk.NewCoin("RUNE", 50)
 
-	keeper.create(ctx, address, ticker, name, reserveRatio)
+	bankKeeper.SetCoins(ctx, address, sdk.Coins{fiftyRune})
+
+	keeper.create(ctx, address, ticker, name, reserveRatio, initialCoinSupply, initialBaseCoins)
 
 	//Test happy path trading
 	bankKeeper.SetCoins(ctx, address, sdk.Coins{tenRune})

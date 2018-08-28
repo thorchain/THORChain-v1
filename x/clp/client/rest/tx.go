@@ -24,16 +24,18 @@ func registerTxRoutes(ctx context.CoreContext, r *mux.Router, cdc *wire.Codec, k
 type sendBody struct {
 	// fees and gas is not used currently
 	// Fees             sdk.Coin  `json="fees"`
-	Ticker           string `json:"ticker"`
-	TokenName        string `json:"token_name"`
-	ReserveRatio     int    `json:"reserve_ratio"`
-	RuneAmount       int    `json:"rune_amount"`
-	LocalAccountName string `json:"name"`
-	Password         string `json:"password"`
-	ChainID          string `json:"chain_id"`
-	AccountNumber    int64  `json:"account_number"`
-	Sequence         int64  `json:"sequence"`
-	Gas              int64  `json:"gas"`
+	Ticker            string `json:"ticker"`
+	TokenName         string `json:"token_name"`
+	ReserveRatio      int    `json:"reserve_ratio"`
+	InitialSupply     int64  `json:"initial_supply"`
+	InitialRuneAmount int64  `json:"initial_rune_amount"`
+	RuneAmount        int    `json:"rune_amount"`
+	LocalAccountName  string `json:"name"`
+	Password          string `json:"password"`
+	ChainID           string `json:"chain_id"`
+	AccountNumber     int64  `json:"account_number"`
+	Sequence          int64  `json:"sequence"`
+	Gas               int64  `json:"gas"`
 }
 
 var msgCdc = wire.NewCodec()
@@ -44,7 +46,7 @@ func init() {
 }
 
 func buildCreateMsg(from sdk.AccAddress, m sendBody) sdk.Msg {
-	return clpTypes.NewMsgCreate(from, m.Ticker, m.TokenName, m.ReserveRatio)
+	return clpTypes.NewMsgCreate(from, m.Ticker, m.TokenName, m.ReserveRatio, m.InitialSupply, m.InitialRuneAmount)
 }
 
 func buildTradeBaseMsg(from sdk.AccAddress, m sendBody) sdk.Msg {

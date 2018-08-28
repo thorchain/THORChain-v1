@@ -25,7 +25,7 @@ func NewHandler(keeper Keeper) sdk.Handler {
 
 // Handle MsgCreateCLP This is the engine of your module
 func handleMsgCreate(k Keeper, ctx sdk.Context, msg types.MsgCreate) sdk.Result {
-	err := k.create(ctx, msg.Sender, msg.Ticker, msg.Name, msg.ReserveRatio)
+	err := k.create(ctx, msg.Sender, msg.Ticker, msg.Name, msg.ReserveRatio, msg.InitialSupply, msg.InitialBaseCoinAmount)
 	if err != nil {
 		return err.Result()
 	}

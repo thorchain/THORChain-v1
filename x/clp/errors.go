@@ -11,12 +11,14 @@ type CodeType = sdk.CodeType
 const (
 	DefaultCodespace sdk.CodespaceType = 14
 
-	CodeInvalidReserveRatio CodeType = 141
-	CodeCLPExists           CodeType = 142
-	CodeCLPNotExists        CodeType = 143
-	CodeInvalidTickerName   CodeType = 144
-	CodeCLPParsing          CodeType = 145
-	CodeNotEnoughCoins      CodeType = 146
+	CodeInvalidReserveRatio     CodeType = 141
+	CodeCLPExists               CodeType = 142
+	CodeCLPNotExists            CodeType = 143
+	CodeInvalidTickerName       CodeType = 144
+	CodeCLPParsing              CodeType = 145
+	CodeNotEnoughCoins          CodeType = 146
+	CodeInvalidInitialSupply    CodeType = 147
+	CodeInvalidInitialBaseCoins CodeType = 148
 )
 
 //Reserve ratio error
@@ -47,4 +49,14 @@ func ErrCLPParsing(codespace sdk.CodespaceType) sdk.Error {
 //Not enough coins Error
 func ErrNotEnoughCoins(codespace sdk.CodespaceType) sdk.Error {
 	return sdk.NewError(codespace, CodeNotEnoughCoins, "not enough coins to make trade")
+}
+
+//Not enough coins Error
+func ErrInvalidInitialSupply(codespace sdk.CodespaceType) sdk.Error {
+	return sdk.NewError(codespace, CodeInvalidInitialSupply, "initial supply must be positive")
+}
+
+//Not enough initial base coins Error
+func ErrInvalidInitialBaseCoins(codespace sdk.CodespaceType) sdk.Error {
+	return sdk.NewError(codespace, CodeInvalidInitialBaseCoins, "initial base coins sent must be positive")
 }

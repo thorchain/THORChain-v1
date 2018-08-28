@@ -64,7 +64,13 @@ func (k Keeper) ensureExistentCLP(ctx sdk.Context, ticker string) sdk.Error {
 }
 
 // Create CLP.
-func (k Keeper) create(ctx sdk.Context, sender sdk.AccAddress, ticker string, name string, reserveRatio int) sdk.Error {
+func (k Keeper) create(ctx sdk.Context, sender sdk.AccAddress, ticker string, name string, reserveRatio int, initialSupply int64, initialBaseCoinAmount int64) sdk.Error {
+	if initialSupply <= 0 {
+		return ErrInvalidInitialSupply(DefaultCodespace).TraceSDK("")
+	}
+	if initialBaseCoinAmount <= 0 {
+		return ErrInvalidInitialBaseCoins(DefaultCodespace).TraceSDK("")
+	}
 	if ticker == k.baseCoinTicker {
 		return ErrInvalidTickerName(DefaultCodespace).TraceSDK("")
 	}
@@ -75,7 +81,18 @@ func (k Keeper) create(ctx sdk.Context, sender sdk.AccAddress, ticker string, na
 	if reserveRatio <= 0 || reserveRatio > 100 {
 		return ErrInvalidReserveRatio(DefaultCodespace).TraceSDK("")
 	}
-	clp := types.NewCLP(sender, ticker, name, reserveRatio)
+	initialBaseCoins := sdk.NewCoin(k.baseCoinTicker, initialBaseCoinAmount)
+	//Debit initial coins from sender
+	_, _, err2 := k.bankKeeper.SubtractCoins(ctx, sender, sdk.Coins{initialBaseCoins})
+	if err2 != nil {
+		return err2
+	}
+	clpAddress := types.NewCLPAddress(ticker)
+	clp := types.NewCLP(sender, ticker, name, reserveRatio, initialSupply, clpAddress)
+	_, _, err3 := k.bankKeeper.AddCoins(ctx, clpAddress, sdk.Coins{initialBaseCoins})
+	if err3 != nil {
+		return err3
+	}
 	k.SetCLP(ctx, clp)
 	return nil
 }

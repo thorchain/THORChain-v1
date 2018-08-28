@@ -9,19 +9,23 @@ import (
 
 // Create type
 type MsgCreate struct {
-	Sender       sdk.AccAddress
-	Ticker       string
-	Name         string
-	ReserveRatio int
+	Sender                sdk.AccAddress
+	Ticker                string
+	Name                  string
+	ReserveRatio          int
+	InitialSupply         int64
+	InitialBaseCoinAmount int64
 }
 
 // new create message
-func NewMsgCreate(sender sdk.AccAddress, ticker string, name string, reserveRatio int) MsgCreate {
+func NewMsgCreate(sender sdk.AccAddress, ticker string, name string, reserveRatio int, initialSupply int64, initialBaseCoinAmount int64) MsgCreate {
 	return MsgCreate{
-		Sender:       sender,
-		Ticker:       ticker,
-		Name:         name,
-		ReserveRatio: reserveRatio,
+		Sender:                sender,
+		Ticker:                ticker,
+		Name:                  name,
+		ReserveRatio:          reserveRatio,
+		InitialSupply:         initialSupply,
+		InitialBaseCoinAmount: initialBaseCoinAmount,
 	}
 }
 
@@ -37,7 +41,7 @@ func (msg MsgCreate) GetSigners() []sdk.AccAddress {
 }
 
 func (msg MsgCreate) String() string {
-	return fmt.Sprintf("MsgCreate{Sender: %v, Ticker: %v,  Name: %v,  ReserveRatio: %v}", msg.Sender, msg.Ticker, msg.Name, msg.ReserveRatio)
+	return fmt.Sprintf("MsgCreate{Sender: %v, Ticker: %v,  Name: %v,  ReserveRatio: %v,  InitialSupply: %v,  InitialBaseCoinAmount: %v}", msg.Sender, msg.Ticker, msg.Name, msg.ReserveRatio, msg.InitialSupply, msg.InitialBaseCoinAmount)
 }
 
 // Validate Basic is used to quickly disqualify obviously invalid messages quickly
