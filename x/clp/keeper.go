@@ -148,14 +148,11 @@ func (k Keeper) tradeBase(ctx sdk.Context, sender sdk.AccAddress, ticker string,
 	newCLPCoinsAmount := CalculateTokensIssued(supply, baseCoinAmount, clpBaseTokenBalance, reserveRatio)
 	newCLPCoins := sdk.Coins{sdk.NewCoin(ticker, newCLPCoinsAmount)}
 
-	//Update CLP Supply
-	clp.CurrentSupply += newCLPCoinsAmount
-	k.SetCLP(ctx, *clp)
-
 	spentBaseCoins := sdk.Coins{sdk.NewCoin(k.baseCoinTicker, baseCoinAmount)}
 	k.bankKeeper.AddCoins(ctx, sender, newCLPCoins)
 	k.bankKeeper.SubtractCoins(ctx, sender, spentBaseCoins)
 	k.bankKeeper.AddCoins(ctx, clp.AccountAddress, spentBaseCoins)
+	k.bankKeeper.SubtractCoins(ctx, clp.AccountAddress, newCLPCoins)
 
 	return newCLPCoinsAmount, nil
 }

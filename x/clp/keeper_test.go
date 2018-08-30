@@ -143,8 +143,8 @@ func TestCoolKeeperTradeBase(t *testing.T) {
 	require.Nil(t, err1)
 	require.Equal(t, senderEthAmount, int64(10))
 	require.Equal(t, senderRuneAmount, int64(490))
-	require.Equal(t, clpEthAmount, int64(500))
-	require.Equal(t, clp.CurrentSupply, int64(510))
+	require.Equal(t, clpEthAmount, int64(490))
+	require.Equal(t, clp.CurrentSupply, int64(500))
 	require.Equal(t, clpRuneAmount, int64(510))
 
 	//Test double trade
@@ -159,8 +159,8 @@ func TestCoolKeeperTradeBase(t *testing.T) {
 	clpRuneAmount = clpCoins.AmountOf("RUNE").Int64()
 	require.Equal(t, senderEthAmount, int64(30))
 	require.Equal(t, senderRuneAmount, int64(470))
-	require.Equal(t, clpEthAmount, int64(500))
-	require.Equal(t, clp.CurrentSupply, int64(530))
+	require.Equal(t, clpEthAmount, int64(470))
+	require.Equal(t, clp.CurrentSupply, int64(500))
 	require.Equal(t, clpRuneAmount, int64(530))
 
 	//Test invalid trade with nonexistent clp
@@ -184,8 +184,8 @@ func TestCoolKeeperTradeBase(t *testing.T) {
 	clpRuneAmount = clpCoins.AmountOf("RUNE").Int64()
 	require.Equal(t, senderEthAmount, int64(30))
 	require.Equal(t, senderRuneAmount, int64(470))
-	require.Equal(t, clpEthAmount, int64(500))
-	require.Equal(t, clp.CurrentSupply, int64(530))
+	require.Equal(t, clpEthAmount, int64(470))
+	require.Equal(t, clp.CurrentSupply, int64(500))
 	require.Equal(t, clpRuneAmount, int64(530))
 
 	// //Test invalid trade with negative rune
@@ -200,8 +200,8 @@ func TestCoolKeeperTradeBase(t *testing.T) {
 	clpRuneAmount = clpCoins.AmountOf("RUNE").Int64()
 	require.Equal(t, senderEthAmount, int64(30))
 	require.Equal(t, senderRuneAmount, int64(470))
-	require.Equal(t, clpEthAmount, int64(500))
-	require.Equal(t, clp.CurrentSupply, int64(530))
+	require.Equal(t, clpEthAmount, int64(470))
+	require.Equal(t, clp.CurrentSupply, int64(500))
 	require.Equal(t, clpRuneAmount, int64(530))
 
 	//Test Example from scoping doc
@@ -217,12 +217,12 @@ func TestCoolKeeperTradeBase(t *testing.T) {
 	require.Nil(t, err5)
 	require.Equal(t, senderTokAmount, int64(900000))
 	require.Equal(t, senderRuneAmount, int64(280))
-	require.Equal(t, clpTokAmount, int64(1000000))
-	require.Equal(t, clp2.CurrentSupply, int64(1900000))
+	require.Equal(t, clpTokAmount, int64(100000))
+	require.Equal(t, clp2.CurrentSupply, int64(1000000))
 	require.Equal(t, clpRuneAmount, int64(190))
 
-	//Test Second Example from scoping doc
-	keeper.tradeBase(ctx, address, "tok", 99)
+	//Test Second Trade on example from scoping doc
+	keeper.tradeBase(ctx, address, "tok", 5)
 	clp2 = keeper.GetCLP(ctx, "tok")
 	senderCoins = bankKeeper.GetCoins(ctx, address)
 	senderTokAmount = senderCoins.AmountOf("tok").Int64()
@@ -231,10 +231,10 @@ func TestCoolKeeperTradeBase(t *testing.T) {
 	clpTokAmount = clpCoins.AmountOf("tok").Int64()
 	clpRuneAmount = clpCoins.AmountOf("RUNE").Int64()
 	require.Nil(t, err5)
-	require.Equal(t, senderTokAmount, int64(1890000))
-	require.Equal(t, senderRuneAmount, int64(181))
-	require.Equal(t, clpTokAmount, int64(1000000))
-	require.Equal(t, clp2.CurrentSupply, int64(2890000))
-	require.Equal(t, clpRuneAmount, int64(289))
+	require.Equal(t, senderTokAmount, int64(926316))
+	require.Equal(t, senderRuneAmount, int64(275))
+	require.Equal(t, clpTokAmount, int64(73684))
+	require.Equal(t, clp2.CurrentSupply, int64(1000000))
+	require.Equal(t, clpRuneAmount, int64(195))
 
 }
