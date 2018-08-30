@@ -49,7 +49,8 @@
   revision = "d4cc87b860166d00d6b5b9e0d3b3d71d6088d4d4"
 
 [[projects]]
-  digest = "1:2e6ae72b874658a061bca44f2880527dd61219006266b3a7848e47d4a019c6bc"
+  branch = "thorchain_master"
+  digest = "1:37f4e475a616eb2834211235082995a7b817685dad389ef7d3a37369a7b5cb21"
   name = "github.com/cosmos/cosmos-sdk"
   packages = [
     "baseapp",
@@ -97,8 +98,8 @@
     "x/stake/types",
   ]
   pruneopts = "UT"
-  revision = "23e3d5ac12145c02fcb4b4767d7dfccad782aee5"
-  version = "v0.23.1"
+  revision = "347e02e5306d679a32176f3092a3dca80e2f4035"
+  source = "https://github.com/swishlabsco/cosmos-sdk.git"
 
 [[projects]]
   digest = "1:a2c1d0e43bd3baaa071d1b9ed72c27d78169b2b269f71c105ac4ba34b1be4a39"
@@ -703,6 +704,7 @@
     "github.com/spf13/pflag",
     "github.com/spf13/viper",
     "github.com/stretchr/testify/require",
+    "github.com/tendermint/go-amino",
     "github.com/tendermint/tendermint/abci/types",
     "github.com/tendermint/tendermint/crypto",
     "github.com/tendermint/tendermint/crypto/ed25519",

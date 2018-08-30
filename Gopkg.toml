@@ -27,7 +27,8 @@
 
 [[constraint]]
   name = "github.com/cosmos/cosmos-sdk"
-  version = "0.23.1"
+  source = "https://github.com/swishlabsco/cosmos-sdk.git"
+  branch = "thorchain_master"
 
 [[constraint]]
   name = "github.com/spf13/cobra"
