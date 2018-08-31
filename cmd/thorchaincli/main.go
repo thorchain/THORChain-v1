@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/gorilla/mux"
 	"github.com/spf13/cobra"
 	"github.com/thorchain/THORChain/app"
 	"github.com/thorchain/THORChain/version"
@@ -8,10 +9,13 @@ import (
 	"github.com/tendermint/tendermint/libs/cli"
 
 	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/cosmos/cosmos-sdk/client/context"
 	"github.com/cosmos/cosmos-sdk/client/keys"
 	"github.com/cosmos/cosmos-sdk/client/lcd"
 	"github.com/cosmos/cosmos-sdk/client/rpc"
 	"github.com/cosmos/cosmos-sdk/client/tx"
+	cryptokeys "github.com/cosmos/cosmos-sdk/crypto/keys"
+	"github.com/cosmos/cosmos-sdk/wire"
 	authcmd "github.com/cosmos/cosmos-sdk/x/auth/client/cli"
 	bankcmd "github.com/cosmos/cosmos-sdk/x/bank/client/cli"
 	govcmd "github.com/cosmos/cosmos-sdk/x/gov/client/cli"
@@ -19,6 +23,7 @@ import (
 	slashingcmd "github.com/cosmos/cosmos-sdk/x/slashing/client/cli"
 	stakecmd "github.com/cosmos/cosmos-sdk/x/stake/client/cli"
 	clpcmd "github.com/thorchain/THORChain/x/clp/client/cli"
+	clp "github.com/thorchain/THORChain/x/clp/client/rest"
 )
 
 // rootCmd is the entry point for this binary
@@ -26,6 +31,9 @@ var (
 	rootCmd = &cobra.Command{
 		Use:   "thorchaincli",
 		Short: "THORChain light-client",
+	}
+	serveCommandCallback = func(ctx context.CoreContext, r *mux.Router, cdc *wire.Codec, kb cryptokeys.Keybase) {
+		clp.RegisterRoutes(ctx, r, cdc, kb)
 	}
 )
 
@@ -70,7 +78,7 @@ func main() {
 	advancedCmd.AddCommand(
 		tendermintCmd,
 		ibcCmd,
-		lcd.ServeCommand(cdc),
+		lcd.ServeCommandWithCallback(cdc, serveCommandCallback),
 	)
 	rootCmd.AddCommand(
 		advancedCmd,
