@@ -17,9 +17,9 @@ import (
 // create new clp transaction
 func CreateTxCmd(cdc *wire.Codec) *cobra.Command {
 	return &cobra.Command{
-		Use:   "create <ticker> <name> <reserve_ratio>",
+		Use:   "create <ticker> <name> <reserve_ratio> <initial_supply> <initial_rune_amount>",
 		Short: "Create a token with CLP",
-		Args:  cobra.ExactArgs(3),
+		Args:  cobra.ExactArgs(5),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := context.NewCoreContextFromViper().WithDecoder(authcmd.GetAccountDecoder(cdc))
 
@@ -33,7 +33,9 @@ func CreateTxCmd(cdc *wire.Codec) *cobra.Command {
 			ticker := args[0]
 			name := args[1]
 			reserveRatio, err := strconv.Atoi(args[2])
-			msg := clpTypes.NewMsgCreate(from, ticker, name, reserveRatio)
+			initialSupply, err := strconv.Atoi(args[3])
+			initialBaseCoinAmount, err := strconv.Atoi(args[4])
+			msg := clpTypes.NewMsgCreate(from, ticker, name, reserveRatio, int64(initialSupply), int64(initialBaseCoinAmount))
 
 			// get account name
 			addressName := ctx.FromAddressName
@@ -109,7 +111,7 @@ func GetCmd(cdc *wire.Codec) *cobra.Command {
 			if err2 != nil {
 				return err2
 			}
-			fmt.Printf("CLP details \nCreator: %s \nTicker: %v \nName: %v \nReserve Ratio: %v \n", clp.Creator, clp.Ticker, clp.Name, clp.ReserveRatio)
+			fmt.Printf("CLP details \nCreator: %s \nTicker: %v \nName: %v \nReserve Ratio: %v \nInitial Supply: %v \nAccount Address: %v \n", clp.Creator, clp.Ticker, clp.Name, clp.ReserveRatio, clp.InitialSupply, clp.AccountAddress.String())
 			return nil
 		},
 	}

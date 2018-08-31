@@ -25,7 +25,7 @@ func NewHandler(keeper Keeper) sdk.Handler {
 
 // Handle MsgCreateCLP This is the engine of your module
 func handleMsgCreate(k Keeper, ctx sdk.Context, msg types.MsgCreate) sdk.Result {
-	err := k.create(ctx, msg.Sender, msg.Ticker, msg.Name, msg.ReserveRatio)
+	err := k.create(ctx, msg.Sender, msg.Ticker, msg.Name, msg.ReserveRatio, msg.InitialSupply, msg.InitialBaseCoinAmount)
 	if err != nil {
 		return err.Result()
 	}
@@ -35,10 +35,10 @@ func handleMsgCreate(k Keeper, ctx sdk.Context, msg types.MsgCreate) sdk.Result 
 
 // Handle MsgCreateCLP This is the engine of your module
 func handleMsgTradeBase(k Keeper, ctx sdk.Context, msg types.MsgTradeBase) sdk.Result {
-	err := k.tradeBase(ctx, msg.Sender, msg.Ticker, int64(msg.BaseCoinAmount))
+	newCoinsAmount, err := k.tradeBase(ctx, msg.Sender, msg.Ticker, int64(msg.BaseCoinAmount))
 	if err != nil {
 		return err.Result()
 	}
-	fmt.Println("New Trade created!")
-	return sdk.Result{}
+	resultLog := fmt.Sprintf("in: %v%v, out: %v%v", msg.BaseCoinAmount, k.baseCoinTicker, newCoinsAmount, msg.Ticker)
+	return sdk.Result{Log: resultLog}
 }
