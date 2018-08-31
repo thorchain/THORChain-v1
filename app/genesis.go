@@ -7,7 +7,7 @@ import (
 	"github.com/spf13/pflag"
 	"github.com/tendermint/tendermint/crypto"
 	tmtypes "github.com/tendermint/tendermint/types"
-	"github.com/thorchain/THORChain/x/clp"
+	clpTypes "github.com/thorchain/THORChain/x/clp/types"
 
 	"github.com/cosmos/cosmos-sdk/server"
 	"github.com/cosmos/cosmos-sdk/server/config"
@@ -27,7 +27,7 @@ var (
 type GenesisState struct {
 	Accounts   []GenesisAccount   `json:"accounts"`
 	StakeData  stake.GenesisState `json:"stake"`
-	CLPGenesis clp.Genesis        `json:"clp"`
+	CLPGenesis clpTypes.Genesis   `json:"clp"`
 }
 
 // GenesisAccount doesn't need pubkey or sequence
@@ -154,11 +154,11 @@ func ThorchainAppGenState(cdc *wire.Codec, appGenTxs []json.RawMessage) (genesis
 			return
 		}
 
-		// create the genesis account, give'm few steaks and a buncha token with there name
+		// create the genesis account, give'm few runes and a buncha token with there name
 		accAuth := auth.NewBaseAccountWithAddress(genTx.Address)
 		accAuth.Coins = sdk.Coins{
 			{genTx.Name + "Token", sdk.NewInt(1000)},
-			{"steak", sdk.NewInt(freeFermionsAcc)},
+			{"RUNE", sdk.NewInt(freeFermionsAcc)},
 		}
 		acc := NewGenesisAccount(&accAuth)
 		genaccs[i] = acc

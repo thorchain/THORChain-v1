@@ -7,6 +7,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/crypto/keys"
 	"github.com/gorilla/mux"
 	"github.com/thorchain/THORChain/x/clp"
+	clpTypes "github.com/thorchain/THORChain/x/clp/types"
 
 	"github.com/cosmos/cosmos-sdk/client/context"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -16,17 +17,17 @@ import (
 
 // RegisterRoutes - Central function to define routes that get registered by the main application
 func registerTxRoutes(ctx context.CoreContext, r *mux.Router, cdc *wire.Codec, kb keys.Keybase) {
-	r.HandleFunc("/clp/test", SendRequestHandlerFn(cdc, kb, ctx, buildTestMsg)).Methods("POST")
 	r.HandleFunc("/clp", SendRequestHandlerFn(cdc, kb, ctx, buildCreateMsg)).Methods("POST")
+	r.HandleFunc("/clp_trade_rune", SendRequestHandlerFn(cdc, kb, ctx, buildTradeBaseMsg)).Methods("POST")
 }
 
 type sendBody struct {
 	// fees and gas is not used currently
 	// Fees             sdk.Coin  `json="fees"`
-	Test             string `json:"test"`
 	Ticker           string `json:"ticker"`
 	TokenName        string `json:"token_name"`
 	ReserveRatio     int    `json:"reserve_ratio"`
+	RuneAmount       int    `json:"rune_amount"`
 	LocalAccountName string `json:"name"`
 	Password         string `json:"password"`
 	ChainID          string `json:"chain_id"`
@@ -42,12 +43,12 @@ func init() {
 	clp.RegisterWire(msgCdc)
 }
 
-func buildTestMsg(from sdk.AccAddress, m sendBody) sdk.Msg {
-	return clp.NewMsgTest(from, m.Test)
+func buildCreateMsg(from sdk.AccAddress, m sendBody) sdk.Msg {
+	return clpTypes.NewMsgCreate(from, m.Ticker, m.TokenName, m.ReserveRatio)
 }
 
-func buildCreateMsg(from sdk.AccAddress, m sendBody) sdk.Msg {
-	return clp.NewMsgCreate(from, m.Ticker, m.TokenName, m.ReserveRatio)
+func buildTradeBaseMsg(from sdk.AccAddress, m sendBody) sdk.Msg {
+	return clpTypes.NewMsgTradeBase(from, m.Ticker, m.RuneAmount)
 }
 
 // SendRequestHandlerFn - http request handler to send coins to a address

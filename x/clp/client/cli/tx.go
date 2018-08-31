@@ -6,44 +6,13 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/thorchain/THORChain/x/clp"
+	clpTypes "github.com/thorchain/THORChain/x/clp/types"
 
 	"github.com/cosmos/cosmos-sdk/client/context"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/wire"
 	authcmd "github.com/cosmos/cosmos-sdk/x/auth/client/cli"
 )
-
-// run the test transaction
-func TestTxCmd(cdc *wire.Codec) *cobra.Command {
-	return &cobra.Command{
-		Use:   "test [string]",
-		Short: "Test me?",
-		Args:  cobra.ExactArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx := context.NewCoreContextFromViper().WithDecoder(authcmd.GetAccountDecoder(cdc))
-
-			// get the from address from the name flag
-			from, err := ctx.GetFromAddress()
-			if err != nil {
-				return err
-			}
-
-			// create the message
-			msg := clp.NewMsgTest(from, args[0])
-
-			// get account name
-			name := ctx.FromAddressName
-
-			// build and sign the transaction, then broadcast to Tendermint
-			err = ctx.EnsureSignBuildBroadcast(name, []sdk.Msg{msg}, cdc)
-			if err != nil {
-				return err
-			}
-
-			return nil
-		},
-	}
-}
 
 // create new clp transaction
 func CreateTxCmd(cdc *wire.Codec) *cobra.Command {
@@ -64,7 +33,7 @@ func CreateTxCmd(cdc *wire.Codec) *cobra.Command {
 			ticker := args[0]
 			name := args[1]
 			reserveRatio, err := strconv.Atoi(args[2])
-			msg := clp.NewMsgCreate(from, ticker, name, reserveRatio)
+			msg := clpTypes.NewMsgCreate(from, ticker, name, reserveRatio)
 
 			// get account name
 			addressName := ctx.FromAddressName
@@ -80,20 +49,35 @@ func CreateTxCmd(cdc *wire.Codec) *cobra.Command {
 	}
 }
 
-// get test data
-func GetTestCmd(cdc *wire.Codec) *cobra.Command {
+// create new clp transaction
+func TradeBaseTxCmd(cdc *wire.Codec) *cobra.Command {
 	return &cobra.Command{
-		Use:   "get_test",
-		Short: "Get test",
+		Use:   "trade_rune <ticker> <rune_amount>",
+		Short: "Trade rune for a token via CLP",
+		Args:  cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx := context.NewCoreContextFromViper().WithDecoder(authcmd.GetAccountDecoder(cdc))
 
-			ctx := context.NewCoreContextFromViper()
-
-			res, err := ctx.QueryStore(clp.GetTestKey(), "clp")
+			// get the from address from the name flag
+			from, err := ctx.GetFromAddress()
 			if err != nil {
 				return err
 			}
-			fmt.Printf("Test value is: %v \n", string(res))
+
+			// create the message
+			ticker := args[0]
+			baseCoinAmount, err := strconv.Atoi(args[1])
+			msg := clpTypes.NewMsgTradeBase(from, ticker, baseCoinAmount)
+
+			// get account name
+			addressName := ctx.FromAddressName
+
+			// build and sign the transaction, then broadcast to Tendermint
+			err = ctx.EnsureSignBuildBroadcast(addressName, []sdk.Msg{msg}, cdc)
+			if err != nil {
+				return err
+			}
+
 			return nil
 		},
 	}
@@ -120,7 +104,7 @@ func GetCmd(cdc *wire.Codec) *cobra.Command {
 			}
 			cdc := wire.NewCodec()
 			wire.RegisterCrypto(cdc)
-			clp := new(clp.CLP)
+			clp := new(clpTypes.CLP)
 			err2 := cdc.UnmarshalBinary(res, &clp)
 			if err2 != nil {
 				return err2

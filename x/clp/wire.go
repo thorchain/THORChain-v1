@@ -1,9 +1,12 @@
 package clp
 
-import "github.com/cosmos/cosmos-sdk/wire"
+import (
+	"github.com/cosmos/cosmos-sdk/wire"
+	"github.com/thorchain/THORChain/x/clp/types"
+)
 
 //Function to register a codec with this packages concretes/interfaces
 func RegisterWire(cdc *wire.Codec) {
-	cdc.RegisterConcrete(MsgTest{}, "clp/MsgTest", nil)
-	cdc.RegisterConcrete(MsgCreate{}, "clp/MsgCreate", nil)
+	cdc.RegisterConcrete(types.MsgCreate{}, "clp/MsgCreate", nil)
+	cdc.RegisterConcrete(types.MsgTradeBase{}, "clp/MsgTradeBase", nil)
 }

@@ -131,12 +131,11 @@ func main() {
 	}
 	clpCmd.AddCommand(
 		client.PostCommands(
-			clpcmd.TestTxCmd(cdc),
 			clpcmd.CreateTxCmd(cdc),
+			clpcmd.TradeBaseTxCmd(cdc),
 		)...)
 	clpCmd.AddCommand(
 		client.GetCommands(
-			clpcmd.GetTestCmd(cdc),
 			clpcmd.GetCmd(cdc),
 		)...)
 	rootCmd.AddCommand(
