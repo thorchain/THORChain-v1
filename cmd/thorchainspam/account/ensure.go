@@ -11,7 +11,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"github.com/thorchain/THORChain/cmd/thorchainspam/constants"
 	"github.com/thorchain/THORChain/cmd/thorchainspam/helpers"
 
 	cryptokeys "github.com/cosmos/cosmos-sdk/crypto/keys"
@@ -24,7 +23,18 @@ func GetAccountEnsure(cdc *wire.Codec) func(cmd *cobra.Command, args []string) e
 	return func(cmd *cobra.Command, args []string) error {
 		ctx := context.NewCoreContextFromViper().WithDecoder(authcmd.GetAccountDecoder(cdc))
 
-		// get list of all accounts starting with "spam"
+		// parse spam prefix and password
+		spamPrefix := viper.GetString(FlagSpamPrefix)
+		spamPassword := viper.GetString(FlagSpamPassword)
+		if spamPassword == "" {
+			return fmt.Errorf("--spam-password is required")
+		}
+		signPassword := viper.GetString(FlagSignPassword)
+		if signPassword == "" {
+			return fmt.Errorf("--sign-password is required")
+		}
+
+		// get list of all accounts starting with spamPrefix
 		kb, err := keys.GetKeyBase()
 		if err != nil {
 			return err
@@ -35,7 +45,7 @@ func GetAccountEnsure(cdc *wire.Codec) func(cmd *cobra.Command, args []string) e
 			return err
 		}
 
-		numExistingAccs := helpers.CountSpamAccounts(infos)
+		numExistingAccs := helpers.CountSpamAccounts(infos, spamPrefix)
 		k := viper.GetInt(FlagK)
 		numAccsToCreate := k - numExistingAccs
 
@@ -85,8 +95,8 @@ func GetAccountEnsure(cdc *wire.Codec) func(cmd *cobra.Command, args []string) e
 
 		// for each required account, build the required amount of keys and transfer the coins
 		for i := 0; i < numAccsToCreate; i++ {
-			accountName := fmt.Sprintf("%v-%v", constants.SpamAccountPrefix, i+numExistingAccs)
-			to, err := createSpamAccountKey(kb, accountName, constants.SpamAccountPassword)
+			accountName := fmt.Sprintf("%v-%v", spamPrefix, i+numExistingAccs)
+			to, err := createSpamAccountKey(kb, accountName, spamPassword)
 			if err != nil {
 				return err
 			}
@@ -97,7 +107,7 @@ func GetAccountEnsure(cdc *wire.Codec) func(cmd *cobra.Command, args []string) e
 			// in the last loop, or every msgsPerTx loop sign the transaction, then broadcast to Tendermint
 			if i == numAccsToCreate-1 || (i+1)%msgsPerTx == 0 {
 				ctx = ctx.WithGas(10000 * int64(msgsPerTx))
-				err = ensureSignBuildBroadcast(ctx, ctx.FromAddressName, constants.SpamAccountPassword, msgs, cdc)
+				err = ensureSignBuildBroadcast(ctx, ctx.FromAddressName, signPassword, msgs, cdc)
 				if err != nil {
 					return err
 				}

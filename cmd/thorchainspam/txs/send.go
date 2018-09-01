@@ -11,7 +11,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/wire"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	"github.com/thorchain/THORChain/cmd/thorchainspam/constants"
+	"github.com/spf13/viper"
 	"github.com/thorchain/THORChain/cmd/thorchainspam/stats"
 
 	cryptokeys "github.com/cosmos/cosmos-sdk/crypto/keys"
@@ -26,8 +26,15 @@ func GetTxsSend(cdc *wire.Codec) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		ctx := context.NewCoreContextFromViper().WithDecoder(authcmd.GetAccountDecoder(cdc))
 
-		// get list of all accounts starting with "spam"
-		spamAccs, err := getSpamAccs()
+		// parse spam prefix and password
+		spamPrefix := viper.GetString(FlagSpamPrefix)
+		spamPassword := viper.GetString(FlagSpamPassword)
+		if spamPassword == "" {
+			return fmt.Errorf("--spam-password is required")
+		}
+
+		// get list of all accounts starting with spamPrefix
+		spamAccs, err := getSpamAccs(spamPrefix)
 		if err != nil {
 			return err
 		}
@@ -53,7 +60,7 @@ func GetTxsSend(cdc *wire.Codec) func(cmd *cobra.Command, args []string) error {
 			go func(i int) {
 				defer wg.Done()
 
-				sendTxToRandomAcc(ctx, i, spamAccs, cdc, &stats)
+				sendTxToRandomAcc(ctx, i, spamAccs, spamPassword, cdc, &stats)
 
 				// release semaphore
 				<-sem
@@ -80,7 +87,7 @@ func GetTxsSend(cdc *wire.Codec) func(cmd *cobra.Command, args []string) error {
 	}
 }
 
-func getSpamAccs() ([]cryptokeys.Info, error) {
+func getSpamAccs(spamPrefix string) ([]cryptokeys.Info, error) {
 	kb, err := keys.GetKeyBase()
 	if err != nil {
 		return nil, err
@@ -94,7 +101,7 @@ func getSpamAccs() ([]cryptokeys.Info, error) {
 	res := make([]cryptokeys.Info, 0, len(infos))
 
 	for _, info := range infos {
-		if strings.HasPrefix(info.GetName(), constants.SpamAccountPrefix) {
+		if strings.HasPrefix(info.GetName(), spamPrefix) {
 			res = append(res, info)
 		}
 	}
@@ -102,7 +109,7 @@ func getSpamAccs() ([]cryptokeys.Info, error) {
 	return res, nil
 }
 
-func sendTxToRandomAcc(ctx context.CoreContext, i int, spamAccs []cryptokeys.Info, cdc *wire.Codec, stats *stats.Stats) {
+func sendTxToRandomAcc(ctx context.CoreContext, i int, spamAccs []cryptokeys.Info, spamPassword string, cdc *wire.Codec, stats *stats.Stats) {
 	from := spamAccs[i]
 
 	fmt.Printf("Iteration %v: Will send from account %v\n", i, from.GetName())
@@ -131,7 +138,7 @@ func sendTxToRandomAcc(ctx context.CoreContext, i int, spamAccs []cryptokeys.Inf
 
 	// build and sign the transaction, then broadcast to Tendermint
 	msg := client.BuildMsg(fromAcc.GetAddress(), getAddr(to), coins)
-	err = ensureSignBuildBroadcast(ctx, fromAcc, from.GetName(), constants.SpamAccountPassword, []sdk.Msg{msg}, cdc)
+	err = ensureSignBuildBroadcast(ctx, fromAcc, from.GetName(), spamPassword, []sdk.Msg{msg}, cdc)
 	if err != nil {
 		fmt.Println(err)
 		stats.AddOtherError()
