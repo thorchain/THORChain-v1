@@ -2,7 +2,6 @@ package account
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/cosmos/cosmos-sdk/client/context"
 	"github.com/cosmos/cosmos-sdk/client/keys"
@@ -12,6 +11,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"github.com/thorchain/THORChain/cmd/thorchainspam/constants"
+	"github.com/thorchain/THORChain/cmd/thorchainspam/helpers"
 
 	cryptokeys "github.com/cosmos/cosmos-sdk/crypto/keys"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -34,7 +35,7 @@ func GetAccountEnsure(cdc *wire.Codec) func(cmd *cobra.Command, args []string) e
 			return err
 		}
 
-		numExistingAccs := countSpamAccounts(infos)
+		numExistingAccs := helpers.CountSpamAccounts(infos)
 		k := viper.GetInt(FlagK)
 		numAccsToCreate := k - numExistingAccs
 
@@ -81,8 +82,8 @@ func GetAccountEnsure(cdc *wire.Codec) func(cmd *cobra.Command, args []string) e
 
 		// for each required account, build the required amount of keys and transfer the coins
 		for i := 0; i < numAccsToCreate; i++ {
-			accountName := fmt.Sprintf("%v-%v", SpamAccountPrefix, i)
-			to, err := createSpamAccountKey(kb, accountName, SpamAccountPassword)
+			accountName := fmt.Sprintf("%v-%v", constants.SpamAccountPrefix, i)
+			to, err := createSpamAccountKey(kb, accountName, constants.SpamAccountPassword)
 			if err != nil {
 				return err
 			}
@@ -90,7 +91,7 @@ func GetAccountEnsure(cdc *wire.Codec) func(cmd *cobra.Command, args []string) e
 			// build and sign the transaction, then broadcast to Tendermint
 			msg := client.BuildMsg(from, to, coins)
 
-			err = ensureSignBuildBroadcast(ctx, ctx.FromAddressName, SpamAccountPassword, []sdk.Msg{msg}, cdc)
+			err = ensureSignBuildBroadcast(ctx, ctx.FromAddressName, constants.SpamAccountPassword, []sdk.Msg{msg}, cdc)
 			if err != nil {
 				return err
 			}
@@ -98,18 +99,6 @@ func GetAccountEnsure(cdc *wire.Codec) func(cmd *cobra.Command, args []string) e
 
 		return nil
 	}
-}
-
-func countSpamAccounts(arr []cryptokeys.Info) int {
-	count := 0
-
-	for _, info := range arr {
-		if strings.HasPrefix(info.GetName(), SpamAccountPrefix) {
-			count++
-		}
-	}
-
-	return count
 }
 
 func createSpamAccountKey(kb cryptokeys.Keybase, name string, pass string) (sdk.AccAddress, error) {
