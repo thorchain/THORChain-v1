@@ -39,7 +39,7 @@ func GetTxsSend(cdc *wire.Codec) func(cmd *cobra.Command, args []string) error {
 			return err
 		}
 
-		// ensure spamAccs are present
+		// ensure at least 1 spamAcc is present
 		if len(spamAccs) == 0 {
 			return fmt.Errorf("no spam accounts found, please create them with `thorchainspam account ensure`")
 		}
@@ -48,7 +48,6 @@ func GetTxsSend(cdc *wire.Codec) func(cmd *cobra.Command, args []string) error {
 
 		stats := stats.NewStats()
 
-		blockCommitted := make(chan struct{})
 		var wg sync.WaitGroup
 
 		for i := 0; i < len(spamAccs); {
@@ -58,17 +57,16 @@ func GetTxsSend(cdc *wire.Codec) func(cmd *cobra.Command, args []string) error {
 				defer wg.Done()
 
 				sendTxToNextAcc(ctx, i, spamAccs, spamPassword, cdc, &stats)
-
-				if i == len(spamAccs)-1 {
-					stats.Print()
-					// Iterated over all accounts. Unblock loop.
-					<-blockCommitted
-				}
 			}(i)
 
 			if i == len(spamAccs)-1 {
 				// Iterated over all accounts. Need to wait now until all committed (reason: we cannot send more than 1 tx per block)
-				blockCommitted <- struct{}{}
+				wg.Wait()
+
+				// Print stats
+				stats.Print()
+
+				// Restart
 				i = 0
 			} else {
 				i++
