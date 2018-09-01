@@ -49,14 +49,21 @@ func GetTxsSend(cdc *wire.Codec) func(cmd *cobra.Command, args []string) error {
 		stats := stats.NewStats()
 
 		var wg sync.WaitGroup
+		sem := make(chan struct{}, viper.GetInt(FlagTxConcurrency))
 
 		for i := 0; i < len(spamAccs); {
 			wg.Add(1)
+
+			// acquire semaphore
+			sem <- struct{}{}
 
 			go func(i int) {
 				defer wg.Done()
 
 				sendTxToNextAcc(ctx, i, spamAccs, spamPassword, cdc, &stats)
+
+				// release semaphore
+				<-sem
 			}(i)
 
 			if i == len(spamAccs)-1 {
