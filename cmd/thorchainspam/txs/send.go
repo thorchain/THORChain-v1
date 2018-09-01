@@ -12,6 +12,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/thorchain/THORChain/cmd/thorchainspam/constants"
+	"github.com/thorchain/THORChain/cmd/thorchainspam/stats"
 
 	cryptokeys "github.com/cosmos/cosmos-sdk/crypto/keys"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -38,10 +39,12 @@ func GetTxsSend(cdc *wire.Codec) func(cmd *cobra.Command, args []string) error {
 
 		fmt.Printf("Found %v spam accounts\n", len(spamAccs))
 
-		sem := make(chan struct{}, 100)
+		stats := stats.NewStats()
+
+		sem := make(chan struct{}, 200)
 		var wg sync.WaitGroup
 
-		for i := 0; i < len(spamAccs); i++ {
+		for i := 0; i < len(spamAccs); {
 			wg.Add(1)
 
 			// acquire semaphore
@@ -50,16 +53,28 @@ func GetTxsSend(cdc *wire.Codec) func(cmd *cobra.Command, args []string) error {
 			go func(i int) {
 				defer wg.Done()
 
-				sendTxToRandomAcc(ctx, i, spamAccs, cdc)
+				sendTxToRandomAcc(ctx, i, spamAccs, cdc, &stats)
 
 				// release semaphore
 				<-sem
+
+				if i%100 == 0 {
+					stats.Print()
+				}
 			}(i)
+
+			if i == len(spamAccs)-1 {
+				// Iterated over all accounts. Need to wait now until all committed => we cannot
+				i = 0
+			} else {
+				i++
+			}
 		}
 
 		wg.Wait()
 
 		fmt.Printf("Done.")
+		stats.Print()
 
 		return nil
 	}
@@ -87,7 +102,7 @@ func getSpamAccs() ([]cryptokeys.Info, error) {
 	return res, nil
 }
 
-func sendTxToRandomAcc(ctx context.CoreContext, i int, spamAccs []cryptokeys.Info, cdc *wire.Codec) {
+func sendTxToRandomAcc(ctx context.CoreContext, i int, spamAccs []cryptokeys.Info, cdc *wire.Codec, stats *stats.Stats) {
 	from := spamAccs[i]
 
 	fmt.Printf("Iteration %v: Will send from account %v\n", i, from.GetName())
@@ -96,6 +111,7 @@ func sendTxToRandomAcc(ctx context.CoreContext, i int, spamAccs []cryptokeys.Inf
 	fromAcc, err := getAcc(ctx, from)
 	if err != nil {
 		fmt.Printf("Iteration %v: Account not found, skipping\n", i)
+		stats.AddAccountNotFound()
 		return
 	}
 
@@ -104,6 +120,7 @@ func sendTxToRandomAcc(ctx context.CoreContext, i int, spamAccs []cryptokeys.Inf
 
 	if !coins.IsPositive() {
 		fmt.Printf("Iteration %v: No coins to send, skipping\n", i)
+		stats.AddNoCoinsToSend()
 		return
 	}
 
@@ -117,6 +134,9 @@ func sendTxToRandomAcc(ctx context.CoreContext, i int, spamAccs []cryptokeys.Inf
 	err = ensureSignBuildBroadcast(ctx, fromAcc, from.GetName(), constants.SpamAccountPassword, []sdk.Msg{msg}, cdc)
 	if err != nil {
 		fmt.Println(err)
+		stats.AddOtherError()
+	} else {
+		stats.AddSuccess()
 	}
 }
 
