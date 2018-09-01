@@ -64,6 +64,7 @@ func main() {
 
 	txsSendCmd.Flags().String(txs.FlagSpamPrefix, "spam", "Prefix for the name of spam account keys")
 	txsSendCmd.Flags().String(txs.FlagSpamPassword, "", "Password for spam account keys")
+	txsSendCmd.Flags().Int(txs.FlagTxConcurrency, 200, "Number of concurrent txs")
 	txsSendCmd.Flags().String(txs.FlagChainID, "", "Chain ID of tendermint node")
 	txsSendCmd.Flags().String(txs.FlagNode, "tcp://localhost:26657", "<host>:<port> to tendermint rpc interface for this chain")
 
