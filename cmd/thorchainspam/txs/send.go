@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math/rand"
 	"strings"
+	"sync"
 
 	"github.com/cosmos/cosmos-sdk/client/context"
 	"github.com/cosmos/cosmos-sdk/client/keys"
@@ -37,38 +38,28 @@ func GetTxsSend(cdc *wire.Codec) func(cmd *cobra.Command, args []string) error {
 
 		fmt.Printf("Found %v spam accounts\n", len(spamAccs))
 
+		sem := make(chan struct{}, 100)
+		var wg sync.WaitGroup
+
 		for i := 0; i < len(spamAccs); i++ {
-			from := spamAccs[i]
+			wg.Add(1)
 
-			fmt.Printf("Iteration %v: Will send from account %v\n", i, from.GetName())
+			// acquire semaphore
+			sem <- struct{}{}
 
-			// get account balance from sender
-			fromAcc, err := getAcc(ctx, from)
-			if err != nil {
-				fmt.Printf("Iteration %v: Account not found, skipping\n", i)
-				continue
-			}
+			go func(i int) {
+				defer wg.Done()
 
-			// calculate random share of coins to be sent
-			coins := getRandomCoinsUpTo(fromAcc.GetCoins(), 0.5)
+				sendTxToRandomAcc(ctx, i, spamAccs, cdc)
 
-			if !coins.IsPositive() {
-				fmt.Printf("Iteration %v: No coins to send, skipping\n", i)
-				continue
-			}
-
-			// get random account to send to
-			to := spamAccs[rand.Intn(len(spamAccs))]
-
-			fmt.Printf("Iteration %v: Will send %v from %v to %v\n", i, coins.String(), from.GetName(), to.GetName())
-
-			// build and sign the transaction, then broadcast to Tendermint
-			msg := client.BuildMsg(fromAcc.GetAddress(), getAddr(to), coins)
-			err = ensureSignBuildBroadcast(ctx, fromAcc, from.GetName(), constants.SpamAccountPassword, []sdk.Msg{msg}, cdc)
-			if err != nil {
-				return err
-			}
+				// release semaphore
+				<-sem
+			}(i)
 		}
+
+		wg.Wait()
+
+		fmt.Printf("Done.")
 
 		return nil
 	}
@@ -94,6 +85,39 @@ func getSpamAccs() ([]cryptokeys.Info, error) {
 	}
 
 	return res, nil
+}
+
+func sendTxToRandomAcc(ctx context.CoreContext, i int, spamAccs []cryptokeys.Info, cdc *wire.Codec) {
+	from := spamAccs[i]
+
+	fmt.Printf("Iteration %v: Will send from account %v\n", i, from.GetName())
+
+	// get account balance from sender
+	fromAcc, err := getAcc(ctx, from)
+	if err != nil {
+		fmt.Printf("Iteration %v: Account not found, skipping\n", i)
+		return
+	}
+
+	// calculate random share of coins to be sent
+	coins := getRandomCoinsUpTo(fromAcc.GetCoins(), 0.5)
+
+	if !coins.IsPositive() {
+		fmt.Printf("Iteration %v: No coins to send, skipping\n", i)
+		return
+	}
+
+	// get random account to send to
+	to := spamAccs[rand.Intn(len(spamAccs))]
+
+	fmt.Printf("Iteration %v: Will send %v from %v to %v\n", i, coins.String(), from.GetName(), to.GetName())
+
+	// build and sign the transaction, then broadcast to Tendermint
+	msg := client.BuildMsg(fromAcc.GetAddress(), getAddr(to), coins)
+	err = ensureSignBuildBroadcast(ctx, fromAcc, from.GetName(), constants.SpamAccountPassword, []sdk.Msg{msg}, cdc)
+	if err != nil {
+		fmt.Println(err)
+	}
 }
 
 func getRandomCoinsUpTo(coins sdk.Coins, max float32) sdk.Coins {
