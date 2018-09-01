@@ -48,6 +48,9 @@ install: check-ledger
 install_debug:
 	go install $(BUILD_FLAGS) ./cmd/thorchaindebug
 
+install_spam:
+	go install $(BUILD_FLAGS) ./cmd/thorchainspam
+
 recreate: check-ledger
 	rm -rf ~/.thorchaind
 	make install

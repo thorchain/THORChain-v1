@@ -38,7 +38,7 @@ func main() {
 
 	accountEnsureCmd.Flags().String(account.FlagFrom, "", "Name of private key with which to sign")
 	accountEnsureCmd.Flags().Int(account.FlagK, 10, "Number of accounts to create")
-	accountEnsureCmd.Flags().String(account.FlagAmount, "", "Maximum total amount of coins to distribute over the k accounts")
+	accountEnsureCmd.Flags().String(account.FlagAmount, "", "Amount of coins to send to each account")
 	accountEnsureCmd.Flags().String(account.FlagChainID, "", "Chain ID of tendermint node")
 	accountEnsureCmd.Flags().String(account.FlagNode, "tcp://localhost:26657", "<host>:<port> to tendermint rpc interface for this chain")
 
