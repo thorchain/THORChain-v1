@@ -1,14 +1,20 @@
 package main
 
 import (
+	"math/rand"
+	"time"
+
 	"github.com/spf13/cobra"
 	"github.com/thorchain/THORChain/app"
 	"github.com/thorchain/THORChain/cmd/thorchainspam/account"
+	"github.com/thorchain/THORChain/cmd/thorchainspam/txs"
 
 	"github.com/tendermint/tendermint/libs/cli"
 )
 
 func main() {
+	rand.Seed(time.Now().UTC().UnixNano())
+
 	cdc := app.MakeCodec()
 	cobra.EnableCommandSorting = false
 
@@ -16,6 +22,8 @@ func main() {
 		Use:   "thorchainspam",
 		Short: "Spam commands to create artificial load on THORChain",
 	}
+
+	// --- account commands ---
 
 	accountCmd := &cobra.Command{
 		Use:   "account",
@@ -37,6 +45,26 @@ func main() {
 	accountCmd.AddCommand(accountEnsureCmd)
 
 	rootCmd.AddCommand(accountCmd)
+
+	// --- txs commands ---
+
+	txsCmd := &cobra.Command{
+		Use:   "txs",
+		Short: "Transaction subcommands for creating transactions between spam accounts",
+	}
+
+	txsSendCmd := &cobra.Command{
+		Use:   "send",
+		Short: "Sends random transactions between spam accounts",
+		RunE:  txs.GetTxsSend(cdc),
+	}
+
+	txsSendCmd.Flags().String(txs.FlagChainID, "", "Chain ID of tendermint node")
+	txsSendCmd.Flags().String(txs.FlagNode, "tcp://localhost:26657", "<host>:<port> to tendermint rpc interface for this chain")
+
+	txsCmd.AddCommand(txsSendCmd)
+
+	rootCmd.AddCommand(txsCmd)
 
 	// prepare and add flags
 	executor := cli.PrepareMainCmd(rootCmd, "GA", app.DefaultCLIHome)
