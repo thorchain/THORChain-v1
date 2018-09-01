@@ -20,7 +20,7 @@ cd $GOPATH/src/github.com/thorchain/THORChain
 make build-linux
 
 # Build thorchain/thorchaindnode image
-make build-docker-thorchaindnode
+make build-docker-thorchaind-node
 ```
 
 ## Run a testnet

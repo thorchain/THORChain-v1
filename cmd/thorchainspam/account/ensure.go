@@ -64,36 +64,44 @@ func GetAccountEnsure(cdc *wire.Codec) func(cmd *cobra.Command, args []string) e
 
 		// parse coins trying to be sent
 		amount := viper.GetString(FlagAmount)
-		totalCoins, err := sdk.ParseCoins(amount)
+		coins, err := sdk.ParseCoins(amount)
 		if err != nil {
 			return err
 		}
 
-		coins := divideCoins(totalCoins, k)
-
 		// ensure account has enough coins
+		totalCoinsNeeded := multiplyCoins(coins, numAccsToCreate)
 		account, err := ctx.Decoder(fromAcc)
 		if err != nil {
 			return err
 		}
-		if !account.GetCoins().IsGTE(coins) {
-			return errors.Errorf("Address %s doesn't have enough coins to pay for this transaction.", from)
+		if !account.GetCoins().IsGTE(totalCoinsNeeded) {
+			return errors.Errorf("Account %s doesn't have enough coins to pay for all txs", from)
 		}
+
+		// how many msgs to send in 1 tx
+		msgsPerTx := 1000
+		msgs := make([]sdk.Msg, 0, msgsPerTx)
 
 		// for each required account, build the required amount of keys and transfer the coins
 		for i := 0; i < numAccsToCreate; i++ {
-			accountName := fmt.Sprintf("%v-%v", constants.SpamAccountPrefix, i)
+			accountName := fmt.Sprintf("%v-%v", constants.SpamAccountPrefix, i+numExistingAccs)
 			to, err := createSpamAccountKey(kb, accountName, constants.SpamAccountPassword)
 			if err != nil {
 				return err
 			}
 
-			// build and sign the transaction, then broadcast to Tendermint
-			msg := client.BuildMsg(from, to, coins)
+			// build the message and put it into the message
+			msgs = append(msgs, client.BuildMsg(from, to, coins))
 
-			err = ensureSignBuildBroadcast(ctx, ctx.FromAddressName, constants.SpamAccountPassword, []sdk.Msg{msg}, cdc)
-			if err != nil {
-				return err
+			// in the last loop, or every msgsPerTx loop sign the transaction, then broadcast to Tendermint
+			if i == numAccsToCreate-1 || (i+1)%msgsPerTx == 0 {
+				ctx = ctx.WithGas(10000 * int64(msgsPerTx))
+				err = ensureSignBuildBroadcast(ctx, ctx.FromAddressName, constants.SpamAccountPassword, msgs, cdc)
+				if err != nil {
+					return err
+				}
+				msgs = make([]sdk.Msg, 0, msgsPerTx)
 			}
 		}
 
@@ -114,12 +122,12 @@ func createSpamAccountKey(kb cryptokeys.Keybase, name string, pass string) (sdk.
 	return ko.Address, nil
 }
 
-func divideCoins(coins sdk.Coins, divideBy int) sdk.Coins {
+func multiplyCoins(coins sdk.Coins, multiplyBy int) sdk.Coins {
 	res := make([]sdk.Coin, 0, len(coins))
 	for _, coin := range coins {
 		res = append(res, sdk.Coin{
 			Denom:  coin.Denom,
-			Amount: coin.Amount.DivRaw(int64(divideBy)),
+			Amount: coin.Amount.MulRaw(int64(multiplyBy)),
 		})
 	}
 	return res
@@ -127,6 +135,8 @@ func divideCoins(coins sdk.Coins, divideBy int) sdk.Coins {
 
 // sign and build the transaction from the msg
 func ensureSignBuild(ctx context.CoreContext, name string, passphrase string, msgs []sdk.Msg, cdc *wire.Codec) (tyBytes []byte, err error) {
+	// ctx = ctx.WithFromAddressName(name)
+
 	err = context.EnsureAccountExists(ctx, name)
 	if err != nil {
 		return nil, err
@@ -154,7 +164,6 @@ func ensureSignBuild(ctx context.CoreContext, name string, passphrase string, ms
 
 // sign and build the transaction from the msg
 func ensureSignBuildBroadcast(ctx context.CoreContext, name string, passphrase string, msgs []sdk.Msg, cdc *wire.Codec) (err error) {
-
 	txBytes, err := ensureSignBuild(ctx, name, passphrase, msgs, cdc)
 	if err != nil {
 		return err
