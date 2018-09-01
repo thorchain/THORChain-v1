@@ -48,30 +48,27 @@ func GetTxsSend(cdc *wire.Codec) func(cmd *cobra.Command, args []string) error {
 
 		stats := stats.NewStats()
 
-		sem := make(chan struct{}, 200)
+		blockCommitted := make(chan struct{})
 		var wg sync.WaitGroup
 
 		for i := 0; i < len(spamAccs); {
 			wg.Add(1)
 
-			// acquire semaphore
-			sem <- struct{}{}
-
 			go func(i int) {
 				defer wg.Done()
 
-				sendTxToRandomAcc(ctx, i, spamAccs, spamPassword, cdc, &stats)
+				sendTxToNextAcc(ctx, i, spamAccs, spamPassword, cdc, &stats)
 
-				// release semaphore
-				<-sem
-
-				if i%100 == 0 {
+				if i == len(spamAccs)-1 {
 					stats.Print()
+					// Iterated over all accounts. Unblock loop.
+					<-blockCommitted
 				}
 			}(i)
 
 			if i == len(spamAccs)-1 {
-				// Iterated over all accounts. Need to wait now until all committed => we cannot
+				// Iterated over all accounts. Need to wait now until all committed (reason: we cannot send more than 1 tx per block)
+				blockCommitted <- struct{}{}
 				i = 0
 			} else {
 				i++
@@ -109,7 +106,7 @@ func getSpamAccs(spamPrefix string) ([]cryptokeys.Info, error) {
 	return res, nil
 }
 
-func sendTxToRandomAcc(ctx context.CoreContext, i int, spamAccs []cryptokeys.Info, spamPassword string, cdc *wire.Codec, stats *stats.Stats) {
+func sendTxToNextAcc(ctx context.CoreContext, i int, spamAccs []cryptokeys.Info, spamPassword string, cdc *wire.Codec, stats *stats.Stats) {
 	from := spamAccs[i]
 
 	fmt.Printf("Iteration %v: Will send from account %v\n", i, from.GetName())
@@ -123,7 +120,7 @@ func sendTxToRandomAcc(ctx context.CoreContext, i int, spamAccs []cryptokeys.Inf
 	}
 
 	// calculate random share of coins to be sent
-	coins := getRandomCoinsUpTo(fromAcc.GetCoins(), 0.5)
+	coins := getRandomCoinsUpTo(fromAcc.GetCoins(), 2)
 
 	if !coins.IsPositive() {
 		fmt.Printf("Iteration %v: No coins to send, skipping\n", i)
@@ -131,8 +128,8 @@ func sendTxToRandomAcc(ctx context.CoreContext, i int, spamAccs []cryptokeys.Inf
 		return
 	}
 
-	// get random account to send to
-	to := spamAccs[rand.Intn(len(spamAccs))]
+	// get next account to send to
+	to := spamAccs[(i+1)%len(spamAccs)]
 
 	fmt.Printf("Iteration %v: Will send %v from %v to %v\n", i, coins.String(), from.GetName(), to.GetName())
 
@@ -147,17 +144,27 @@ func sendTxToRandomAcc(ctx context.CoreContext, i int, spamAccs []cryptokeys.Inf
 	}
 }
 
-func getRandomCoinsUpTo(coins sdk.Coins, max float32) sdk.Coins {
+func getRandomCoinsUpTo(coins sdk.Coins, divideBy int64) sdk.Coins {
 	res := make([]sdk.Coin, 0, len(coins))
 
-	mult := rand.Int63n(int64(9999*max)) + 1
-
 	for _, coin := range coins {
+		amount := coin.Amount.Int64()
+		var randAmount int64
+		if amount/divideBy > 0 {
+			randAmount = rand.Int63n(amount / divideBy)
+		} else {
+			randAmount = 0
+		}
+		if randAmount == 0 && amount >= 1 {
+			randAmount = 1
+		}
+
 		res = append(res, sdk.Coin{
 			Denom:  coin.Denom,
-			Amount: coin.Amount.MulRaw(mult).DivRaw(int64(10000)),
+			Amount: sdk.NewInt(randAmount),
 		})
 	}
+
 	return res
 }
 
