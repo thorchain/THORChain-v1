@@ -16,7 +16,7 @@ type MsgTrade struct {
 }
 
 // new create message
-func NewMsgMsgTrade(sender sdk.AccAddress, fromTicker string, toTicker string, fromAmount int) MsgTrade {
+func NewMsgTrade(sender sdk.AccAddress, fromTicker string, toTicker string, fromAmount int) MsgTrade {
 	return MsgTrade{
 		Sender:     sender,
 		FromTicker: fromTicker,
