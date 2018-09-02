@@ -125,17 +125,17 @@ func CalculateTokensIssued(supply int64, baseCoinAmount int64, baseTokenBalance 
 }
 
 // Trade with CLP.
-func (k Keeper) tradeBase(ctx sdk.Context, sender sdk.AccAddress, ticker string, baseCoinAmount int64) (int64, sdk.Error) {
-	if baseCoinAmount <= 0 {
+func (k Keeper) trade(ctx sdk.Context, sender sdk.AccAddress, fromTicker string, toTicker string, fromAmount int64) (int64, sdk.Error) {
+	if fromAmount <= 0 {
 		return 0, ErrNotEnoughCoins(DefaultCodespace).TraceSDK("")
 	}
-	clp := k.GetCLP(ctx, ticker)
+	clp := k.GetCLP(ctx, toTicker)
 	if clp.Ticker == "" {
 		return 0, ErrCLPNotExists(DefaultCodespace).TraceSDK("")
 	}
 	currentSenderCoins := k.bankKeeper.GetCoins(ctx, sender)
 	currentSenderBaseCoinAmount := currentSenderCoins.AmountOf(k.baseCoinTicker).Int64()
-	if currentSenderBaseCoinAmount < baseCoinAmount {
+	if currentSenderBaseCoinAmount < fromAmount {
 		return 0, ErrNotEnoughCoins(DefaultCodespace).TraceSDK("")
 	}
 	supply := clp.CurrentSupply
@@ -145,10 +145,10 @@ func (k Keeper) tradeBase(ctx sdk.Context, sender sdk.AccAddress, ticker string,
 		return 0, ErrCLPEmpty(DefaultCodespace).TraceSDK("")
 	}
 	reserveRatio := clp.ReserveRatio
-	newCLPCoinsAmount := CalculateTokensIssued(supply, baseCoinAmount, clpBaseTokenBalance, reserveRatio)
-	newCLPCoins := sdk.Coins{sdk.NewCoin(ticker, newCLPCoinsAmount)}
+	newCLPCoinsAmount := CalculateTokensIssued(supply, fromAmount, clpBaseTokenBalance, reserveRatio)
+	newCLPCoins := sdk.Coins{sdk.NewCoin(toTicker, newCLPCoinsAmount)}
 
-	spentBaseCoins := sdk.Coins{sdk.NewCoin(k.baseCoinTicker, baseCoinAmount)}
+	spentBaseCoins := sdk.Coins{sdk.NewCoin(k.baseCoinTicker, fromAmount)}
 	k.bankKeeper.AddCoins(ctx, sender, newCLPCoins)
 	k.bankKeeper.SubtractCoins(ctx, sender, spentBaseCoins)
 	k.bankKeeper.AddCoins(ctx, clp.AccountAddress, spentBaseCoins)

@@ -119,6 +119,7 @@ func TestCoolKeeperTradeBase(t *testing.T) {
 	ctx := setupContext(clpKey)
 	keeper, _, bankKeeper, address := setupKeepers(clpKey, ctx)
 
+	fromTicker := "rune"
 	ticker := "eth"
 	name := "ethereum"
 	reserveRatio := 100
@@ -132,7 +133,7 @@ func TestCoolKeeperTradeBase(t *testing.T) {
 	clp := keeper.GetCLP(ctx, ticker)
 
 	//Test happy path trading
-	_, err1 := keeper.tradeBase(ctx, address, ticker, 10)
+	_, err1 := keeper.trade(ctx, address, fromTicker, ticker, 10)
 	clp = keeper.GetCLP(ctx, ticker)
 	senderCoins := bankKeeper.GetCoins(ctx, address)
 	senderEthAmount := senderCoins.AmountOf("eth").Int64()
@@ -148,8 +149,8 @@ func TestCoolKeeperTradeBase(t *testing.T) {
 	require.Equal(t, clpRuneAmount, int64(510))
 
 	//Test double trade
-	keeper.tradeBase(ctx, address, ticker, 10)
-	keeper.tradeBase(ctx, address, ticker, 10)
+	keeper.trade(ctx, address, fromTicker, ticker, 10)
+	keeper.trade(ctx, address, fromTicker, ticker, 10)
 	clp = keeper.GetCLP(ctx, ticker)
 	senderCoins = bankKeeper.GetCoins(ctx, address)
 	senderEthAmount = senderCoins.AmountOf("eth").Int64()
@@ -164,7 +165,7 @@ func TestCoolKeeperTradeBase(t *testing.T) {
 	require.Equal(t, clpRuneAmount, int64(530))
 
 	//Test invalid trade with nonexistent clp
-	_, err2 := keeper.tradeBase(ctx, address, "btc", 10)
+	_, err2 := keeper.trade(ctx, address, fromTicker, "btc", 10)
 	require.Error(t, err2)
 	senderCoins = bankKeeper.GetCoins(ctx, address)
 	senderBtcAmount := senderCoins.AmountOf("btc").Int64()
@@ -173,7 +174,7 @@ func TestCoolKeeperTradeBase(t *testing.T) {
 	require.Equal(t, senderRuneAmount, int64(470))
 
 	//Test invalid trade with too little rune
-	_, err3 := keeper.tradeBase(ctx, address, ticker, int64(480))
+	_, err3 := keeper.trade(ctx, address, fromTicker, ticker, int64(480))
 	clp = keeper.GetCLP(ctx, ticker)
 	require.Error(t, err3)
 	senderCoins = bankKeeper.GetCoins(ctx, address)
@@ -189,7 +190,7 @@ func TestCoolKeeperTradeBase(t *testing.T) {
 	require.Equal(t, clpRuneAmount, int64(530))
 
 	// //Test invalid trade with negative rune
-	_, err4 := keeper.tradeBase(ctx, address, ticker, int64(-20))
+	_, err4 := keeper.trade(ctx, address, fromTicker, ticker, int64(-20))
 	clp = keeper.GetCLP(ctx, ticker)
 	require.Error(t, err4)
 	senderCoins = bankKeeper.GetCoins(ctx, address)
@@ -206,7 +207,7 @@ func TestCoolKeeperTradeBase(t *testing.T) {
 
 	//Test Example from scoping doc
 	keeper.create(ctx, address, "tok", "Test Token", 100, 1000000, 100)
-	_, err5 := keeper.tradeBase(ctx, address, "tok", 90)
+	_, err5 := keeper.trade(ctx, address, fromTicker, "tok", 90)
 	clp2 := keeper.GetCLP(ctx, "tok")
 	senderCoins = bankKeeper.GetCoins(ctx, address)
 	senderTokAmount := senderCoins.AmountOf("tok").Int64()
@@ -222,7 +223,7 @@ func TestCoolKeeperTradeBase(t *testing.T) {
 	require.Equal(t, clpRuneAmount, int64(190))
 
 	//Test Second Trade on example from scoping doc
-	keeper.tradeBase(ctx, address, "tok", 5)
+	keeper.trade(ctx, address, fromTicker, "tok", 5)
 	clp2 = keeper.GetCLP(ctx, "tok")
 	senderCoins = bankKeeper.GetCoins(ctx, address)
 	senderTokAmount = senderCoins.AmountOf("tok").Int64()

@@ -14,8 +14,8 @@ func NewHandler(keeper Keeper) sdk.Handler {
 		switch msg := msg.(type) {
 		case types.MsgCreate:
 			return handleMsgCreate(keeper, context, msg)
-		case types.MsgTradeBase:
-			return handleMsgTradeBase(keeper, context, msg)
+		case types.MsgTrade:
+			return handleMsgTrade(keeper, context, msg)
 		default:
 			errMsg := fmt.Sprintf("Unrecognized CLP Msg type: %v", reflect.TypeOf(msg).Name())
 			return sdk.ErrUnknownRequest(errMsg).Result()
@@ -34,11 +34,11 @@ func handleMsgCreate(k Keeper, ctx sdk.Context, msg types.MsgCreate) sdk.Result 
 }
 
 // Handle MsgCreateCLP This is the engine of your module
-func handleMsgTradeBase(k Keeper, ctx sdk.Context, msg types.MsgTradeBase) sdk.Result {
-	newCoinsAmount, err := k.tradeBase(ctx, msg.Sender, msg.Ticker, int64(msg.BaseCoinAmount))
+func handleMsgTrade(k Keeper, ctx sdk.Context, msg types.MsgTrade) sdk.Result {
+	newCoinsAmount, err := k.trade(ctx, msg.Sender, msg.FromTicker, msg.ToTicker, int64(msg.FromAmount))
 	if err != nil {
 		return err.Result()
 	}
-	resultLog := fmt.Sprintf("in: %v%v, out: %v%v", msg.BaseCoinAmount, k.baseCoinTicker, newCoinsAmount, msg.Ticker)
+	resultLog := fmt.Sprintf("in: %v%v, out: %v%v", msg.FromAmount, msg.FromTicker, newCoinsAmount, msg.ToTicker)
 	return sdk.Result{Log: resultLog}
 }
