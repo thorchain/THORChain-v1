@@ -18,6 +18,28 @@ import (
 	bank "github.com/cosmos/cosmos-sdk/x/bank"
 )
 
+var (
+	clpKey              = sdk.NewKVStoreKey("clpTestKey")
+	_1600Rune           = sdk.NewCoin("RUNE", 1600)
+	_1000Rune           = sdk.NewCoin("RUNE", 1000)
+	runeTicker          = "RUNE"
+	runeTokenName       = "Rune"
+	ethTicker           = "ETH"
+	ethTokenName        = "ethereum"
+	ethClpAddress       = types.NewCLPAddress(ethTicker)
+	btcTicker           = "BTC"
+	btcTokenName        = "bitcoin"
+	tokTicker           = "TOK"
+	tokTokenName        = "Token"
+	blankTicker         = ""
+	invalidTicker       = "INVALID"
+	reserveRatio        = 100
+	zeroReserveRatio    = 0
+	over100ReserveRatio = 300
+	initialCoinSupply   = int64(500)
+	initialBaseCoins    = int64(500)
+)
+
 func setupContext(clpKey *sdk.KVStoreKey) sdk.Context {
 	db := dbm.NewMemDB()
 	multiStore := store.NewCommitMultiStore(db)
@@ -32,115 +54,97 @@ func setupKeepers(clpKey *sdk.KVStoreKey, ctx sdk.Context) (Keeper, *amino.Codec
 	auth.RegisterBaseAccount(cdc)
 	accountMapper := auth.NewAccountMapper(cdc, clpKey, auth.ProtoBaseAccount)
 	bankKeeper := bank.NewKeeper(accountMapper)
-	clpKeeper := NewKeeper(clpKey, "RUNE", bankKeeper, DefaultCodespace)
+	clpKeeper := NewKeeper(clpKey, runeTicker, bankKeeper, DefaultCodespace)
 	address := sdk.AccAddress([]byte("address1"))
 	account := accountMapper.NewAccountWithAddress(ctx, address)
 	accountMapper.SetAccount(ctx, account)
 	return clpKeeper, cdc, bankKeeper, address
 }
 
-func TestCoolKeeperCreate(t *testing.T) {
-	clpKey := sdk.NewKVStoreKey("clpTestKey")
+func setupTradingTest() (sdk.Context, Keeper, bank.Keeper, sdk.AccAddress) {
 	ctx := setupContext(clpKey)
 	keeper, _, bankKeeper, address := setupKeepers(clpKey, ctx)
 
-	baseTokenTicker := "RUNE"
-	baseTokenName := "Rune"
-	ticker := "eth"
-	name := "ethereum"
-	reserveRatio := 100
-	ticker2 := "btc"
-	name2 := "bitcoin"
-	reserveRatio2 := 0
-	ticker3 := "cos"
-	name3 := "cosmos"
-	reserveRatio3 := 200
-	initialCoinSupply := int64(500)
-	initialBaseCoins := int64(500)
-	clpAddress := types.NewCLPAddress(ticker)
-	thousandRune := sdk.NewCoin("RUNE", 1000)
+	bankKeeper.SetCoins(ctx, address, sdk.Coins{_1600Rune})
 
-	validCLP := types.NewCLP(address, ticker, name, reserveRatio, initialCoinSupply, clpAddress)
-	bankKeeper.SetCoins(ctx, address, sdk.Coins{thousandRune})
+	keeper.create(ctx, address, ethTicker, ethTokenName, 100, int64(500), int64(500))
+	keeper.create(ctx, address, btcTicker, btcTokenName, 100, int64(500), int64(500))
+	keeper.create(ctx, address, tokTicker, tokTokenName, 100, 1000000, 100)
+
+	return ctx, keeper, bankKeeper, address
+}
+
+func TestCoolKeeperCreate(t *testing.T) {
+	ctx := setupContext(clpKey)
+	keeper, _, bankKeeper, senderAddress := setupKeepers(clpKey, ctx)
+
+	validCLP := types.NewCLP(senderAddress, ethTicker, ethTokenName, 100, int64(500), ethClpAddress)
+	bankKeeper.SetCoins(ctx, senderAddress, sdk.Coins{_1000Rune})
 
 	//Test happy path creation
-	err1 := keeper.create(ctx, address, ticker, name, reserveRatio, initialCoinSupply, initialBaseCoins)
+	err1 := keeper.create(ctx, senderAddress, ethTicker, ethTokenName, 100, int64(500), int64(500))
 	require.Nil(t, err1)
 
 	//Get created CLP and confirm values are correct
-	newClp := keeper.GetCLP(ctx, ticker)
+	newClp := keeper.GetCLP(ctx, ethTicker)
 	require.Equal(t, newClp, &validCLP)
 
 	//Get account coins and confirm debited and credited correctly
-	addressCoins := bankKeeper.GetCoins(ctx, address)
-	clpCoins := bankKeeper.GetCoins(ctx, clpAddress)
-	addressRuneAmount := addressCoins.AmountOf("RUNE").Int64()
-	clpRuneAmount := clpCoins.AmountOf("RUNE").Int64()
-	addressEthAmount := addressCoins.AmountOf("eth").Int64()
-	clpEthAmount := clpCoins.AmountOf("eth").Int64()
+	addressCoins := bankKeeper.GetCoins(ctx, senderAddress)
+	clpCoins := bankKeeper.GetCoins(ctx, ethClpAddress)
+	addressRuneAmount := addressCoins.AmountOf(runeTicker).Int64()
+	clpRuneAmount := clpCoins.AmountOf(runeTicker).Int64()
+	addressEthAmount := addressCoins.AmountOf(ethTicker).Int64()
+	clpEthAmount := clpCoins.AmountOf(ethTicker).Int64()
 	require.Equal(t, addressRuneAmount, int64(500))
 	require.Equal(t, clpRuneAmount, int64(500))
 	require.Equal(t, addressEthAmount, int64(0))
 	require.Equal(t, clpEthAmount, int64(500))
 
 	//Test duplicate ticker
-	err2 := keeper.create(ctx, address, ticker, name2, reserveRatio, initialCoinSupply, initialBaseCoins)
+	err2 := keeper.create(ctx, senderAddress, ethTicker, ethTokenName, reserveRatio, initialCoinSupply, initialBaseCoins)
 	require.Error(t, err2)
 
 	//Test bad ratios
-	err4 := keeper.create(ctx, address, ticker2, name2, reserveRatio2, initialCoinSupply, initialBaseCoins)
+	err4 := keeper.create(ctx, senderAddress, btcTicker, btcTokenName, zeroReserveRatio, initialCoinSupply, initialBaseCoins)
 	require.Error(t, err4)
-	err5 := keeper.create(ctx, address, ticker3, name3, reserveRatio3, initialCoinSupply, initialBaseCoins)
+	err5 := keeper.create(ctx, senderAddress, btcTicker, btcTokenName, over100ReserveRatio, initialCoinSupply, initialBaseCoins)
 	require.Error(t, err5)
 
 	//Test cannot create CLP for base token
-	err6 := keeper.create(ctx, address, baseTokenTicker, baseTokenName, reserveRatio, initialCoinSupply, initialBaseCoins)
+	err6 := keeper.create(ctx, senderAddress, runeTicker, runeTokenName, reserveRatio, initialCoinSupply, initialBaseCoins)
 	require.Error(t, err6)
 
 	//Test cannot create CLP with bad initial supply
-	err7 := keeper.create(ctx, address, "eth5", "ethereum4", reserveRatio, 0, initialBaseCoins)
+	err7 := keeper.create(ctx, senderAddress, btcTicker, btcTokenName, reserveRatio, 0, initialBaseCoins)
 	require.Error(t, err7)
-	err8 := keeper.create(ctx, address, "eth5", "ethereum5", reserveRatio, -5, initialBaseCoins)
+	err8 := keeper.create(ctx, senderAddress, btcTicker, btcTokenName, reserveRatio, -5, initialBaseCoins)
 	require.Error(t, err8)
 
 	//Test cannot create CLP with bad initial coins
-	err9 := keeper.create(ctx, address, "eth6", "ethereum6", reserveRatio, initialCoinSupply, 0)
+	err9 := keeper.create(ctx, senderAddress, btcTicker, btcTokenName, reserveRatio, initialCoinSupply, 0)
 	require.Error(t, err9)
-	err10 := keeper.create(ctx, address, "eth7", "ethereum7", reserveRatio, initialCoinSupply, -5)
+	err10 := keeper.create(ctx, senderAddress, btcTicker, btcTokenName, reserveRatio, initialCoinSupply, -5)
 	require.Error(t, err10)
 
 	//Test cannot create CLP with more initial coins than owned
-	err11 := keeper.create(ctx, address, "eth8", "ethereum8", reserveRatio, initialCoinSupply, 5000)
+	err11 := keeper.create(ctx, senderAddress, btcTicker, btcTokenName, reserveRatio, initialCoinSupply, 5000)
 	require.Error(t, err11)
 }
 
-func TestCoolKeeperTradeBase(t *testing.T) {
-	clpKey := sdk.NewKVStoreKey("clpTestKey")
-	ctx := setupContext(clpKey)
-	keeper, _, bankKeeper, address := setupKeepers(clpKey, ctx)
-
-	fromTicker := "rune"
-	ticker := "eth"
-	name := "ethereum"
-	reserveRatio := 100
-	initialCoinSupply := int64(500)
-	initialBaseCoins := int64(500)
-	thousandRune := sdk.NewCoin("RUNE", 1000)
-
-	bankKeeper.SetCoins(ctx, address, sdk.Coins{thousandRune})
-
-	keeper.create(ctx, address, ticker, name, reserveRatio, initialCoinSupply, initialBaseCoins)
-	clp := keeper.GetCLP(ctx, ticker)
+func TestCoolKeeperTradeBasic(t *testing.T) {
+	ctx, keeper, bankKeeper, senderAddress := setupTradingTest()
+	clp := keeper.GetCLP(ctx, ethTicker)
 
 	//Test happy path trading
-	_, err1 := keeper.trade(ctx, address, fromTicker, ticker, 10)
-	clp = keeper.GetCLP(ctx, ticker)
-	senderCoins := bankKeeper.GetCoins(ctx, address)
-	senderEthAmount := senderCoins.AmountOf("eth").Int64()
-	senderRuneAmount := senderCoins.AmountOf("RUNE").Int64()
+	_, err1 := keeper.trade(ctx, senderAddress, runeTicker, ethTicker, 10)
+	clp = keeper.GetCLP(ctx, ethTicker)
+	senderCoins := bankKeeper.GetCoins(ctx, senderAddress)
+	senderEthAmount := senderCoins.AmountOf(ethTicker).Int64()
+	senderRuneAmount := senderCoins.AmountOf(runeTicker).Int64()
 	clpCoins := bankKeeper.GetCoins(ctx, clp.AccountAddress)
-	clpEthAmount := clpCoins.AmountOf("eth").Int64()
-	clpRuneAmount := clpCoins.AmountOf("RUNE").Int64()
+	clpEthAmount := clpCoins.AmountOf(ethTicker).Int64()
+	clpRuneAmount := clpCoins.AmountOf(runeTicker).Int64()
 	require.Nil(t, err1)
 	require.Equal(t, senderEthAmount, int64(10))
 	require.Equal(t, senderRuneAmount, int64(490))
@@ -149,93 +153,215 @@ func TestCoolKeeperTradeBase(t *testing.T) {
 	require.Equal(t, clpRuneAmount, int64(510))
 
 	//Test double trade
-	keeper.trade(ctx, address, fromTicker, ticker, 10)
-	keeper.trade(ctx, address, fromTicker, ticker, 10)
-	clp = keeper.GetCLP(ctx, ticker)
-	senderCoins = bankKeeper.GetCoins(ctx, address)
-	senderEthAmount = senderCoins.AmountOf("eth").Int64()
-	senderRuneAmount = senderCoins.AmountOf("RUNE").Int64()
+	keeper.trade(ctx, senderAddress, runeTicker, ethTicker, 10)
+	keeper.trade(ctx, senderAddress, runeTicker, ethTicker, 10)
+	clp = keeper.GetCLP(ctx, ethTicker)
+	senderCoins = bankKeeper.GetCoins(ctx, senderAddress)
+	senderEthAmount = senderCoins.AmountOf(ethTicker).Int64()
+	senderRuneAmount = senderCoins.AmountOf(runeTicker).Int64()
 	clpCoins = bankKeeper.GetCoins(ctx, clp.AccountAddress)
-	clpEthAmount = clpCoins.AmountOf("eth").Int64()
-	clpRuneAmount = clpCoins.AmountOf("RUNE").Int64()
+	clpEthAmount = clpCoins.AmountOf(ethTicker).Int64()
+	clpRuneAmount = clpCoins.AmountOf(runeTicker).Int64()
 	require.Equal(t, senderEthAmount, int64(30))
 	require.Equal(t, senderRuneAmount, int64(470))
 	require.Equal(t, clpEthAmount, int64(470))
 	require.Equal(t, clp.CurrentSupply, int64(500))
 	require.Equal(t, clpRuneAmount, int64(530))
 
-	//Test invalid trade with nonexistent clp
-	_, err2 := keeper.trade(ctx, address, fromTicker, "btc", 10)
-	require.Error(t, err2)
-	senderCoins = bankKeeper.GetCoins(ctx, address)
-	senderBtcAmount := senderCoins.AmountOf("btc").Int64()
-	senderRuneAmount = senderCoins.AmountOf("RUNE").Int64()
-	require.Equal(t, senderBtcAmount, int64(0))
-	require.Equal(t, senderRuneAmount, int64(470))
-
-	//Test invalid trade with too little rune
-	_, err3 := keeper.trade(ctx, address, fromTicker, ticker, int64(480))
-	clp = keeper.GetCLP(ctx, ticker)
-	require.Error(t, err3)
-	senderCoins = bankKeeper.GetCoins(ctx, address)
-	senderEthAmount = senderCoins.AmountOf("eth").Int64()
-	senderRuneAmount = senderCoins.AmountOf("RUNE").Int64()
+	//Test Trade from token back to rune twice
+	keeper.trade(ctx, senderAddress, ethTicker, runeTicker, 10)
+	keeper.trade(ctx, senderAddress, ethTicker, runeTicker, 10)
+	clp = keeper.GetCLP(ctx, ethTicker)
+	senderCoins = bankKeeper.GetCoins(ctx, senderAddress)
+	senderEthAmount = senderCoins.AmountOf(ethTicker).Int64()
+	senderRuneAmount = senderCoins.AmountOf(runeTicker).Int64()
 	clpCoins = bankKeeper.GetCoins(ctx, clp.AccountAddress)
-	clpEthAmount = clpCoins.AmountOf("eth").Int64()
-	clpRuneAmount = clpCoins.AmountOf("RUNE").Int64()
-	require.Equal(t, senderEthAmount, int64(30))
-	require.Equal(t, senderRuneAmount, int64(470))
-	require.Equal(t, clpEthAmount, int64(470))
+	clpEthAmount = clpCoins.AmountOf(ethTicker).Int64()
+	clpRuneAmount = clpCoins.AmountOf(runeTicker).Int64()
+	require.Equal(t, senderEthAmount, int64(10))
+	require.Equal(t, senderRuneAmount, int64(491))
+	require.Equal(t, clpEthAmount, int64(490))
 	require.Equal(t, clp.CurrentSupply, int64(500))
-	require.Equal(t, clpRuneAmount, int64(530))
+	require.Equal(t, clpRuneAmount, int64(509))
+}
 
-	// //Test invalid trade with negative rune
-	_, err4 := keeper.trade(ctx, address, fromTicker, ticker, int64(-20))
-	clp = keeper.GetCLP(ctx, ticker)
-	require.Error(t, err4)
-	senderCoins = bankKeeper.GetCoins(ctx, address)
-	senderEthAmount = senderCoins.AmountOf("eth").Int64()
-	senderRuneAmount = senderCoins.AmountOf("RUNE").Int64()
-	clpCoins = bankKeeper.GetCoins(ctx, clp.AccountAddress)
-	clpEthAmount = clpCoins.AmountOf("eth").Int64()
-	clpRuneAmount = clpCoins.AmountOf("RUNE").Int64()
-	require.Equal(t, senderEthAmount, int64(30))
-	require.Equal(t, senderRuneAmount, int64(470))
-	require.Equal(t, clpEthAmount, int64(470))
-	require.Equal(t, clp.CurrentSupply, int64(500))
-	require.Equal(t, clpRuneAmount, int64(530))
+func TestCoolKeeperTradeBasicSad(t *testing.T) {
+	ctx, keeper, bankKeeper, senderAddress := setupTradingTest()
+
+	//Test invalid trades then confirm balances are still in check
+	//Invalid trade rune to rune
+	_, err := keeper.trade(ctx, senderAddress, runeTicker, runeTicker, 10)
+	require.Error(t, err)
+	//Invalid trade same token
+	_, err = keeper.trade(ctx, senderAddress, ethTicker, ethTicker, 10)
+	require.Error(t, err)
+	//Invalid trade to nonexistent clp token
+	_, err = keeper.trade(ctx, senderAddress, runeTicker, invalidTicker, 10)
+	require.Error(t, err)
+	//Invalid trade to empty clp token
+	_, err = keeper.trade(ctx, senderAddress, runeTicker, blankTicker, 10)
+	require.Error(t, err)
+	//Invalid trade from nonexistent clp token
+	_, err = keeper.trade(ctx, senderAddress, invalidTicker, ethTicker, 10)
+	require.Error(t, err)
+	//Invalid trade from empty token
+	_, err = keeper.trade(ctx, senderAddress, blankTicker, ethTicker, 10)
+	require.Error(t, err)
+	//Invalid trade with too little rune
+	_, err = keeper.trade(ctx, senderAddress, runeTicker, ethTicker, int64(5000))
+	require.Error(t, err)
+	//Invalid trade with negative rune
+	_, err = keeper.trade(ctx, senderAddress, runeTicker, ethTicker, int64(-20))
+	require.Error(t, err)
+
+	//Check balances still the same after invalid trades
+	ethClp := keeper.GetCLP(ctx, ethTicker)
+	senderCoins := bankKeeper.GetCoins(ctx, senderAddress)
+	senderEthAmount := senderCoins.AmountOf(ethTicker).Int64()
+	senderInvalidAmount := senderCoins.AmountOf(invalidTicker).Int64()
+	senderRuneAmount := senderCoins.AmountOf(runeTicker).Int64()
+	clpCoins := bankKeeper.GetCoins(ctx, ethClp.AccountAddress)
+	clpEthAmount := clpCoins.AmountOf(ethTicker).Int64()
+	clpRuneAmount := clpCoins.AmountOf(runeTicker).Int64()
+	require.Equal(t, senderInvalidAmount, int64(0))
+	require.Equal(t, senderRuneAmount, int64(500))
+	require.Equal(t, senderEthAmount, int64(0))
+	require.Equal(t, clpEthAmount, int64(500))
+	require.Equal(t, ethClp.CurrentSupply, int64(500))
+	require.Equal(t, clpRuneAmount, int64(500))
+}
+
+func TestCoolKeeperTradeBridged(t *testing.T) {
+	ctx, keeper, bankKeeper, senderAddress := setupTradingTest()
+	btcClp := keeper.GetCLP(ctx, btcTicker)
+
+	//Get some BTC:
+	keeper.trade(ctx, senderAddress, runeTicker, btcTicker, 100)
+	senderCoins := bankKeeper.GetCoins(ctx, senderAddress)
+	senderBtcAmount := senderCoins.AmountOf(btcTicker).Int64()
+	senderRuneAmount := senderCoins.AmountOf(runeTicker).Int64()
+	btcClpCoins := bankKeeper.GetCoins(ctx, btcClp.AccountAddress)
+	btcClpRuneAmount := btcClpCoins.AmountOf(runeTicker).Int64()
+	btcClpBtcAmount := btcClpCoins.AmountOf(btcTicker).Int64()
+	require.Equal(t, senderBtcAmount, int64(100))
+	require.Equal(t, senderRuneAmount, int64(400))
+	require.Equal(t, btcClpRuneAmount, int64(600))
+	require.Equal(t, btcClpBtcAmount, int64(400))
+
+	//Test happy path trading
+	_, err1 := keeper.trade(ctx, senderAddress, btcTicker, ethTicker, 20)
+	ethClp := keeper.GetCLP(ctx, ethTicker)
+	btcClp = keeper.GetCLP(ctx, btcTicker)
+	senderCoins = bankKeeper.GetCoins(ctx, senderAddress)
+	senderBtcAmount = senderCoins.AmountOf(btcTicker).Int64()
+	senderRuneAmount = senderCoins.AmountOf(runeTicker).Int64()
+	senderEthAmount := senderCoins.AmountOf(ethTicker).Int64()
+	btcClpCoins = bankKeeper.GetCoins(ctx, btcClp.AccountAddress)
+	btcClpEthAmount := btcClpCoins.AmountOf(ethTicker).Int64()
+	btcClpRuneAmount = btcClpCoins.AmountOf(runeTicker).Int64()
+	btcClpBtcAmount = btcClpCoins.AmountOf(btcTicker).Int64()
+	ethClpCoins := bankKeeper.GetCoins(ctx, ethClp.AccountAddress)
+	ethClpEthAmount := ethClpCoins.AmountOf(ethTicker).Int64()
+	ethClpRuneAmount := ethClpCoins.AmountOf(runeTicker).Int64()
+	ethClpBtcAmount := ethClpCoins.AmountOf(btcTicker).Int64()
+	require.Nil(t, err1)
+	require.Equal(t, senderBtcAmount, int64(80))
+	require.Equal(t, senderRuneAmount, int64(400))
+	require.Equal(t, senderEthAmount, int64(24))
+	require.Equal(t, btcClpBtcAmount, int64(420))
+	require.Equal(t, btcClpRuneAmount, int64(576))
+	require.Equal(t, btcClpEthAmount, int64(0))
+	require.Equal(t, ethClpBtcAmount, int64(0))
+	require.Equal(t, ethClpRuneAmount, int64(524))
+	require.Equal(t, ethClpEthAmount, int64(476))
+
+	//Test double trade
+	keeper.trade(ctx, senderAddress, btcTicker, ethTicker, 10)
+	keeper.trade(ctx, senderAddress, btcTicker, ethTicker, 10)
+	ethClp = keeper.GetCLP(ctx, ethTicker)
+	btcClp = keeper.GetCLP(ctx, btcTicker)
+	senderCoins = bankKeeper.GetCoins(ctx, senderAddress)
+	senderBtcAmount = senderCoins.AmountOf(btcTicker).Int64()
+	senderRuneAmount = senderCoins.AmountOf(runeTicker).Int64()
+	senderEthAmount = senderCoins.AmountOf(ethTicker).Int64()
+	btcClpCoins = bankKeeper.GetCoins(ctx, btcClp.AccountAddress)
+	btcClpEthAmount = btcClpCoins.AmountOf(ethTicker).Int64()
+	btcClpRuneAmount = btcClpCoins.AmountOf(runeTicker).Int64()
+	btcClpBtcAmount = btcClpCoins.AmountOf(btcTicker).Int64()
+	ethClpCoins = bankKeeper.GetCoins(ctx, ethClp.AccountAddress)
+	ethClpEthAmount = ethClpCoins.AmountOf(ethTicker).Int64()
+	ethClpRuneAmount = ethClpCoins.AmountOf(runeTicker).Int64()
+	ethClpBtcAmount = ethClpCoins.AmountOf(btcTicker).Int64()
+	require.Nil(t, err1)
+	require.Equal(t, senderBtcAmount, int64(60))
+	require.Equal(t, senderRuneAmount, int64(400))
+	require.Equal(t, senderEthAmount, int64(45))
+	require.Equal(t, btcClpBtcAmount, int64(440))
+	require.Equal(t, btcClpRuneAmount, int64(553))
+	require.Equal(t, btcClpEthAmount, int64(0))
+	require.Equal(t, ethClpBtcAmount, int64(0))
+	require.Equal(t, ethClpRuneAmount, int64(547))
+	require.Equal(t, ethClpEthAmount, int64(455))
+
+	//Test Trade from token back to rune twice
+	keeper.trade(ctx, senderAddress, ethTicker, btcTicker, 10)
+	keeper.trade(ctx, senderAddress, ethTicker, btcTicker, 10)
+	ethClp = keeper.GetCLP(ctx, ethTicker)
+	btcClp = keeper.GetCLP(ctx, btcTicker)
+	senderCoins = bankKeeper.GetCoins(ctx, senderAddress)
+	senderBtcAmount = senderCoins.AmountOf(btcTicker).Int64()
+	senderRuneAmount = senderCoins.AmountOf(runeTicker).Int64()
+	senderEthAmount = senderCoins.AmountOf(ethTicker).Int64()
+	btcClpCoins = bankKeeper.GetCoins(ctx, btcClp.AccountAddress)
+	btcClpEthAmount = btcClpCoins.AmountOf(ethTicker).Int64()
+	btcClpRuneAmount = btcClpCoins.AmountOf(runeTicker).Int64()
+	btcClpBtcAmount = btcClpCoins.AmountOf(btcTicker).Int64()
+	ethClpCoins = bankKeeper.GetCoins(ctx, ethClp.AccountAddress)
+	ethClpEthAmount = ethClpCoins.AmountOf(ethTicker).Int64()
+	ethClpRuneAmount = ethClpCoins.AmountOf(runeTicker).Int64()
+	ethClpBtcAmount = ethClpCoins.AmountOf(btcTicker).Int64()
+	require.Nil(t, err1)
+	require.Equal(t, senderBtcAmount, int64(80))
+	require.Equal(t, senderRuneAmount, int64(400))
+	require.Equal(t, senderEthAmount, int64(25))
+	require.Equal(t, btcClpBtcAmount, int64(420))
+	require.Equal(t, btcClpRuneAmount, int64(575))
+	require.Equal(t, btcClpEthAmount, int64(0))
+	require.Equal(t, ethClpBtcAmount, int64(0))
+	require.Equal(t, ethClpRuneAmount, int64(525))
+	require.Equal(t, ethClpEthAmount, int64(475))
+}
+
+func TestCoolKeeperTradeScopingDoc(t *testing.T) {
+	ctx, keeper, bankKeeper, senderAddress := setupTradingTest()
+	tokClp := keeper.GetCLP(ctx, tokTicker)
 
 	//Test Example from scoping doc
-	keeper.create(ctx, address, "tok", "Test Token", 100, 1000000, 100)
-	_, err5 := keeper.trade(ctx, address, fromTicker, "tok", 90)
-	clp2 := keeper.GetCLP(ctx, "tok")
-	senderCoins = bankKeeper.GetCoins(ctx, address)
-	senderTokAmount := senderCoins.AmountOf("tok").Int64()
-	senderRuneAmount = senderCoins.AmountOf("RUNE").Int64()
-	clpCoins = bankKeeper.GetCoins(ctx, clp2.AccountAddress)
-	clpTokAmount := clpCoins.AmountOf("tok").Int64()
-	clpRuneAmount = clpCoins.AmountOf("RUNE").Int64()
-	require.Nil(t, err5)
+	keeper.trade(ctx, senderAddress, runeTicker, tokTicker, 90)
+	senderCoins := bankKeeper.GetCoins(ctx, senderAddress)
+	senderTokAmount := senderCoins.AmountOf(tokTicker).Int64()
+	senderRuneAmount := senderCoins.AmountOf(runeTicker).Int64()
+	clpCoins := bankKeeper.GetCoins(ctx, tokClp.AccountAddress)
+	clpTokAmount := clpCoins.AmountOf(tokTicker).Int64()
+	clpRuneAmount := clpCoins.AmountOf(runeTicker).Int64()
 	require.Equal(t, senderTokAmount, int64(900000))
-	require.Equal(t, senderRuneAmount, int64(280))
+	require.Equal(t, senderRuneAmount, int64(410))
 	require.Equal(t, clpTokAmount, int64(100000))
-	require.Equal(t, clp2.CurrentSupply, int64(1000000))
+	require.Equal(t, tokClp.CurrentSupply, int64(1000000))
 	require.Equal(t, clpRuneAmount, int64(190))
 
 	//Test Second Trade on example from scoping doc
-	keeper.trade(ctx, address, fromTicker, "tok", 5)
-	clp2 = keeper.GetCLP(ctx, "tok")
-	senderCoins = bankKeeper.GetCoins(ctx, address)
-	senderTokAmount = senderCoins.AmountOf("tok").Int64()
-	senderRuneAmount = senderCoins.AmountOf("RUNE").Int64()
-	clpCoins = bankKeeper.GetCoins(ctx, clp2.AccountAddress)
-	clpTokAmount = clpCoins.AmountOf("tok").Int64()
-	clpRuneAmount = clpCoins.AmountOf("RUNE").Int64()
-	require.Nil(t, err5)
+	keeper.trade(ctx, senderAddress, runeTicker, tokTicker, 5)
+	tokClp = keeper.GetCLP(ctx, tokTicker)
+	senderCoins = bankKeeper.GetCoins(ctx, senderAddress)
+	senderTokAmount = senderCoins.AmountOf(tokTicker).Int64()
+	senderRuneAmount = senderCoins.AmountOf(runeTicker).Int64()
+	clpCoins = bankKeeper.GetCoins(ctx, tokClp.AccountAddress)
+	clpTokAmount = clpCoins.AmountOf(tokTicker).Int64()
+	clpRuneAmount = clpCoins.AmountOf(runeTicker).Int64()
 	require.Equal(t, senderTokAmount, int64(926316))
-	require.Equal(t, senderRuneAmount, int64(275))
+	require.Equal(t, senderRuneAmount, int64(405))
 	require.Equal(t, clpTokAmount, int64(73684))
-	require.Equal(t, clp2.CurrentSupply, int64(1000000))
+	require.Equal(t, tokClp.CurrentSupply, int64(1000000))
 	require.Equal(t, clpRuneAmount, int64(195))
-
 }

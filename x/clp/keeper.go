@@ -101,60 +101,133 @@ func (k Keeper) create(ctx sdk.Context, sender sdk.AccAddress, ticker string, na
 	return nil
 }
 
-//Run Formula for Tokens Issued
-func CalculateTokensIssued(supply int64, baseCoinAmount int64, baseTokenBalance int64, reserveRatio int) int64 {
-	//tokens issued = supply * ((1 + (connectedTokensPaid/balance))^connectorWeight - 1)
-	floatReserveRatio := float64(reserveRatio) / float64(100)
-	tokensIssued := float64(supply) * (math.Pow(float64(1+(float64(baseCoinAmount)/float64(baseTokenBalance))), floatReserveRatio) - 1)
-	// Leaving Debug prints here for future convenience for if decimal token precision is ever implemented
-	// fmt.Printf("supply: %v\n", supply)
-	// fmt.Printf("baseCoinAmount: %v\n", baseCoinAmount)
-	// fmt.Printf("baseTokenBalance: %v\n", baseTokenBalance)
-	// fmt.Printf("reserveRatio: %v\n", reserveRatio)
-	// fmt.Printf("floatReserveRatio: %v\n", floatReserveRatio)
-	// fmt.Printf("float64(supply): %v\n", float64(supply))
-	// fmt.Printf("float64(baseCoinAmount)/float64(baseTokenBalance): %v\n", float64(baseCoinAmount)/float64(baseTokenBalance))
-	// fmt.Printf("1+(float64(baseCoinAmount)/float64(baseTokenBalance)): %v\n", 1+(float64(baseCoinAmount)/float64(baseTokenBalance)))
-	// fmt.Printf("1+(float64(baseCoinAmount)/float64(baseTokenBalance)): %v\n", 1+(float64(baseCoinAmount)/float64(baseTokenBalance)))
-	// fmt.Printf("float64(1+(float64(baseCoinAmount)/float64(baseTokenBalance))): %v\n", float64(1+(float64(baseCoinAmount)/float64(baseTokenBalance))))
-	// fmt.Printf("math.Pow(float64(1+(float64(baseCoinAmount)/float64(baseTokenBalance))), floatReserveRatio): %v\n", math.Pow(float64(1+(float64(baseCoinAmount)/float64(baseTokenBalance))), floatReserveRatio))
-	// fmt.Printf("tokensIssued: %v\n", tokensIssued)
-	// fmt.Printf("math.Round(tokensIssued): %v\n", math.Round(tokensIssued))
-	// fmt.Printf("\n\n")
-	return int64(math.Round(tokensIssued))
+//Run Formula for CLP command
+func RunCLPFormula(a float64, b float64, c float64, d float64) int64 {
+	//y = a * ((1 + (b/c))^d - 1)
+	y := a * (math.Pow(float64(1+(b/c)), d) - 1)
+	return int64(math.Round(y))
+}
+
+//Run Formula for buying CLP coins
+func CalculateCLPCoinsEmitted(clpCoinSupply int64, baseCoinsPaid int64, baseCoinBalance int64, reserveRatio int) int64 {
+	//clpCoinsEmitted = clpCoinSupply * ((1 + (baseCoinsPaid/baseCoinBalance))^reserveRatio - 1)
+	a := float64(clpCoinSupply)
+	b := float64(baseCoinsPaid)
+	c := float64(baseCoinBalance)
+	d := float64(reserveRatio) / float64(100)
+	return RunCLPFormula(a, b, c, d)
+}
+
+//Run Formula for selling CLP coins
+func CalculateBaseCoinsEmitted(baseCoinBalance int64, clpCoinsPaid int64, clpCoinSupply int64, reserveRatio int) int64 {
+	//baseCoinsEmitted = baseCoinBalance * ((1 + (clpCoinsPaid/clpCoinSupply))^(1/reserveRatio) - 1)
+	a := float64(baseCoinBalance)
+	b := float64(clpCoinsPaid)
+	c := float64(clpCoinSupply)
+	d := float64(1) / (float64(reserveRatio) / float64(100))
+	return RunCLPFormula(a, b, c, d)
 }
 
 // Trade with CLP.
 func (k Keeper) trade(ctx sdk.Context, sender sdk.AccAddress, fromTicker string, toTicker string, fromAmount int64) (int64, sdk.Error) {
-	if fromAmount <= 0 {
-		return 0, ErrNotEnoughCoins(DefaultCodespace).TraceSDK("")
+	//Check different tickers
+	if fromTicker == toTicker {
+		return 0, ErrSameCoin(DefaultCodespace).TraceSDK("")
 	}
-	clp := k.GetCLP(ctx, toTicker)
-	if clp.Ticker == "" {
-		return 0, ErrCLPNotExists(DefaultCodespace).TraceSDK("")
-	}
+
+	//Check sender coins ok
 	currentSenderCoins := k.bankKeeper.GetCoins(ctx, sender)
-	currentSenderBaseCoinAmount := currentSenderCoins.AmountOf(k.baseCoinTicker).Int64()
-	if currentSenderBaseCoinAmount < fromAmount {
+	currentSenderFromCoinAmount := currentSenderCoins.AmountOf(fromTicker).Int64()
+	if fromAmount <= 0 || currentSenderFromCoinAmount < fromAmount {
 		return 0, ErrNotEnoughCoins(DefaultCodespace).TraceSDK("")
 	}
-	supply := clp.CurrentSupply
-	currentCLPCoins := k.bankKeeper.GetCoins(ctx, clp.AccountAddress)
-	clpBaseTokenBalance := currentCLPCoins.AmountOf(k.baseCoinTicker).Int64()
-	if clpBaseTokenBalance <= 0 {
-		return 0, ErrCLPEmpty(DefaultCodespace).TraceSDK("")
+
+	var fromClp, toClp *types.CLP
+	var fromClpCoins, toClpCoins sdk.Coins
+	if fromTicker != k.baseCoinTicker {
+		fromClp = k.GetCLP(ctx, fromTicker)
 	}
-	reserveRatio := clp.ReserveRatio
-	newCLPCoinsAmount := CalculateTokensIssued(supply, fromAmount, clpBaseTokenBalance, reserveRatio)
-	newCLPCoins := sdk.Coins{sdk.NewCoin(toTicker, newCLPCoinsAmount)}
+	if toTicker != k.baseCoinTicker {
+		toClp = k.GetCLP(ctx, toTicker)
+	}
 
-	spentBaseCoins := sdk.Coins{sdk.NewCoin(k.baseCoinTicker, fromAmount)}
-	k.bankKeeper.AddCoins(ctx, sender, newCLPCoins)
-	k.bankKeeper.SubtractCoins(ctx, sender, spentBaseCoins)
-	k.bankKeeper.AddCoins(ctx, clp.AccountAddress, spentBaseCoins)
-	k.bankKeeper.SubtractCoins(ctx, clp.AccountAddress, newCLPCoins)
+	//Check from clp if needed exists and coins ok
+	if fromClp != nil {
+		if fromClp.Ticker == "" {
+			return 0, ErrCLPNotExists(DefaultCodespace).TraceSDK("")
+		}
+		fromClpCoins = k.bankKeeper.GetCoins(ctx, fromClp.AccountAddress)
+		fromCLPBaseCoinBalance := fromClpCoins.AmountOf(k.baseCoinTicker).Int64()
+		if fromCLPBaseCoinBalance <= 0 {
+			return 0, ErrCLPEmpty(DefaultCodespace).TraceSDK("")
+		}
+	}
 
-	return newCLPCoinsAmount, nil
+	//Check to clp exists if needed and coins ok
+	if toClp != nil {
+		if toClp.Ticker == "" {
+			return 0, ErrCLPNotExists(DefaultCodespace).TraceSDK("")
+		}
+		toClpCoins = k.bankKeeper.GetCoins(ctx, toClp.AccountAddress)
+		toCLPCoinBalance := toClpCoins.AmountOf(toTicker).Int64()
+		if toCLPCoinBalance <= 0 {
+			return 0, ErrCLPEmpty(DefaultCodespace).TraceSDK("")
+		}
+	}
+
+	if fromTicker == k.baseCoinTicker && toTicker != k.baseCoinTicker {
+		toClpCoinSupply := toClp.CurrentSupply
+		toCLPBaseCoinBalance := toClpCoins.AmountOf(k.baseCoinTicker).Int64()
+		toClpReserveRatio := toClp.ReserveRatio
+		emittedCLPCoinsAmount := CalculateCLPCoinsEmitted(toClpCoinSupply, fromAmount, toCLPBaseCoinBalance, toClpReserveRatio)
+
+		spentFromCoins := sdk.Coins{sdk.NewCoin(fromTicker, fromAmount)}
+		emittedCLPCoins := sdk.Coins{sdk.NewCoin(toTicker, emittedCLPCoinsAmount)}
+
+		k.bankKeeper.SubtractCoins(ctx, sender, spentFromCoins)
+		k.bankKeeper.AddCoins(ctx, sender, emittedCLPCoins)
+		k.bankKeeper.SubtractCoins(ctx, toClp.AccountAddress, emittedCLPCoins)
+		k.bankKeeper.AddCoins(ctx, toClp.AccountAddress, spentFromCoins)
+		return emittedCLPCoinsAmount, nil
+
+	} else if toTicker == k.baseCoinTicker && fromTicker != k.baseCoinTicker {
+		fromCLPBaseCoinBalance := fromClpCoins.AmountOf(k.baseCoinTicker).Int64()
+		fromClpCoinSupply := fromClp.CurrentSupply
+		fromClpReserveRatio := fromClp.ReserveRatio
+		emittedBaseCoinsAmount := CalculateBaseCoinsEmitted(fromCLPBaseCoinBalance, fromAmount, fromClpCoinSupply, fromClpReserveRatio)
+
+		spentFromCoins := sdk.Coins{sdk.NewCoin(fromTicker, fromAmount)}
+		emittedBaseCoins := sdk.Coins{sdk.NewCoin(k.baseCoinTicker, emittedBaseCoinsAmount)}
+
+		k.bankKeeper.SubtractCoins(ctx, sender, spentFromCoins)
+		k.bankKeeper.AddCoins(ctx, sender, emittedBaseCoins)
+		k.bankKeeper.SubtractCoins(ctx, fromClp.AccountAddress, emittedBaseCoins)
+		k.bankKeeper.AddCoins(ctx, fromClp.AccountAddress, spentFromCoins)
+		return emittedBaseCoinsAmount, nil
+	}
+
+	fromCLPBaseCoinBalance := fromClpCoins.AmountOf(k.baseCoinTicker).Int64()
+	fromClpCoinSupply := fromClp.CurrentSupply
+	fromClpReserveRatio := fromClp.ReserveRatio
+	emittedBaseCoinsAmount := CalculateBaseCoinsEmitted(fromCLPBaseCoinBalance, fromAmount, fromClpCoinSupply, fromClpReserveRatio)
+
+	toClpCoinSupply := toClp.CurrentSupply
+	toCLPBaseCoinBalance := toClpCoins.AmountOf(k.baseCoinTicker).Int64()
+	toClpReserveRatio := toClp.ReserveRatio
+	emittedCLPCoinsAmount := CalculateCLPCoinsEmitted(toClpCoinSupply, emittedBaseCoinsAmount, toCLPBaseCoinBalance, toClpReserveRatio)
+
+	spentFromCoins := sdk.Coins{sdk.NewCoin(fromTicker, fromAmount)}
+	emittedBaseCoins := sdk.Coins{sdk.NewCoin(k.baseCoinTicker, emittedBaseCoinsAmount)}
+	emittedCLPCoins := sdk.Coins{sdk.NewCoin(toTicker, emittedCLPCoinsAmount)}
+
+	k.bankKeeper.SubtractCoins(ctx, sender, spentFromCoins)
+	k.bankKeeper.AddCoins(ctx, fromClp.AccountAddress, spentFromCoins)
+	k.bankKeeper.SubtractCoins(ctx, fromClp.AccountAddress, emittedBaseCoins)
+	k.bankKeeper.AddCoins(ctx, toClp.AccountAddress, emittedBaseCoins)
+	k.bankKeeper.SubtractCoins(ctx, toClp.AccountAddress, emittedCLPCoins)
+	k.bankKeeper.AddCoins(ctx, sender, emittedCLPCoins)
+
+	return emittedCLPCoinsAmount, nil
 }
 
 // Implements sdk.AccountMapper.
