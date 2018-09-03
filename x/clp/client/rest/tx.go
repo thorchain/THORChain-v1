@@ -16,7 +16,7 @@ import (
 // RegisterRoutes - Central function to define routes that get registered by the main application
 func registerTxRoutes(ctx context.CoreContext, r *mux.Router, cdc *wire.Codec, kb keys.Keybase) {
 	r.HandleFunc("/clp", lcdhelpers.RequestHandlerFn(cdc, kb, ctx, buildCreateMsg)).Methods("POST")
-	r.HandleFunc("/clp_trade_rune", lcdhelpers.RequestHandlerFn(cdc, kb, ctx, buildTradeBaseMsg)).Methods("POST")
+	r.HandleFunc("/clp_trade", lcdhelpers.RequestHandlerFn(cdc, kb, ctx, buildTradeMsg)).Methods("POST")
 }
 
 type clpCreateBody struct {
@@ -28,8 +28,9 @@ type clpCreateBody struct {
 }
 
 type clpTradeBody struct {
-	Ticker     string `json:"ticker"`
-	RuneAmount int    `json:"rune_amount"`
+	FromTicker string `json:"from_ticker"`
+	ToTicker   string `json:"to_ticker"`
+	FromAmount int    `json:"from_amount"`
 }
 
 func buildCreateMsg(w http.ResponseWriter, cdc *wire.Codec, from sdk.AccAddress, body []byte, routeVars map[string]string) (sdk.Msg, error) {
@@ -43,7 +44,7 @@ func buildCreateMsg(w http.ResponseWriter, cdc *wire.Codec, from sdk.AccAddress,
 	return clpTypes.NewMsgCreate(from, m.Ticker, m.TokenName, m.ReserveRatio, m.InitialSupply, m.InitialRuneAmount), nil
 }
 
-func buildTradeBaseMsg(w http.ResponseWriter, cdc *wire.Codec, from sdk.AccAddress, body []byte, routeVars map[string]string) (sdk.Msg, error) {
+func buildTradeMsg(w http.ResponseWriter, cdc *wire.Codec, from sdk.AccAddress, body []byte, routeVars map[string]string) (sdk.Msg, error) {
 	var m clpTradeBody
 	err := cdc.UnmarshalJSON(body, &m)
 	if err != nil {
@@ -51,5 +52,5 @@ func buildTradeBaseMsg(w http.ResponseWriter, cdc *wire.Codec, from sdk.AccAddre
 		w.Write([]byte(err.Error()))
 		return nil, err
 	}
-	return clpTypes.NewMsgTradeBase(from, m.Ticker, m.RuneAmount), nil
+	return clpTypes.NewMsgTrade(from, m.FromTicker, m.ToTicker, m.FromAmount), nil
 }

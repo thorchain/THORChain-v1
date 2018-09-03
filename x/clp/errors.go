@@ -20,6 +20,7 @@ const (
 	CodeInvalidInitialSupply    CodeType = 147
 	CodeInvalidInitialBaseCoins CodeType = 148
 	CodeCLPEmpty                CodeType = 149
+	CodeSameCoin                CodeType = 150
 )
 
 //Reserve ratio error
@@ -65,4 +66,10 @@ func ErrInvalidInitialBaseCoins(codespace sdk.CodespaceType) sdk.Error {
 //CLP too empty Error
 func ErrCLPEmpty(codespace sdk.CodespaceType) sdk.Error {
 	return sdk.NewError(codespace, CodeCLPEmpty, "clp is too empty")
+}
+
+//Same coin err
+func ErrSameCoin(codespace sdk.CodespaceType) sdk.Error {
+	return sdk.NewError(codespace, CodeSameCoin, "cannot trade same coin")
+
 }

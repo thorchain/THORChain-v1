@@ -54,9 +54,9 @@ func CreateTxCmd(cdc *wire.Codec) *cobra.Command {
 // create new clp transaction
 func TradeBaseTxCmd(cdc *wire.Codec) *cobra.Command {
 	return &cobra.Command{
-		Use:   "trade_rune <ticker> <rune_amount>",
-		Short: "Trade rune for a token via CLP",
-		Args:  cobra.ExactArgs(2),
+		Use:   "trade <from_ticker> <to_ticker> <from_amount>",
+		Short: "Trade from one token to another token via CLP",
+		Args:  cobra.ExactArgs(3),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := context.NewCoreContextFromViper().WithDecoder(authcmd.GetAccountDecoder(cdc))
 
@@ -67,9 +67,10 @@ func TradeBaseTxCmd(cdc *wire.Codec) *cobra.Command {
 			}
 
 			// create the message
-			ticker := args[0]
-			baseCoinAmount, err := strconv.Atoi(args[1])
-			msg := clpTypes.NewMsgTradeBase(from, ticker, baseCoinAmount)
+			fromTicker := args[0]
+			toTicker := args[1]
+			fromAmount, err := strconv.Atoi(args[2])
+			msg := clpTypes.NewMsgTrade(from, fromTicker, toTicker, fromAmount)
 
 			// get account name
 			addressName := ctx.FromAddressName

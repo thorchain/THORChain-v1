@@ -50,7 +50,7 @@
 
 [[projects]]
   branch = "thorchain_master"
-  digest = "1:9584907df546786bdd7e5a708c29c9ca2580463c5919b8cf86481d7ebbcf91f0"
+  digest = "1:e8d7a0f7626c11e187a737396c1ee09c444d601a7fcb1f3182ae4178906796b4"
   name = "github.com/cosmos/cosmos-sdk"
   packages = [
     "baseapp",
@@ -99,7 +99,7 @@
     "x/stake/types",
   ]
   pruneopts = "UT"
-  revision = "d6d9be5fa23dca2a3fe9371e924bd35f10a508b4"
+  revision = "f3be8f34c4f827bbf16d4e0650ddd9bb3ddc0058"
   source = "https://github.com/swishlabsco/cosmos-sdk.git"
 
 [[projects]]
@@ -219,12 +219,13 @@
   version = "v1.2.0"
 
 [[projects]]
-  digest = "1:ea40c24cdbacd054a6ae9de03e62c5f252479b96c716375aace5c120d68647c8"
+  digest = "1:c0d19ab64b32ce9fe5cf4ddceba78d5bc9807f0016db6b1183599da3dcc24d10"
   name = "github.com/hashicorp/hcl"
   packages = [
     ".",
     "hcl/ast",
     "hcl/parser",
+    "hcl/printer",
     "hcl/scanner",
     "hcl/strconv",
     "hcl/token",
@@ -624,7 +625,7 @@
   name = "google.golang.org/genproto"
   packages = ["googleapis/rpc/status"]
   pruneopts = "UT"
-  revision = "c66870c02cf823ceb633bcd05be3c7cda29976f4"
+  revision = "11092d34479b07829b72e10713b159248caf5dad"
 
 [[projects]]
   digest = "1:2dab32a43451e320e49608ff4542fdfc653c95dcc35d0065ec9c6c3dd540ed74"
