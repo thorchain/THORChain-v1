@@ -111,7 +111,7 @@ func main() {
 		stakeCmd,
 	)
 
-	//Add stake commands
+	//Add governance commands
 	govCmd := &cobra.Command{
 		Use:   "gov",
 		Short: "Governance and voting subcommands",

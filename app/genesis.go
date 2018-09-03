@@ -20,7 +20,7 @@ import (
 var (
 	// bonded tokens given to genesis validators/accounts
 	freeFermionVal  = int64(100)
-	freeFermionsAcc = int64(500)
+	freeFermionsAcc = int64(50000000000)
 )
 
 // State to Unmarshal
