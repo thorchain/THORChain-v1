@@ -10,6 +10,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/thorchain/THORChain/app"
+	clpTypes "github.com/thorchain/THORChain/x/clp/types"
 
 	"github.com/cosmos/cosmos-sdk/client/context"
 	cosmosClientKeys "github.com/cosmos/cosmos-sdk/client/keys"
@@ -157,7 +158,7 @@ func (sp *Spammer) start() {
 		// fmt.Printf("Spammer %v: Sending to self with sequence %v...\n", sp.index, sp.currentSequence)
 		sp.ctx = sp.ctx.WithSequence(sp.currentSequence)
 
-		msg2 := client.BuildMsg(sp.accountAddress, sp.accountAddress, _1Rune)
+		msg2 := clpTypes.NewMsgTrade(sp.accountAddress, "RUNE", "ETH", 1)
 
 		_, err := PrivProcessMsg(sp.ctx, sp.priv, sp.codec, msg2)
 		if err != nil {
