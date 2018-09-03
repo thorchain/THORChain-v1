@@ -3,8 +3,10 @@ package txs
 import (
 	"fmt"
 	"math/rand"
+	"runtime"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/cosmos/cosmos-sdk/client/context"
 	"github.com/cosmos/cosmos-sdk/client/keys"
@@ -12,6 +14,9 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	tmcrypto "github.com/tendermint/tendermint/crypto"
+	"github.com/thorchain/THORChain/app"
+	"github.com/thorchain/THORChain/cmd/thorchainspam/helpers"
 	"github.com/thorchain/THORChain/cmd/thorchainspam/stats"
 
 	cryptokeys "github.com/cosmos/cosmos-sdk/crypto/keys"
@@ -24,7 +29,6 @@ import (
 // Returns the command to ensure k accounts exist
 func GetTxsSend(cdc *wire.Codec) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-		ctx := context.NewCoreContextFromViper().WithDecoder(authcmd.GetAccountDecoder(cdc))
 
 		// parse spam prefix and password
 		spamPrefix := viper.GetString(FlagSpamPrefix)
@@ -33,52 +37,38 @@ func GetTxsSend(cdc *wire.Codec) func(cmd *cobra.Command, args []string) error {
 			return fmt.Errorf("--spam-password is required")
 		}
 
-		// get list of all accounts starting with spamPrefix
-		spamAccs, err := getSpamAccs(spamPrefix)
+		stats := stats.NewStats()
+
+		// create context and all spammer objects
+		spammers, err := createSpammers(spamPrefix, spamPassword, &stats)
 		if err != nil {
 			return err
 		}
 
-		// ensure at least 1 spamAcc is present
-		if len(spamAccs) == 0 {
+		// ensure at least 1 spammer is present
+		if len(spammers) == 0 {
 			return fmt.Errorf("no spam accounts found, please create them with `thorchainspam account ensure`")
 		}
 
-		fmt.Printf("Found %v spam accounts\n", len(spamAccs))
+		fmt.Printf("Found %v spam accounts\n", len(spammers))
 
-		stats := stats.NewStats()
+		//Use all cores
+		runtime.GOMAXPROCS(runtime.NumCPU())
 
 		var wg sync.WaitGroup
-		sem := make(chan struct{}, viper.GetInt(FlagTxConcurrency))
 
-		for i := 0; i < len(spamAccs); {
+		for i := 0; i < len(spammers); i++ {
 			wg.Add(1)
 
-			// acquire semaphore
-			sem <- struct{}{}
+			fmt.Printf("Spammer %v: Starting up...\n", i)
+			nextSpammer := spammers[(i+1)%len(spammers)]
+			go spammers[i].start(&nextSpammer, &stats)
+			fmt.Printf("Spammer %v: Started...\n", i)
 
-			go func(i int) {
-				defer wg.Done()
-
-				sendTxToNextAcc(ctx, i, spamAccs, spamPassword, cdc, &stats)
-
-				// release semaphore
-				<-sem
-			}(i)
-
-			if i == len(spamAccs)-1 {
-				// Iterated over all accounts. Need to wait now until all committed (reason: we cannot send more than 1 tx per block)
-				wg.Wait()
-
-				// Print stats
-				stats.Print()
-
-				// Restart
-				i = 0
-			} else {
-				i++
-			}
 		}
+
+		go printStats(&stats)
+		wg.Add(1)
 
 		wg.Wait()
 
@@ -89,7 +79,12 @@ func GetTxsSend(cdc *wire.Codec) func(cmd *cobra.Command, args []string) error {
 	}
 }
 
-func getSpamAccs(spamPrefix string) ([]cryptokeys.Info, error) {
+func printStats(stats *stats.Stats) {
+	time.Sleep(5 * time.Millisecond)
+	stats.Print()
+}
+
+func createSpammers(spamPrefix string, spamPassword string, stats *stats.Stats) ([]Spammer, error) {
 	kb, err := keys.GetKeyBase()
 	if err != nil {
 		return nil, err
@@ -100,52 +95,101 @@ func getSpamAccs(spamPrefix string) ([]cryptokeys.Info, error) {
 		return nil, err
 	}
 
-	res := make([]cryptokeys.Info, 0, len(infos))
-
-	for _, info := range infos {
-		if strings.HasPrefix(info.GetName(), spamPrefix) {
-			res = append(res, info)
+	var spammers []Spammer
+	for i, info := range infos {
+		accountName := info.GetName()
+		if strings.HasPrefix(accountName, spamPrefix) {
+			newSpammer := SpawnSpammer(accountName, spamPassword, i, kb, info, stats)
+			spammers = append(spammers, newSpammer)
+			fmt.Printf("Spammer %v: Spawned...\n", i)
 		}
 	}
 
-	return res, nil
+	return spammers, nil
+
 }
 
-func sendTxToNextAcc(ctx context.CoreContext, i int, spamAccs []cryptokeys.Info, spamPassword string, cdc *wire.Codec, stats *stats.Stats) {
-	from := spamAccs[i]
+//Spawn new spammer
+func SpawnSpammer(localAccountName string, spamPassword string, index int, kb cryptokeys.Keybase, spammerInfo cryptokeys.Info, stats *stats.Stats) Spammer {
+	fmt.Printf("Spammer %v: Spawning...\n", index)
 
-	fmt.Printf("Iteration %v: Will send from account %v\n", i, from.GetName())
+	cdc := app.MakeCodec()
+	fmt.Printf("Spammer %v: Made codec...\n", index)
+
+	ctx := context.NewCoreContextFromViper().WithDecoder(authcmd.GetAccountDecoder(cdc))
+	fmt.Printf("Spammer %v: Made context...\n", index)
+
+	from, err := helpers.GetFromAddress(kb, localAccountName)
+	if err != nil {
+		fmt.Println(err)
+		return Spammer{}
+	}
+
+	ctx, err = helpers.SetupContext(ctx, from)
+	if err != nil {
+		fmt.Println(err)
+		return Spammer{}
+	}
 
 	// get account balance from sender
-	fromAcc, err := getAcc(ctx, from)
+	fromAcc, err := getAcc(ctx, spammerInfo)
 	if err != nil {
-		fmt.Printf("Iteration %v: Account not found, skipping\n", i)
+		fmt.Printf("Iteration %v: Account not found, skipping\n", index)
 		stats.AddAccountNotFound()
-		return
+		return Spammer{}
 	}
 
 	// calculate random share of coins to be sent
-	coins := getRandomCoinsUpTo(fromAcc.GetCoins(), 2)
+	randomCoins := getRandomCoinsUpTo(fromAcc.GetCoins(), 1000)
 
-	if !coins.IsPositive() {
-		fmt.Printf("Iteration %v: No coins to send, skipping\n", i)
+	if !randomCoins.IsPositive() {
+		fmt.Printf("Iteration %v: No coins to send, skipping\n", index)
 		stats.AddNoCoinsToSend()
-		return
+		return Spammer{}
 	}
 
-	// get next account to send to
-	to := spamAccs[(i+1)%len(spamAccs)]
+	fmt.Printf("Spammer %v: Making sequence...\n", index)
 
-	fmt.Printf("Iteration %v: Will send %v from %v to %v\n", i, coins.String(), from.GetName(), to.GetName())
-
-	// build and sign the transaction, then broadcast to Tendermint
-	msg := client.BuildMsg(fromAcc.GetAddress(), getAddr(to), coins)
-	err = ensureSignBuildBroadcast(ctx, fromAcc, from.GetName(), spamPassword, []sdk.Msg{msg}, cdc)
+	sequence, err3 := ctx.NextSequence(from)
+	if err3 != nil {
+		fmt.Printf("Spammer %v: Sequence Error...\n", index)
+	}
+	priv, err := kb.ExportPrivateKeyObject(localAccountName, spamPassword)
 	if err != nil {
 		fmt.Println(err)
-		stats.AddOtherError()
-	} else {
-		stats.AddSuccess()
+	}
+
+	return Spammer{localAccountName, spamPassword, from, cdc, index, sequence, ctx, priv, randomCoins}
+
+}
+
+//All the things needed for a single spammer thread
+type Spammer struct {
+	accountName     string
+	password        string
+	accountAddress  sdk.AccAddress
+	codec           *wire.Codec
+	index           int
+	currentSequence int64
+	ctx             context.CoreContext
+	priv            tmcrypto.PrivKey
+	randomCoins     sdk.Coins
+}
+
+func (sp *Spammer) start(nextSpammer *Spammer, stats *stats.Stats) {
+	for {
+		// fmt.Printf("Spammer %v: Sending to self with sequence %v...\n", sp.index, sp.currentSequence)
+		sp.ctx = sp.ctx.WithSequence(sp.currentSequence)
+
+		// msgClp := clpTypes.NewMsgTrade(sp.accountAddress, "RUNE", "ETH", 1)
+		msgSend := client.BuildMsg(sp.accountAddress, nextSpammer.accountAddress, sp.randomCoins)
+
+		_, err := helpers.PrivProcessMsg(sp.ctx, sp.priv, sp.codec, msgSend)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		sp.currentSequence = sp.currentSequence + 1
 	}
 }
 
@@ -197,64 +241,4 @@ func getAcc(ctx context.CoreContext, info cryptokeys.Info) (auth.Account, error)
 	}
 
 	return acc, nil
-}
-
-// sign and build the transaction from the msg
-func ensureSignBuildBroadcast(ctx context.CoreContext, account auth.Account, name string, passphrase string, msgs []sdk.Msg, cdc *wire.Codec) (err error) {
-	ctx = ctx.WithAccountNumber(account.GetAccountNumber())
-	ctx = ctx.WithSequence(account.GetSequence())
-	ctx = ctx.WithGas(int64(10000))
-
-	var txBytes []byte
-
-	txBytes, err = ctx.SignAndBuild(name, passphrase, msgs, cdc)
-	if err != nil {
-		return fmt.Errorf("Error signing transaction: %v", err)
-	}
-
-	if ctx.Async {
-		res, err := ctx.BroadcastTxAsync(txBytes)
-		if err != nil {
-			return err
-		}
-		if ctx.JSON {
-			type toJSON struct {
-				TxHash string
-			}
-			valueToJSON := toJSON{res.Hash.String()}
-			JSON, err := cdc.MarshalJSON(valueToJSON)
-			if err != nil {
-				return err
-			}
-			fmt.Println(string(JSON))
-		} else {
-			fmt.Println("Async tx sent. tx hash: ", res.Hash.String())
-		}
-		return nil
-	}
-	res, err := ctx.BroadcastTx(txBytes)
-	if err != nil {
-		return err
-	}
-	if ctx.JSON {
-		// Since JSON is intended for automated scripts, always include response in JSON mode
-		type toJSON struct {
-			Height   int64
-			TxHash   string
-			Response string
-		}
-		valueToJSON := toJSON{res.Height, res.Hash.String(), fmt.Sprintf("%+v", res.DeliverTx)}
-		JSON, err := cdc.MarshalJSON(valueToJSON)
-		if err != nil {
-			return err
-		}
-		fmt.Println(string(JSON))
-		return nil
-	}
-	if ctx.PrintResponse {
-		fmt.Printf("Committed at block %d. Hash: %s Response:%+v \n", res.Height, res.Hash.String(), res.DeliverTx)
-	} else {
-		fmt.Printf("Committed at block %d. Hash: %s \n", res.Height, res.Hash.String())
-	}
-	return nil
 }

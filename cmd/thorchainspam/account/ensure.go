@@ -2,6 +2,9 @@ package account
 
 import (
 	"fmt"
+	"runtime"
+
+	"github.com/tendermint/go-amino"
 
 	"github.com/cosmos/cosmos-sdk/client/context"
 	"github.com/cosmos/cosmos-sdk/client/keys"
@@ -89,34 +92,51 @@ func GetAccountEnsure(cdc *wire.Codec) func(cmd *cobra.Command, args []string) e
 			return errors.Errorf("Account %s doesn't have enough coins to pay for all txs", from)
 		}
 
-		// how many msgs to send in 1 tx
-		msgsPerTx := 1000
-		msgs := make([]sdk.Msg, 0, msgsPerTx)
-
-		// for each required account, build the required amount of keys and transfer the coins
-		for i := 0; i < numAccsToCreate; i++ {
-			accountName := fmt.Sprintf("%v-%v", spamPrefix, i+numExistingAccs)
-			to, err := createSpamAccountKey(kb, accountName, spamPassword)
-			if err != nil {
-				return err
-			}
-
-			// build the message and put it into the message
-			msgs = append(msgs, client.BuildMsg(from, to, coins))
-
-			// in the last loop, or every msgsPerTx loop sign the transaction, then broadcast to Tendermint
-			if i == numAccsToCreate-1 || (i+1)%msgsPerTx == 0 {
-				ctx = ctx.WithGas(10000 * int64(msgsPerTx))
-				err = ensureSignBuildBroadcast(ctx, ctx.FromAddressName, signPassword, msgs, cdc)
-				if err != nil {
-					return err
-				}
-				msgs = make([]sdk.Msg, 0, msgsPerTx)
-			}
-		}
-
+		sendCoins(numAccsToCreate, spamPrefix, numExistingAccs,
+			kb, spamPassword, signPassword, from,
+			coins, ctx, cdc)
 		return nil
 	}
+}
+
+func sendCoins(numAccsToCreate int, spamPrefix string, numExistingAccs int,
+	kb cryptokeys.Keybase, spamPassword string, signPassword string, from sdk.AccAddress,
+	coins sdk.Coins, ctx context.CoreContext, cdc *amino.Codec) error {
+
+	//Set to use max CPUs
+	runtime.GOMAXPROCS(runtime.NumCPU())
+
+	ctx, err := helpers.SetupContext(ctx, from)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+
+	fromSequence, err := ctx.NextSequence(from)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	// how many msgs to send in 1 tx
+	// for each required account, build the required amount of keys and transfer the coins
+	for i := 0; i < numAccsToCreate; i++ {
+		accountName := fmt.Sprintf("%v-%v", spamPrefix, i+numExistingAccs)
+		to, err := createSpamAccountKey(kb, accountName, spamPassword)
+		if err != nil {
+			return err
+		}
+
+		msg := client.BuildMsg(from, to, coins)
+		ctx = ctx.WithSequence(fromSequence)
+
+		_, err2 := helpers.ProcessMsg(ctx, ctx.FromAddressName, signPassword, cdc, msg)
+		if err2 != nil {
+			fmt.Println(err)
+			return err
+		}
+		fromSequence++
+	}
+	return nil
 }
 
 func createSpamAccountKey(kb cryptokeys.Keybase, name string, pass string) (sdk.AccAddress, error) {
