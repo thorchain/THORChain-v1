@@ -24,6 +24,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/auth"
 	authcmd "github.com/cosmos/cosmos-sdk/x/auth/client/cli"
 	"github.com/cosmos/cosmos-sdk/x/bank/client"
+	clpTypes "github.com/thorchain/THORChain/x/clp/types"
 )
 
 // Returns the command to ensure k accounts exist
@@ -181,10 +182,16 @@ func (sp *Spammer) start(nextSpammer *Spammer, stats *stats.Stats) {
 		// fmt.Printf("Spammer %v: Sending to self with sequence %v...\n", sp.index, sp.currentSequence)
 		sp.ctx = sp.ctx.WithSequence(sp.currentSequence)
 
-		// msgClp := clpTypes.NewMsgTrade(sp.accountAddress, "RUNE", "ETH", 1)
-		msgSend := client.BuildMsg(sp.accountAddress, nextSpammer.accountAddress, sp.randomCoins)
+		clpMsg := rand.Float32() < 0.5
+		var msg sdk.Msg
+		if clpMsg {
+			msg = clpTypes.NewMsgTrade(sp.accountAddress, "RUNE", "ETH", 1)
+		} else {
+			msg = client.BuildMsg(sp.accountAddress, nextSpammer.accountAddress, sp.randomCoins)
 
-		_, err := helpers.PrivProcessMsg(sp.ctx, sp.priv, sp.codec, msgSend)
+		}
+
+		_, err := helpers.PrivProcessMsg(sp.ctx, sp.priv, sp.codec, msg)
 		if err != nil {
 			fmt.Println(err)
 			return
