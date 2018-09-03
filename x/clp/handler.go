@@ -35,10 +35,10 @@ func handleMsgCreate(k Keeper, ctx sdk.Context, msg types.MsgCreate) sdk.Result 
 
 // Handle MsgCreateCLP This is the engine of your module
 func handleMsgTrade(k Keeper, ctx sdk.Context, msg types.MsgTrade) sdk.Result {
-	newCoinsAmount, err := k.trade(ctx, msg.Sender, msg.FromTicker, msg.ToTicker, int64(msg.FromAmount))
+	newCoinsAmount, runeTransacted, err := k.trade(ctx, msg.Sender, msg.FromTicker, msg.ToTicker, int64(msg.FromAmount))
 	if err != nil {
 		return err.Result()
 	}
-	resultLog := fmt.Sprintf("in: %v%v, out: %v%v", msg.FromAmount, msg.FromTicker, newCoinsAmount, msg.ToTicker)
+	resultLog := fmt.Sprintf("json{\"fromTokenSpent\": %v, \"toTokenReceived\": %v, \"runeTransacted\": %v}json", msg.FromAmount, newCoinsAmount, runeTransacted)
 	return sdk.Result{Log: resultLog}
 }

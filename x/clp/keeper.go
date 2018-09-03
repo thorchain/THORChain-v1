@@ -149,30 +149,30 @@ func ProcessCLPTrade(ctx sdk.Context, sender sdk.AccAddress, clpTicker string, f
 }
 
 // Trade with CLP.
-func (k Keeper) trade(ctx sdk.Context, sender sdk.AccAddress, fromTicker string, toTicker string, fromAmount int64) (int64, sdk.Error) {
+func (k Keeper) trade(ctx sdk.Context, sender sdk.AccAddress, fromTicker string, toTicker string, fromAmount int64) (int64, int64, sdk.Error) {
 	//Check different tickers
 	if fromTicker == toTicker {
-		return 0, ErrSameCoin(DefaultCodespace).TraceSDK("")
+		return 0, 0, ErrSameCoin(DefaultCodespace).TraceSDK("")
 	}
 
 	//Check sender coins ok
 	currentSenderCoins := k.bankKeeper.GetCoins(ctx, sender)
 	currentSenderFromCoinAmount := currentSenderCoins.AmountOf(fromTicker).Int64()
 	if fromAmount <= 0 || currentSenderFromCoinAmount < fromAmount {
-		return 0, ErrNotEnoughCoins(DefaultCodespace).TraceSDK("")
+		return 0, 0, ErrNotEnoughCoins(DefaultCodespace).TraceSDK("")
 	}
 
 	if fromTicker == k.baseCoinTicker && toTicker != k.baseCoinTicker {
 		emittedCLPCoinsAmount, nil := ProcessCLPTrade(ctx, sender, toTicker, fromAmount, k, true)
-		return emittedCLPCoinsAmount, nil
+		return emittedCLPCoinsAmount, fromAmount, nil
 
 	} else if toTicker == k.baseCoinTicker && fromTicker != k.baseCoinTicker {
 		emittedBaseCoinsAmount, nil := ProcessCLPTrade(ctx, sender, fromTicker, fromAmount, k, false)
-		return emittedBaseCoinsAmount, nil
+		return emittedBaseCoinsAmount, emittedBaseCoinsAmount, nil
 	}
 	emittedBaseCoinsAmount, nil := ProcessCLPTrade(ctx, sender, fromTicker, fromAmount, k, false)
 	emittedCLPCoinsAmount, nil := ProcessCLPTrade(ctx, sender, toTicker, emittedBaseCoinsAmount, k, true)
-	return emittedCLPCoinsAmount, nil
+	return emittedCLPCoinsAmount, emittedBaseCoinsAmount, nil
 }
 
 // Implements sdk.AccountMapper.
