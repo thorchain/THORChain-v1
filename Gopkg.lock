@@ -50,7 +50,7 @@
 
 [[projects]]
   branch = "thorchain_master"
-  digest = "1:e8d7a0f7626c11e187a737396c1ee09c444d601a7fcb1f3182ae4178906796b4"
+  digest = "1:3196baa55dbaa0c7cda71a2a923387575c1666d57c091165d9f930a02e079a5a"
   name = "github.com/cosmos/cosmos-sdk"
   packages = [
     "baseapp",
@@ -99,7 +99,7 @@
     "x/stake/types",
   ]
   pruneopts = "UT"
-  revision = "f3be8f34c4f827bbf16d4e0650ddd9bb3ddc0058"
+  revision = "472543e9ea435d774984efe9f706234098922388"
   source = "https://github.com/swishlabsco/cosmos-sdk.git"
 
 [[projects]]
@@ -594,7 +594,7 @@
   name = "golang.org/x/sys"
   packages = ["unix"]
   pruneopts = "UT"
-  revision = "fa5fdf94c78965f1aa8423f0cc50b8b8d728b05a"
+  revision = "2b024373dcd9800f0cae693839fac6ede8d64a8c"
 
 [[projects]]
   digest = "1:a2ab62866c75542dd18d2b069fec854577a20211d7c0ea6ae746072a1dccdd18"
@@ -692,6 +692,7 @@
     "github.com/cosmos/cosmos-sdk/x/auth",
     "github.com/cosmos/cosmos-sdk/x/auth/client/cli",
     "github.com/cosmos/cosmos-sdk/x/bank",
+    "github.com/cosmos/cosmos-sdk/x/bank/client",
     "github.com/cosmos/cosmos-sdk/x/bank/client/cli",
     "github.com/cosmos/cosmos-sdk/x/gov",
     "github.com/cosmos/cosmos-sdk/x/gov/client/cli",
@@ -703,6 +704,7 @@
     "github.com/cosmos/cosmos-sdk/x/stake",
     "github.com/cosmos/cosmos-sdk/x/stake/client/cli",
     "github.com/gorilla/mux",
+    "github.com/pkg/errors",
     "github.com/spf13/cobra",
     "github.com/spf13/pflag",
     "github.com/spf13/viper",
