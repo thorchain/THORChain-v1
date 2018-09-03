@@ -31,7 +31,7 @@ func NewCLP(sender sdk.AccAddress, ticker string, name string, reserveRatio int,
 }
 
 func NewCLPAddress(ticker string) sdk.AccAddress {
-	return sdk.AccAddress([]byte(fmt.Sprintf("clp%v", ticker)))
+	return sdk.AccAddress([]byte(fmt.Sprintf("t0clpaddr%v", ticker)))
 }
 
 // String provides a human-readable representation of a coin
