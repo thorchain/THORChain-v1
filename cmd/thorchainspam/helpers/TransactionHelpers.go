@@ -14,12 +14,12 @@ import (
 )
 
 //Setup ChainID, Gas, Account number for a context
-func SetupContext(ctx context.CoreContext, from sdk.AccAddress) (context.CoreContext, error) {
+func SetupContext(ctx context.CoreContext, from sdk.AccAddress, chainId string) (context.CoreContext, error) {
 	// add gas to context
 	ctx = ctx.WithGas(10000)
 
 	// add chain-id to context
-	ctx = ctx.WithChainID("test-chain-local")
+	ctx = ctx.WithChainID(chainId)
 
 	//add account number and sequence
 	ctx, err := lcdhelpers.EnsureAccountNumber(ctx, 0, from)

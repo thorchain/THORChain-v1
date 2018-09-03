@@ -30,6 +30,10 @@ import (
 // Returns the command to ensure k accounts exist
 func GetTxsSend(cdc *wire.Codec) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
+		chainId := viper.GetString(FlagChainID)
+		if chainId == "" {
+			return fmt.Errorf("--chain-id is required")
+		}
 
 		// parse spam prefix and password
 		spamPrefix := viper.GetString(FlagSpamPrefix)
@@ -41,7 +45,7 @@ func GetTxsSend(cdc *wire.Codec) func(cmd *cobra.Command, args []string) error {
 		stats := stats.NewStats()
 
 		// create context and all spammer objects
-		spammers, err := createSpammers(spamPrefix, spamPassword, &stats)
+		spammers, err := createSpammers(spamPrefix, spamPassword, &stats, chainId)
 		if err != nil {
 			return err
 		}
@@ -85,7 +89,7 @@ func printStats(stats *stats.Stats) {
 	stats.Print()
 }
 
-func createSpammers(spamPrefix string, spamPassword string, stats *stats.Stats) ([]Spammer, error) {
+func createSpammers(spamPrefix string, spamPassword string, stats *stats.Stats, chainId string) ([]Spammer, error) {
 	kb, err := keys.GetKeyBase()
 	if err != nil {
 		return nil, err
@@ -100,7 +104,7 @@ func createSpammers(spamPrefix string, spamPassword string, stats *stats.Stats) 
 	for i, info := range infos {
 		accountName := info.GetName()
 		if strings.HasPrefix(accountName, spamPrefix) {
-			newSpammer := SpawnSpammer(accountName, spamPassword, i, kb, info, stats)
+			newSpammer := SpawnSpammer(accountName, spamPassword, i, kb, info, stats, chainId)
 			spammers = append(spammers, newSpammer)
 			fmt.Printf("Spammer %v: Spawned...\n", i)
 		}
@@ -111,7 +115,7 @@ func createSpammers(spamPrefix string, spamPassword string, stats *stats.Stats) 
 }
 
 //Spawn new spammer
-func SpawnSpammer(localAccountName string, spamPassword string, index int, kb cryptokeys.Keybase, spammerInfo cryptokeys.Info, stats *stats.Stats) Spammer {
+func SpawnSpammer(localAccountName string, spamPassword string, index int, kb cryptokeys.Keybase, spammerInfo cryptokeys.Info, stats *stats.Stats, chainId string) Spammer {
 	fmt.Printf("Spammer %v: Spawning...\n", index)
 
 	cdc := app.MakeCodec()
@@ -126,7 +130,7 @@ func SpawnSpammer(localAccountName string, spamPassword string, index int, kb cr
 		return Spammer{}
 	}
 
-	ctx, err = helpers.SetupContext(ctx, from)
+	ctx, err = helpers.SetupContext(ctx, from, chainId)
 	if err != nil {
 		fmt.Println(err)
 		return Spammer{}
