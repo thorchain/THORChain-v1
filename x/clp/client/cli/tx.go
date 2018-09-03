@@ -32,9 +32,9 @@ func CreateTxCmd(cdc *wire.Codec) *cobra.Command {
 			// create the message
 			ticker := args[0]
 			name := args[1]
-			reserveRatio, err := strconv.Atoi(args[2])
-			initialSupply, err := strconv.Atoi(args[3])
-			initialBaseCoinAmount, err := strconv.Atoi(args[4])
+			reserveRatio, _ := strconv.Atoi(args[2])
+			initialSupply, _ := strconv.Atoi(args[3])
+			initialBaseCoinAmount, _ := strconv.Atoi(args[4])
 			msg := clpTypes.NewMsgCreate(from, ticker, name, reserveRatio, int64(initialSupply), int64(initialBaseCoinAmount))
 
 			// get account name
@@ -69,7 +69,7 @@ func TradeBaseTxCmd(cdc *wire.Codec) *cobra.Command {
 			// create the message
 			fromTicker := args[0]
 			toTicker := args[1]
-			fromAmount, err := strconv.Atoi(args[2])
+			fromAmount, _ := strconv.Atoi(args[2])
 			msg := clpTypes.NewMsgTrade(from, fromTicker, toTicker, fromAmount)
 
 			// get account name
