@@ -139,6 +139,8 @@ func main() {
 	}
 	clpCmd.AddCommand(
 		client.PostCommands(
+			clpcmd.RunSpamCmd(cdc),
+			clpcmd.CreateSpamCmd(cdc),
 			clpcmd.CreateTxCmd(cdc),
 			clpcmd.TradeBaseTxCmd(cdc),
 		)...)
