@@ -161,7 +161,7 @@ func SpawnSpammer(localAccountName string, spamPassword string, index int, kb cr
 	}
 	priv, err := kb.ExportPrivateKeyObject(localAccountName, spamPassword)
 	if err != nil {
-		fmt.Println(err)
+		panic(err)
 	}
 
 	return Spammer{localAccountName, spamPassword, from, cdc, index, sequence, ctx, priv, randomCoins}
