@@ -1,0 +1,44 @@
+---
+
+- lineinfile:
+    path: ~/.thorchaind/config/config.toml
+    regexp: '^timeout_propose = '
+    line: 'timeout_propose = 1000'
+  become: yes
+  become_user: thorchaind
+- lineinfile:
+    path: ~/.thorchaind/config/config.toml
+    regexp: '^timeout_propose_delta = '
+    line: 'timeout_propose_delta = 300'
+  become: yes
+  become_user: thorchaind
+- lineinfile:
+    path: ~/.thorchaind/config/config.toml
+    regexp: '^timeout_prevote = '
+    line: 'timeout_prevote = 500'
+  become: yes
+  become_user: thorchaind
+- lineinfile:
+    path: ~/.thorchaind/config/config.toml
+    regexp: '^timeout_prevote_delta = '
+    line: 'timeout_prevote_delta = 300'
+  become: yes
+  become_user: thorchaind
+- lineinfile:
+    path: ~/.thorchaind/config/config.toml
+    regexp: '^timeout_precommit = '
+    line: 'timeout_precommit = 500'
+  become: yes
+  become_user: thorchaind
+- lineinfile:
+    path: ~/.thorchaind/config/config.toml
+    regexp: '^timeout_precommit_delta = '
+    line: 'timeout_precommit_delta = 300'
+  become: yes
+  become_user: thorchaind
+- lineinfile:
+    path: ~/.thorchaind/config/config.toml
+    regexp: '^timeout_commit = '
+    line: 'timeout_commit = 480'
+  become: yes
+  become_user: thorchaind

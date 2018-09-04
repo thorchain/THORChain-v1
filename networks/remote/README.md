@@ -52,7 +52,16 @@ Delete servers
 Logging
 -------
 
-You can ship logs to Logz.io, an Elastic stack (Elastic search, Logstash and Kibana) service provider. You can set up your nodes to log there automatically. Create an account and get your API key from the notes on [this page](https://app.logz.io/#/dashboard/data-sources/Filebeat), then:
+You can ship logs to Logz.io, an Elastic stack (Elastic search, Logstash and Kibana) service provider. You can set up your nodes to log there automatically. Create an account and get your API key from the notes on [this page](https://app.logz.io/#/dashboard/data-sources/Filebeat).
+
+On a Mac, follow these steps: https://github.com/mheese/journalbeat/issues/92#issuecomment-328309117:
+1. `cd $GOPATH/src/github.com/mheese/journalbeat`
+1. `mkdir -p vendor/github.com/coreos/go-systemd/sdjournal/systemd`
+1. Download and unzip: https://github.com/systemd/systemd
+1. `cp ~/Downloads/systemd-master/src/systemd/* vendor/github.com/coreos/go-systemd/sdjournal/systemd`
+1. `go install`
+
+Then:
 
 ```sh
    yum install systemd-devel || echo "This will only work on RHEL-based systems."
@@ -60,5 +69,5 @@ You can ship logs to Logz.io, an Elastic stack (Elastic search, Logstash and Kib
 
    go get github.com/mheese/journalbeat
    cd networks/remote/terraform
-   ansible-playbook -i /usr/local/bin/terraform-inventory logzio.yml ../ansible/-e LOGZIO_TOKEN=ABCDEFGHIJKLMNOPQRSTUVWXYZ012345
+   ansible-playbook -i /usr/local/bin/terraform-inventory ../ansible/logzio.yml -e LOGZIO_TOKEN=ABCDEFGHIJKLMNOPQRSTUVWXYZ012345
 ```
