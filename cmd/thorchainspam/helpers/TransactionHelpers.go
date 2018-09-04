@@ -14,15 +14,15 @@ import (
 )
 
 //Setup ChainID, Gas, Account number for a context
-func SetupContext(ctx context.CoreContext, from sdk.AccAddress, chainId string) (context.CoreContext, error) {
+func SetupContext(ctx context.CoreContext, from sdk.AccAddress, chainID string, accountNumber int64) (context.CoreContext, error) {
 	// add gas to context
 	ctx = ctx.WithGas(10000)
 
 	// add chain-id to context
-	ctx = ctx.WithChainID(chainId)
+	ctx = ctx.WithChainID(chainID)
 
 	//add account number and sequence
-	ctx, err := lcdhelpers.EnsureAccountNumber(ctx, 0, from)
+	ctx, err := lcdhelpers.EnsureAccountNumber(ctx, accountNumber, from)
 	if err != nil {
 		fmt.Println(err)
 		return ctx, err
