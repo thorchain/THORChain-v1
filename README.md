@@ -2,7 +2,7 @@
 
 THORChain is a lightning fast decentralised exchange protocol. Read the whitepaper here: [THORChain Whitepaper](https://github.com/thorchain/Resources/tree/master/Whitepapers/THORChain)
 
-This project is based on work done for the [Cosmos Project](https://github.com/cosmos/cosmos-sdk) by the Cosmos/Tendermint team. 
+This project is based on work done for the [Cosmos Project](https://github.com/cosmos/cosmos-sdk) by the Cosmos/Tendermint team.
 
 ## Getting Started
 
@@ -12,7 +12,7 @@ These instructions will get you a copy of the project up and running on your loc
 
 What things you need to install the software and how to install them:
 
-* Install Go and set GOPATH: [https://golang.org/doc/install](https://golang.org/doc/install)
+* Install Go (Vesion 1.10) and set GOPATH: [https://golang.org/doc/install](https://golang.org/doc/install)
 
 ### Installing
 

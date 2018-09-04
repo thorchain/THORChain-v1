@@ -26,6 +26,11 @@ func GetAccountEnsure(cdc *wire.Codec) func(cmd *cobra.Command, args []string) e
 	return func(cmd *cobra.Command, args []string) error {
 		ctx := context.NewCoreContextFromViper().WithDecoder(authcmd.GetAccountDecoder(cdc))
 
+		chainId := viper.GetString(FlagChainID)
+		if chainId == "" {
+			return fmt.Errorf("--chain-id is required")
+		}
+
 		// parse spam prefix and password
 		spamPrefix := viper.GetString(FlagSpamPrefix)
 		spamPassword := viper.GetString(FlagSpamPassword)
@@ -65,16 +70,6 @@ func GetAccountEnsure(cdc *wire.Codec) func(cmd *cobra.Command, args []string) e
 			return err
 		}
 
-		fromAcc, err := ctx.QueryStore(auth.AddressStoreKey(from), ctx.AccountStore)
-		if err != nil {
-			return err
-		}
-
-		// Check if account was found
-		if fromAcc == nil {
-			return errors.Errorf("No account with address %s was found in the state.\nAre you sure there has been a transaction involving it?", from)
-		}
-
 		// parse coins trying to be sent
 		amount := viper.GetString(FlagAmount)
 		coins, err := sdk.ParseCoins(amount)
@@ -84,29 +79,50 @@ func GetAccountEnsure(cdc *wire.Codec) func(cmd *cobra.Command, args []string) e
 
 		// ensure account has enough coins
 		totalCoinsNeeded := multiplyCoins(coins, numAccsToCreate)
-		account, err := ctx.Decoder(fromAcc)
+
+		err = ensureFromAccHasEnoughCoins(ctx, from, totalCoinsNeeded)
 		if err != nil {
 			return err
-		}
-		if !account.GetCoins().IsGTE(totalCoinsNeeded) {
-			return errors.Errorf("Account %s doesn't have enough coins to pay for all txs", from)
 		}
 
 		sendCoins(numAccsToCreate, spamPrefix, numExistingAccs,
 			kb, spamPassword, signPassword, from,
-			coins, ctx, cdc)
+			coins, ctx, cdc, chainId)
 		return nil
 	}
 }
 
+func ensureFromAccHasEnoughCoins(ctx context.CoreContext, from sdk.AccAddress, coins sdk.Coins) error {
+	fromAcc, err := ctx.QueryStore(auth.AddressStoreKey(from), ctx.AccountStore)
+	if err != nil {
+		return err
+	}
+
+	// Check if account was found
+	if fromAcc == nil {
+		return errors.Errorf("No account with address %s was found in the state.\nAre you sure there has been a transaction involving it?", from)
+	}
+
+	account, err := ctx.Decoder(fromAcc)
+	if err != nil {
+		return err
+	}
+
+	if !account.GetCoins().IsGTE(coins) {
+		return errors.Errorf("Account %s doesn't have enough coins to pay for all txs", from)
+	}
+
+	return nil
+}
+
 func sendCoins(numAccsToCreate int, spamPrefix string, numExistingAccs int,
 	kb cryptokeys.Keybase, spamPassword string, signPassword string, from sdk.AccAddress,
-	coins sdk.Coins, ctx context.CoreContext, cdc *amino.Codec) error {
+	coins sdk.Coins, ctx context.CoreContext, cdc *amino.Codec, chainId string) error {
 
 	//Set to use max CPUs
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
-	ctx, err := helpers.SetupContext(ctx, from)
+	ctx, err := helpers.SetupContext(ctx, from, chainId)
 	if err != nil {
 		fmt.Println(err)
 		return err

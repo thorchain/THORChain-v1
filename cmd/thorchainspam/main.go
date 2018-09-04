@@ -8,6 +8,7 @@ import (
 	"github.com/thorchain/THORChain/app"
 	"github.com/thorchain/THORChain/cmd/thorchainspam/account"
 	"github.com/thorchain/THORChain/cmd/thorchainspam/txs"
+	"github.com/thorchain/THORChain/version"
 
 	"github.com/tendermint/tendermint/libs/cli"
 )
@@ -71,6 +72,9 @@ func main() {
 	txsCmd.AddCommand(txsSendCmd)
 
 	rootCmd.AddCommand(txsCmd)
+
+	// add version
+	rootCmd.AddCommand(version.VersionCmd)
 
 	// prepare and add flags
 	executor := cli.PrepareMainCmd(rootCmd, "GA", app.DefaultCLIHome)
