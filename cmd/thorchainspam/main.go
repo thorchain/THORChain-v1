@@ -63,6 +63,7 @@ func main() {
 		RunE:  txs.GetTxsSend(cdc),
 	}
 
+	txsSendCmd.Flags().Float64(txs.FlagRateLimit, 200, "Prefix for the name of spam account keys")
 	txsSendCmd.Flags().String(txs.FlagSpamPrefix, "spam", "Prefix for the name of spam account keys")
 	txsSendCmd.Flags().String(txs.FlagSpamPassword, "", "Password for spam account keys")
 	txsSendCmd.Flags().Int(txs.FlagTxConcurrency, 200, "Number of concurrent txs")

@@ -39,6 +39,8 @@ func GetTxsSend(cdc *wire.Codec) func(cmd *cobra.Command, args []string) error {
 			return fmt.Errorf("--chain-id is required")
 		}
 
+		rateLimit := viper.GetFloat64(FlagRateLimit)
+
 		// parse spam prefix and password
 		spamPrefix := viper.GetString(FlagSpamPrefix)
 		spamPassword := viper.GetString(FlagSpamPassword)
@@ -66,12 +68,15 @@ func GetTxsSend(cdc *wire.Codec) func(cmd *cobra.Command, args []string) error {
 
 		var wg sync.WaitGroup
 
+		// rate limiter to allow x events per second
+		limiter := time.Tick(time.Duration(rateLimit) * time.Millisecond)
+
 		for i := 0; i < len(spammers); i++ {
 			wg.Add(1)
 
 			fmt.Printf("Spammer %v: Starting up...\n", i)
 			nextSpammer := spammers[(i+1)%len(spammers)]
-			go spammers[i].start(&nextSpammer, &stats)
+			go spammers[i].start(&nextSpammer, &stats, limiter)
 			fmt.Printf("Spammer %v: Started...\n", i)
 
 		}
@@ -193,8 +198,10 @@ type Spammer struct {
 	clpTo           string
 }
 
-func (sp *Spammer) start(nextSpammer *Spammer, stats *stats.Stats) {
+func (sp *Spammer) start(nextSpammer *Spammer, stats *stats.Stats, limiter <-chan time.Time) {
 	for {
+		<-limiter
+
 		fmt.Printf("Spammer %v: Sending transaction with sequence %v...\n", sp.index, sp.currentSequence)
 		sp.ctx = sp.ctx.WithSequence(sp.currentSequence)
 
