@@ -27,11 +27,15 @@ import (
 	clpTypes "github.com/thorchain/THORChain/x/clp/types"
 )
 
+var (
+	defaultBlockTime time.Duration = 8000
+)
+
 // Returns the command to ensure k accounts exist
 func GetTxsSend(cdc *wire.Codec) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-		chainId := viper.GetString(FlagChainID)
-		if chainId == "" {
+		chainID := viper.GetString(FlagChainID)
+		if chainID == "" {
 			return fmt.Errorf("--chain-id is required")
 		}
 
@@ -45,7 +49,7 @@ func GetTxsSend(cdc *wire.Codec) func(cmd *cobra.Command, args []string) error {
 		stats := stats.NewStats()
 
 		// create context and all spammer objects
-		spammers, err := createSpammers(spamPrefix, spamPassword, &stats, chainId)
+		spammers, err := createSpammers(spamPrefix, spamPassword, &stats, chainID)
 		if err != nil {
 			return err
 		}
@@ -72,13 +76,11 @@ func GetTxsSend(cdc *wire.Codec) func(cmd *cobra.Command, args []string) error {
 
 		}
 
-		go printStats(&stats)
 		wg.Add(1)
 
 		wg.Wait()
 
 		fmt.Printf("Done.")
-		stats.Print()
 
 		return nil
 	}
@@ -89,7 +91,7 @@ func printStats(stats *stats.Stats) {
 	stats.Print()
 }
 
-func createSpammers(spamPrefix string, spamPassword string, stats *stats.Stats, chainId string) ([]Spammer, error) {
+func createSpammers(spamPrefix string, spamPassword string, stats *stats.Stats, chainID string) ([]Spammer, error) {
 	kb, err := keys.GetKeyBase()
 	if err != nil {
 		return nil, err
@@ -100,13 +102,18 @@ func createSpammers(spamPrefix string, spamPassword string, stats *stats.Stats, 
 		return nil, err
 	}
 
+	queryFree := make(chan bool, 1)
+	queryFree <- true
+
 	var spammers []Spammer
-	for i, info := range infos {
+	var j = 0
+	for _, info := range infos {
 		accountName := info.GetName()
 		if strings.HasPrefix(accountName, spamPrefix) {
-			newSpammer := SpawnSpammer(accountName, spamPassword, i, kb, info, stats, chainId)
+			newSpammer := SpawnSpammer(accountName, spamPassword, j, kb, info, stats, chainID, queryFree)
 			spammers = append(spammers, newSpammer)
-			fmt.Printf("Spammer %v: Spawned...\n", i)
+			fmt.Printf("Spammer %v: Spawned...\n", j)
+			j++
 		}
 	}
 
@@ -115,7 +122,7 @@ func createSpammers(spamPrefix string, spamPassword string, stats *stats.Stats, 
 }
 
 //Spawn new spammer
-func SpawnSpammer(localAccountName string, spamPassword string, index int, kb cryptokeys.Keybase, spammerInfo cryptokeys.Info, stats *stats.Stats, chainId string) Spammer {
+func SpawnSpammer(localAccountName string, spamPassword string, index int, kb cryptokeys.Keybase, spammerInfo cryptokeys.Info, stats *stats.Stats, chainId string, queryFree chan bool) Spammer {
 	fmt.Printf("Spammer %v: Spawning...\n", index)
 
 	cdc := app.MakeCodec()
@@ -130,7 +137,7 @@ func SpawnSpammer(localAccountName string, spamPassword string, index int, kb cr
 		return Spammer{}
 	}
 
-	ctx, err = helpers.SetupContext(ctx, from, chainId)
+	ctx, err = helpers.SetupContext(ctx, from, chainId, 0)
 	if err != nil {
 		fmt.Println(err)
 		return Spammer{}
@@ -153,18 +160,19 @@ func SpawnSpammer(localAccountName string, spamPassword string, index int, kb cr
 		return Spammer{}
 	}
 
-	fmt.Printf("Spammer %v: Making sequence...\n", index)
+	fmt.Printf("Spammer %v: Finding sequence...\n", index)
 
 	sequence, err3 := ctx.NextSequence(from)
 	if err3 != nil {
 		fmt.Printf("Spammer %v: Sequence Error...\n", index)
 	}
+
 	priv, err := kb.ExportPrivateKeyObject(localAccountName, spamPassword)
 	if err != nil {
 		fmt.Println(err)
 	}
 
-	return Spammer{localAccountName, spamPassword, from, cdc, index, sequence, ctx, priv, randomCoins}
+	return Spammer{localAccountName, spamPassword, from, cdc, index, sequence, ctx, priv, randomCoins, 0, queryFree, "RUNE", "ETH"}
 
 }
 
@@ -173,35 +181,67 @@ type Spammer struct {
 	accountName     string
 	password        string
 	accountAddress  sdk.AccAddress
-	codec           *wire.Codec
+	cdc             *wire.Codec
 	index           int
 	currentSequence int64
 	ctx             context.CoreContext
 	priv            tmcrypto.PrivKey
 	randomCoins     sdk.Coins
+	sequenceCheck   int
+	queryFree       chan bool
+	clpFrom         string
+	clpTo           string
 }
 
 func (sp *Spammer) start(nextSpammer *Spammer, stats *stats.Stats) {
 	for {
-		// fmt.Printf("Spammer %v: Sending to self with sequence %v...\n", sp.index, sp.currentSequence)
+		fmt.Printf("Spammer %v: Sending transaction with sequence %v...\n", sp.index, sp.currentSequence)
 		sp.ctx = sp.ctx.WithSequence(sp.currentSequence)
 
 		clpMsg := rand.Float32() < 0.5
 		var msg sdk.Msg
 		if clpMsg {
-			msg = clpTypes.NewMsgTrade(sp.accountAddress, "RUNE", "ETH", 1)
+			msg = clpTypes.NewMsgTrade(sp.accountAddress, sp.clpFrom, sp.clpTo, 1)
 		} else {
 			msg = client.BuildMsg(sp.accountAddress, nextSpammer.accountAddress, sp.randomCoins)
-
 		}
 
-		_, err := helpers.PrivProcessMsg(sp.ctx, sp.priv, sp.codec, msg)
+		_, err := helpers.PrivProcessMsg(sp.ctx, sp.priv, sp.cdc, msg)
 		if err != nil {
 			fmt.Println(err)
-			return
+			sp.updateContext()
+			continue
 		}
 		sp.currentSequence = sp.currentSequence + 1
+		sp.sequenceCheck = sp.sequenceCheck + 1
+		if sp.sequenceCheck >= 50000 {
+			sp.updateContext()
+		}
 	}
+}
+
+func (sp *Spammer) flipCLPTickers() {
+	tmp := sp.clpFrom
+	sp.clpFrom = sp.clpTo
+	sp.clpTo = tmp
+}
+
+func (sp *Spammer) updateContext() {
+	fmt.Printf("Spammer %v: time to refresh sequence, waiting for next block...\n", sp.index)
+	time.Sleep(defaultBlockTime * time.Millisecond)
+	fmt.Printf("Spammer %v: waiting for query to be free...\n", sp.index)
+	<-sp.queryFree
+	fmt.Printf("Spammer %v: query free, querying...\n", sp.index)
+
+	nextSequence, err := sp.ctx.NextSequence(sp.accountAddress)
+	if err != nil {
+		fmt.Println(err)
+	}
+	sp.currentSequence = nextSequence
+	fmt.Printf("Spammer %v: Sequence updated to...%v\n", sp.index, sp.currentSequence)
+	fmt.Printf("Spammer %v: Setting query free again...\n", sp.index)
+	sp.queryFree <- true
+	sp.sequenceCheck = 0
 }
 
 func getRandomCoinsUpTo(coins sdk.Coins, divideBy int64) sdk.Coins {
