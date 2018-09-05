@@ -122,7 +122,7 @@ func sendCoins(numAccsToCreate int, spamPrefix string, numExistingAccs int,
 	//Set to use max CPUs
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
-	ctx, err := helpers.SetupContext(ctx, from, chainId)
+	ctx, err := helpers.SetupContext(ctx, from, chainId, 0)
 	if err != nil {
 		fmt.Println(err)
 		return err
