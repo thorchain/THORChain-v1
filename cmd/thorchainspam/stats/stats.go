@@ -9,11 +9,12 @@ import (
 type Stats struct {
 	numError      int
 	numSuccessful int
-	started       time.Time
+	started       bool
+	startedAt     time.Time
 }
 
 func NewStats() Stats {
-	return Stats{0, 0, time.Now()}
+	return Stats{0, 0, false, time.Now()}
 }
 
 // Add success to stats
@@ -24,8 +25,13 @@ func (s *Stats) AddError() { s.numError++ }
 
 // Prints the current stats
 func (s *Stats) Print() {
+	if !s.started {
+		s.startedAt = time.Now()
+		s.started = true
+	}
+
 	total := s.numSuccessful + s.numError
-	secsPassed := time.Now().Sub(s.started).Seconds()
+	secsPassed := time.Now().Sub(s.startedAt).Seconds()
 
 	fmt.Printf("\n=======================================\n")
 	fmt.Printf("Total: %v\n", total)
