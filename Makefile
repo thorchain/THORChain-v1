@@ -38,6 +38,13 @@ else
 	go build $(BUILD_FLAGS) -o build/thorchaincli ./cmd/thorchaincli
 endif
 
+build-debug: check-ledger
+ifeq ($(OS),Windows_NT)
+	go build $(BUILD_FLAGS) -o build/thorchaindebug.exe ./cmd/thorchaindebug
+else
+	go build $(BUILD_FLAGS) -o build/thorchaindebug ./cmd/thorchaindebug
+endif
+
 build-spam: check-ledger
 ifeq ($(OS),Windows_NT)
 	go build $(BUILD_FLAGS) -o build/thorchainspam.exe ./cmd/thorchainspam
@@ -45,11 +52,14 @@ else
 	go build $(BUILD_FLAGS) -o build/thorchainspam ./cmd/thorchainspam
 endif
 
-build-spam-linux:
-	LEDGER_ENABLED=false GOOS=linux GOARCH=amd64 $(MAKE) build-spam
-
 build-linux:
 	LEDGER_ENABLED=false GOOS=linux GOARCH=amd64 $(MAKE) build
+
+build-debug-linux:
+	LEDGER_ENABLED=false GOOS=linux GOARCH=amd64 $(MAKE) build-debug
+
+build-spam-linux:
+	LEDGER_ENABLED=false GOOS=linux GOARCH=amd64 $(MAKE) build-spam
 
 install: check-ledger
 	go install $(BUILD_FLAGS) ./cmd/thorchaind

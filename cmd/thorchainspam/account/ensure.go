@@ -89,7 +89,7 @@ func GetAccountEnsure(cdc *wire.Codec) func(cmd *cobra.Command, args []string) e
 			kb, spamPassword, signPassword, from,
 			coins, ctx, cdc, chainId)
 
-		fmt.Printf("Done creating %v accounts\n", numExistingAccs, numAccsToCreate)
+		fmt.Printf("Done creating %v accounts\n", numAccsToCreate)
 
 		return nil
 	}
