@@ -145,6 +145,7 @@ func main() {
 	clpCmd.AddCommand(
 		client.GetCommands(
 			clpcmd.GetCmd(cdc),
+			clpcmd.GetAllCmd(cdc),
 		)...)
 	rootCmd.AddCommand(
 		clpCmd,

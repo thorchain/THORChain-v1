@@ -117,3 +117,43 @@ func GetCmd(cdc *wire.Codec) *cobra.Command {
 		},
 	}
 }
+
+// get clp data
+func GetAllCmd(cdc *wire.Codec) *cobra.Command {
+	return &cobra.Command{
+		Use:   "get_all",
+		Short: "Get all clps",
+		RunE: func(cmd *cobra.Command, args []string) error {
+
+			ctx := context.NewCoreContextFromViper()
+
+			clpSubspace := []byte("clp:")
+
+			res, err := ctx.QuerySubspace(cdc, clpSubspace, "clp")
+			if err != nil {
+				return err
+			}
+			if res == nil {
+				fmt.Printf("No CLPs \n")
+				return nil
+			}
+
+			var clps []clpTypes.CLP
+			for i := 0; i < len(res); i++ {
+				clp := new(clpTypes.CLP)
+				err2 := cdc.UnmarshalBinary(res[i].Value, &clp)
+				if err2 != nil {
+					return err2
+				}
+				clps = append(clps, *clp)
+			}
+			fmt.Printf("CLP details \n\n")
+
+			for i := 0; i < len(clps); i++ {
+				fmt.Printf("Creator: %s \nTicker: %v \nName: %v \nReserve Ratio: %v \nInitial Supply: %v \nAccount Address: %v \n\n", clps[i].Creator, clps[i].Ticker, clps[i].Name, clps[i].ReserveRatio, clps[i].InitialSupply, clps[i].AccountAddress.String())
+			}
+
+			return nil
+		},
+	}
+}
