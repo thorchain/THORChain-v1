@@ -166,6 +166,7 @@ remotenet-reset-with-genesis:
 	@if ! [ -f $(GENESIS_FILE) ]; then echo "GENESIS environment variable not set." ; false ; fi
 	cd networks/remote/terraform && ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i /usr/local/bin/terraform-inventory -e GENESIS_FILE=$(GENESIS_FILE) ../ansible/reset-validators-with-genesis.yml
 	cd networks/remote/terraform && ansible-playbook -i /usr/local/bin/terraform-inventory ../ansible/set-toml-values.yml
+	cd networks/remote/terraform && ansible-playbook -i /usr/local/bin/terraform-inventory -e TESTNET_NAME="$(TESTNET_NAME)" ../ansible/start.yml
 
 remotenet-stop:
 	@if [ -z "$(AWS_SECRET_KEY)" ]; then echo "AWS_SECRET_KEY environment variable not set." ; false ; fi
@@ -178,7 +179,7 @@ remotenet-status:
 ########################################
 ### Remote spam nodes using terraform and ansible
 
-SPAM_CLUSTER_NAME?="$(TESTNET_NAME)-spam"
+SPAM_CLUSTER_NAME?="$(TESTNET_NAME)-spammer"
 SERVERS?=4
 SPAM_SSH_KEY_NAME?="$(SPAM_CLUSTER_NAME)-deployer"
 SSH_PRIVATE_FILE?="$(HOME)/.ssh/id_rsa"
@@ -193,7 +194,15 @@ remotenet-spam-start:
 	@if [ -z "`file $(SPAM_BINARY) | grep 'ELF 64-bit'`" ]; then echo "Please build a linux binary using 'make build-spam-linux'." ; false ; fi
 	@if [ -z "`file $(CLI_BINARY) | grep 'ELF 64-bit'`" ]; then echo "Please build a linux binary using 'make build-linux'." ; false ; fi
 	cd networks/remote-spam/terraform && terraform init && terraform apply -var CLUSTER_NAME="$(SPAM_CLUSTER_NAME)" -var SERVERS="$(SERVERS)" -var AWS_SECRET_KEY="$(AWS_SECRET_KEY)" -var AWS_ACCESS_KEY="$(AWS_ACCESS_KEY)" -var SSH_KEY_NAME="$(SPAM_SSH_KEY_NAME)" -var SSH_PRIVATE_FILE="$(SSH_PRIVATE_FILE)" -var SSH_PUBLIC_FILE="$(SSH_PUBLIC_FILE)"
-	cd networks/remote-spam/terraform && ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i /usr/local/bin/terraform-inventory -e SPAM_BINARY=$(SPAM_BINARY) -e CLI_BINARY=$(CLI_BINARY) -e CLUSTER_NAME="$(SPAM_CLUSTER_NAME)" ../ansible/setup-spammers.yml
+	cd networks/remote-spam/terraform && ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i /usr/local/bin/terraform-inventory -e SPAM_BINARY=$(SPAM_BINARY) -e CLI_BINARY=$(CLI_BINARY) ../ansible/setup-spammers.yml
+
+remotenet-spam-deploy-binaries:
+	@if [ -z "$(AWS_SECRET_KEY)" ]; then echo "AWS_SECRET_KEY environment variable not set." ; false ; fi
+	@if [ -z "$(AWS_ACCESS_KEY)" ]; then echo "AWS_ACCESS_KEY environment variable not set." ; false ; fi
+	@if ! [ -f $(SSH_PUBLIC_FILE) ]; then ssh-keygen ; fi
+	@if [ -z "`file $(SPAM_BINARY) | grep 'ELF 64-bit'`" ]; then echo "Please build a linux binary using 'make build-spam-linux'." ; false ; fi
+	@if [ -z "`file $(CLI_BINARY) | grep 'ELF 64-bit'`" ]; then echo "Please build a linux binary using 'make build-linux'." ; false ; fi
+	cd networks/remote-spam/terraform && ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i /usr/local/bin/terraform-inventory -e SPAM_BINARY=$(SPAM_BINARY) -e CLI_BINARY=$(CLI_BINARY) ../ansible/setup-spammers.yml
 
 remotenet-spam-stop:
 	@if [ -z "$(AWS_SECRET_KEY)" ]; then echo "AWS_SECRET_KEY environment variable not set." ; false ; fi

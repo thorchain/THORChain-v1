@@ -6,7 +6,5 @@
   any_errors_fatal: true
   gather_facts: no
   roles:
-    - stop
     - set-toml-values
-    - start
 

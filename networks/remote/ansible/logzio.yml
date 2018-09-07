@@ -12,4 +12,3 @@
     - JOURNALBEAT_BINARY: "{{lookup('env', 'GOPATH')}}/bin/journalbeat"
   roles:
     - logzio
-
