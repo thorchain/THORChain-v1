@@ -163,15 +163,27 @@ func (k Keeper) trade(ctx sdk.Context, sender sdk.AccAddress, fromTicker string,
 	}
 
 	if fromTicker == k.baseCoinTicker && toTicker != k.baseCoinTicker {
-		emittedCLPCoinsAmount, _ := ProcessCLPTrade(ctx, sender, toTicker, fromAmount, k, true)
+		emittedCLPCoinsAmount, err := ProcessCLPTrade(ctx, sender, toTicker, fromAmount, k, true)
+		if err != nil {
+			return 0, 0, err
+		}
 		return emittedCLPCoinsAmount, fromAmount, nil
 
 	} else if toTicker == k.baseCoinTicker && fromTicker != k.baseCoinTicker {
-		emittedBaseCoinsAmount, _ := ProcessCLPTrade(ctx, sender, fromTicker, fromAmount, k, false)
+		emittedBaseCoinsAmount, err := ProcessCLPTrade(ctx, sender, fromTicker, fromAmount, k, false)
+		if err != nil {
+			return 0, 0, err
+		}
 		return emittedBaseCoinsAmount, emittedBaseCoinsAmount, nil
 	}
-	emittedBaseCoinsAmount, _ := ProcessCLPTrade(ctx, sender, fromTicker, fromAmount, k, false)
-	emittedCLPCoinsAmount, _ := ProcessCLPTrade(ctx, sender, toTicker, emittedBaseCoinsAmount, k, true)
+	emittedBaseCoinsAmount, err := ProcessCLPTrade(ctx, sender, fromTicker, fromAmount, k, false)
+	if err != nil {
+		return 0, 0, err
+	}
+	emittedCLPCoinsAmount, err := ProcessCLPTrade(ctx, sender, toTicker, emittedBaseCoinsAmount, k, true)
+	if err != nil {
+		return 0, 0, err
+	}
 	return emittedCLPCoinsAmount, emittedBaseCoinsAmount, nil
 }
 
