@@ -111,14 +111,18 @@ func createSpammers(spamPrefix string, spamPassword string, stats *stats.Stats, 
 	queryFree <- true
 
 	var spammers []Spammer
-	var j = 0
+	var j = -1
 	for _, info := range infos {
 		accountName := info.GetName()
 		if strings.HasPrefix(accountName, spamPrefix) {
-			newSpammer := SpawnSpammer(accountName, spamPassword, j, kb, info, stats, chainID, queryFree)
+			j++
+			newSpammer, err := SpawnSpammer(accountName, spamPassword, j, kb, info, stats, chainID, queryFree)
+			if err != nil {
+				fmt.Println(err)
+				continue
+			}
 			spammers = append(spammers, newSpammer)
 			fmt.Printf("Spammer %v: Spawned...\n", j)
-			j++
 		}
 	}
 
@@ -127,7 +131,7 @@ func createSpammers(spamPrefix string, spamPassword string, stats *stats.Stats, 
 }
 
 //Spawn new spammer
-func SpawnSpammer(localAccountName string, spamPassword string, index int, kb cryptokeys.Keybase, spammerInfo cryptokeys.Info, stats *stats.Stats, chainId string, queryFree chan bool) Spammer {
+func SpawnSpammer(localAccountName string, spamPassword string, index int, kb cryptokeys.Keybase, spammerInfo cryptokeys.Info, stats *stats.Stats, chainId string, queryFree chan bool) (Spammer, error) {
 	fmt.Printf("Spammer %v: Spawning...\n", index)
 
 	cdc := app.MakeCodec()
@@ -139,30 +143,28 @@ func SpawnSpammer(localAccountName string, spamPassword string, index int, kb cr
 	from, err := helpers.GetFromAddress(kb, localAccountName)
 	if err != nil {
 		fmt.Println(err)
-		return Spammer{}
+		return Spammer{}, err
 	}
 
 	ctx, err = helpers.SetupContext(ctx, from, chainId, 0)
 	if err != nil {
 		fmt.Println(err)
-		return Spammer{}
+		return Spammer{}, err
 	}
 
 	// get account balance from sender
 	fromAcc, err := getAcc(ctx, spammerInfo)
 	if err != nil {
-		fmt.Printf("Iteration %v: Account not found, skipping\n", index)
 		stats.AddAccountNotFound()
-		return Spammer{}
+		return Spammer{}, fmt.Errorf("Iteration %v: Account not found, skipping\n", index)
 	}
 
 	// calculate random share of coins to be sent
 	randomCoins := getRandomCoinsUpTo(fromAcc.GetCoins(), 1000)
 
 	if !randomCoins.IsPositive() {
-		fmt.Printf("Iteration %v: No coins to send, skipping\n", index)
 		stats.AddNoCoinsToSend()
-		return Spammer{}
+		return Spammer{}, fmt.Errorf("Iteration %v: No coins to send, skipping\n", index)
 	}
 
 	fmt.Printf("Spammer %v: Finding sequence...\n", index)
@@ -177,7 +179,7 @@ func SpawnSpammer(localAccountName string, spamPassword string, index int, kb cr
 		panic(err)
 	}
 
-	return Spammer{localAccountName, spamPassword, from, cdc, index, sequence, ctx, priv, randomCoins, 0, queryFree, "RUNE", "ETH"}
+	return Spammer{localAccountName, spamPassword, from, cdc, index, sequence, ctx, priv, randomCoins, 0, queryFree, "RUNE", "ETH"}, nil
 
 }
 
