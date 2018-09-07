@@ -73,15 +73,13 @@ func GetTxsSend(cdc *wire.Codec) func(cmd *cobra.Command, args []string) error {
 
 		for i := 0; i < len(spammers); i++ {
 			wg.Add(1)
-
 			fmt.Printf("Spammer %v: Starting up...\n", i)
 			nextSpammer := spammers[(i+1)%len(spammers)]
 			go spammers[i].start(&nextSpammer, &stats, limiter)
 			fmt.Printf("Spammer %v: Started...\n", i)
-
 		}
 
-		wg.Add(1)
+		doEvery(1*time.Second, stats.Print)
 
 		wg.Wait()
 
@@ -91,9 +89,10 @@ func GetTxsSend(cdc *wire.Codec) func(cmd *cobra.Command, args []string) error {
 	}
 }
 
-func printStats(stats *stats.Stats) {
-	time.Sleep(5 * time.Millisecond)
-	stats.Print()
+func doEvery(d time.Duration, f func()) {
+	for _ = range time.Tick(d) {
+		go f()
+	}
 }
 
 func createSpammers(spamPrefix string, spamPassword string, stats *stats.Stats, chainID string) ([]Spammer, error) {
@@ -155,7 +154,6 @@ func SpawnSpammer(localAccountName string, spamPassword string, index int, kb cr
 	// get account balance from sender
 	fromAcc, err := getAcc(ctx, spammerInfo)
 	if err != nil {
-		stats.AddAccountNotFound()
 		return Spammer{}, fmt.Errorf("Iteration %v: Account not found, skipping\n", index)
 	}
 
@@ -163,7 +161,6 @@ func SpawnSpammer(localAccountName string, spamPassword string, index int, kb cr
 	randomCoins := getRandomCoinsUpTo(fromAcc.GetCoins(), 1000)
 
 	if !randomCoins.IsPositive() {
-		stats.AddNoCoinsToSend()
 		return Spammer{}, fmt.Errorf("Iteration %v: No coins to send, skipping\n", index)
 	}
 
@@ -204,7 +201,7 @@ func (sp *Spammer) start(nextSpammer *Spammer, stats *stats.Stats, limiter <-cha
 	for {
 		<-limiter
 
-		fmt.Printf("Spammer %v: Sending transaction with sequence %v...\n", sp.index, sp.currentSequence)
+		// fmt.Printf("Spammer %v: Sending transaction with sequence %v...\n", sp.index, sp.currentSequence)
 		sp.ctx = sp.ctx.WithSequence(sp.currentSequence)
 
 		clpMsg := rand.Float32() < 0.5
@@ -218,9 +215,11 @@ func (sp *Spammer) start(nextSpammer *Spammer, stats *stats.Stats, limiter <-cha
 		_, err := helpers.PrivProcessMsg(sp.ctx, sp.priv, sp.cdc, msg)
 		if err != nil {
 			fmt.Println(err)
+			stats.AddError()
 			sp.updateContext()
 			continue
 		}
+		stats.AddSuccess()
 		sp.currentSequence = sp.currentSequence + 1
 		sp.sequenceCheck = sp.sequenceCheck + 1
 		if sp.sequenceCheck >= 50000 {
