@@ -222,7 +222,7 @@ func (sp *Spammer) start(nextSpammer *Spammer, stats *stats.Stats, limiter <-cha
 		stats.AddSuccess()
 		sp.currentSequence = sp.currentSequence + 1
 		sp.sequenceCheck = sp.sequenceCheck + 1
-		if sp.sequenceCheck >= 50000 {
+		if sp.sequenceCheck >= 1000 {
 			sp.updateContext()
 		}
 	}
