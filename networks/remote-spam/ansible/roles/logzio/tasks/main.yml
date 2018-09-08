@@ -24,4 +24,4 @@
   notify:
   - reload daemon
   - restart journalbeat
-  
+
