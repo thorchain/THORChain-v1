@@ -10,6 +10,6 @@ output "instances" {
 
 // The list of cluster instance public IPs
 output "public_ips" {
-  value = ["${aws_instance.cluster.*.public_ip}"]
+  value = ["${aws_eip.eip.*.public_ip}"]
 }
 

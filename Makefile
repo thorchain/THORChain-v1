@@ -168,23 +168,23 @@ remotenet-start:
 	@if ! [ -f $(SSH_PUBLIC_FILE) ]; then ssh-keygen ; fi
 	@if [ -z "`file $(BINARY) | grep 'ELF 64-bit'`" ]; then echo "Please build a linux binary using 'make build-linux'." ; false ; fi
 	cd networks/remote/terraform && terraform init && terraform apply -var TESTNET_NAME="$(TESTNET_NAME)" -var SERVERS="$(SERVERS)" -var AWS_SECRET_KEY="$(AWS_SECRET_KEY)" -var AWS_ACCESS_KEY="$(AWS_ACCESS_KEY)" -var SSH_KEY_NAME="$(SSH_KEY_NAME)" -var SSH_PRIVATE_FILE="$(SSH_PRIVATE_FILE)" -var SSH_PUBLIC_FILE="$(SSH_PUBLIC_FILE)"
-	cd networks/remote/terraform && ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i /usr/local/bin/terraform-inventory -e BINARY=$(BINARY) -e TESTNET_NAME="$(TESTNET_NAME)" ../ansible/setup-validators.yml
-	cd networks/remote/terraform && ansible-playbook -i /usr/local/bin/terraform-inventory ../ansible/set-toml-values.yml
-	cd networks/remote/terraform && ansible-playbook -i /usr/local/bin/terraform-inventory -e TESTNET_NAME="$(TESTNET_NAME)" ../ansible/start.yml
+	ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i ./networks/remote/ansible/inventory/hosts.yml -e BINARY=$(BINARY) -e TESTNET_NAME="$(TESTNET_NAME)" ./networks/remote/ansible/setup-validators.yml
+	ansible-playbook -i ./networks/remote/ansible/inventory/hosts.yml ./networks/remote/ansible/set-toml-values.yml
+	ansible-playbook -i ./networks/remote/ansible/inventory/hosts.yml -e TESTNET_NAME="$(TESTNET_NAME)" ./networks/remote/ansible/start.yml
 
 remotenet-reset-with-genesis:
-	@if ! [ -f $(GENESIS_FILE) ]; then echo "GENESIS environment variable not set." ; false ; fi
-	cd networks/remote/terraform && ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i /usr/local/bin/terraform-inventory -e GENESIS_FILE=$(GENESIS_FILE) ../ansible/reset-validators-with-genesis.yml
-	cd networks/remote/terraform && ansible-playbook -i /usr/local/bin/terraform-inventory ../ansible/set-toml-values.yml
-	cd networks/remote/terraform && ansible-playbook -i /usr/local/bin/terraform-inventory -e TESTNET_NAME="$(TESTNET_NAME)" ../ansible/start.yml
+	@if ! [ -f $(GENESIS_FILE) ]; then echo "GENESIS_FILE environment variable not set." ; false ; fi
+	ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i ./networks/remote/ansible/inventory/hosts.yml -e GENESIS_FILE=$(GENESIS_FILE) ./networks/remote/ansible/reset-validators-with-genesis.yml
+	ansible-playbook -i ./networks/remote/ansible/inventory/hosts.yml ./networks/remote/ansible/set-toml-values.yml
+	ansible-playbook -i ./networks/remote/ansible/inventory/hosts.yml -e TESTNET_NAME="$(TESTNET_NAME)" ./networks/remote/ansible/start.yml
 
 remotenet-stop:
 	@if [ -z "$(AWS_SECRET_KEY)" ]; then echo "AWS_SECRET_KEY environment variable not set." ; false ; fi
 	@if [ -z "$(AWS_ACCESS_KEY)" ]; then echo "AWS_ACCESS_KEY environment variable not set." ; false ; fi
-	cd networks/remote/terraform && terraform destroy -var AWS_SECRET_KEY="$(AWS_SECRET_KEY)" -var AWS_ACCESS_KEY="$(AWS_ACCESS_KEY)" -var SSH_KEY_NAME="$(SSH_KEY_NAME)" -var SSH_PRIVATE_FILE="$(SSH_PRIVATE_FILE)" -var SSH_PUBLIC_FILE="$(SSH_PUBLIC_FILE)"
+	terraform destroy -var AWS_SECRET_KEY="$(AWS_SECRET_KEY)" -var AWS_ACCESS_KEY="$(AWS_ACCESS_KEY)" -var SSH_KEY_NAME="$(SSH_KEY_NAME)" -var SSH_PRIVATE_FILE="$(SSH_PRIVATE_FILE)" -var SSH_PUBLIC_FILE="$(SSH_PUBLIC_FILE)"
 
 remotenet-status:
-	cd networks/remote/terraform && ansible-playbook -i /usr/local/bin/terraform-inventory ../ansible/status.yml
+	ansible-playbook -i ./networks/remote/ansible/inventory/hosts.yml ./networks/remote/ansible/status.yml
 
 ########################################
 ### Remote spam nodes using terraform and ansible

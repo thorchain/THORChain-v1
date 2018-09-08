@@ -20,6 +20,11 @@ resource "aws_instance" "cluster" {
   }
   count = "${var.servers}"
 
+  ebs_block_device {
+    device_name = "/dev/xvda"
+    volume_size = 128
+  }
+
   lifecycle = {
 	  prevent_destroy = false
   }
@@ -46,5 +51,16 @@ resource "aws_instance" "cluster" {
       "sudo chmod +x /tmp/terraform.sh",
       "sudo /tmp/terraform.sh ${var.name} ${count.index}",
     ]
+  }
+}
+
+resource "aws_eip" "eip" {
+  instance = "${element(aws_instance.cluster.*.id,count.index)}"
+  vpc = true
+  depends_on = ["aws_instance.cluster"]
+  count = "${var.servers}"
+
+  tags {
+    Name = "${var.name}-eip${count.index}"
   }
 }

@@ -30,3 +30,14 @@ resource "aws_instance" "cluster" {
     timeout = "30s"
   }
 }
+
+resource "aws_eip" "eip" {
+  instance = "${element(aws_instance.cluster.*.id,count.index)}"
+  vpc = true
+  depends_on = ["aws_instance.cluster"]
+  count = "${var.servers}"
+
+  tags {
+    Name = "${var.name}-eip${count.index}"
+  }
+}
