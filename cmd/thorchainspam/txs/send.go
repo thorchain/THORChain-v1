@@ -66,11 +66,6 @@ func GetTxsSend(cdc *wire.Codec) func(cmd *cobra.Command, args []string) error {
 		//Use all cores
 		runtime.GOMAXPROCS(runtime.NumCPU())
 
-		// var wg sync.WaitGroup
-		// wg.Add(1)
-
-		// TODO throw error if rateLimit * spammers would fire too often and we'd get sequence mismatches again
-
 		// rate limiter to allow x events per second
 		limiter := time.Tick(time.Duration(rateLimit) * time.Millisecond)
 
@@ -88,7 +83,6 @@ func GetTxsSend(cdc *wire.Codec) func(cmd *cobra.Command, args []string) error {
 				i++
 			}
 		}
-		// wg.Wait()
 	}
 }
 
@@ -109,9 +103,6 @@ func createSpammers(spamPrefix string, spamPassword string, stats *stats.Stats, 
 		return nil, err
 	}
 
-	queryFree := make(chan bool, 1)
-	queryFree <- true
-
 	var wg sync.WaitGroup
 	var spammers []Spammer
 	var j = -1
@@ -119,23 +110,21 @@ func createSpammers(spamPrefix string, spamPassword string, stats *stats.Stats, 
 		accountName := info.GetName()
 		if strings.HasPrefix(accountName, spamPrefix) {
 			j++
-			newSpammer, err := SpawnSpammer(accountName, spamPassword, j, kb, info, stats, chainID, queryFree)
-			if err != nil {
-				fmt.Println(err)
-				continue
-			}
-			spammers = append(spammers, newSpammer)
-			fmt.Printf("Spammer %v: Spawned...\n", j)
+			go SpawnSpammer(accountName, spamPassword, j, kb, info, stats, chainID, &spammers, &wg)
 		}
 	}
+
+	wg.Wait()
 
 	return spammers, nil
 
 }
 
 //Spawn new spammer
-func SpawnSpammer(localAccountName string, spamPassword string, index int, kb cryptokeys.Keybase, spammerInfo cryptokeys.Info, stats *stats.Stats, chainId string, queryFree chan bool) (Spammer, error) {
+func SpawnSpammer(localAccountName string, spamPassword string, index int, kb cryptokeys.Keybase, spammerInfo cryptokeys.Info, stats *stats.Stats, chainId string, spammers *[]Spammer, wg *sync.WaitGroup) {
 	fmt.Printf("Spammer %v: Spawning...\n", index)
+
+	wg.Add(1)
 
 	cdc := app.MakeCodec()
 	fmt.Printf("Spammer %v: Made codec...\n", index)
@@ -146,19 +135,20 @@ func SpawnSpammer(localAccountName string, spamPassword string, index int, kb cr
 	from, err := helpers.GetFromAddress(kb, localAccountName)
 	if err != nil {
 		fmt.Println(err)
-		return Spammer{}, err
+		return
 	}
 
 	ctx, err = helpers.SetupContext(ctx, from, chainId, 0)
 	if err != nil {
 		fmt.Println(err)
-		return Spammer{}, err
+		return
 	}
 
 	// get account balance from sender
 	fromAcc, err := getAcc(ctx, spammerInfo)
 	if err != nil {
-		return Spammer{}, fmt.Errorf("Iteration %v: Account not found, skipping\n", index)
+		fmt.Printf("Iteration %v: Account not found, skipping\n", index)
+		return
 	}
 
 	// calculate random share of coins to be sent
@@ -176,8 +166,16 @@ func SpawnSpammer(localAccountName string, spamPassword string, index int, kb cr
 		panic(err)
 	}
 
-	return Spammer{localAccountName, spamPassword, from, cdc, index, sequence, ctx, priv, randomCoins, 0, queryFree, "RUNE", "ETH"}, nil
+	queryFree := make(chan bool, 1)
+	queryFree <- true
 
+	newSpammer := Spammer{
+		localAccountName, spamPassword, from, cdc, index, sequence, ctx, priv, randomCoins, 0, queryFree, "RUNE", "ETH"}
+
+	*spammers = append(*spammers, newSpammer)
+	fmt.Printf("Spammer %v: Spawned...\n", index)
+
+	wg.Done()
 }
 
 //All the things needed for a single spammer thread
