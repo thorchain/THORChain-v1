@@ -71,6 +71,8 @@ func GetTxsSend(cdc *wire.Codec) func(cmd *cobra.Command, args []string) error {
 		// rate limiter to allow x events per second
 		limiter := time.Tick(time.Duration(rateLimit) * time.Millisecond)
 
+		go doEvery(1*time.Second, stats.Print)
+
 		for i := 0; i < len(spammers); i++ {
 			wg.Add(1)
 			fmt.Printf("Spammer %v: Starting up...\n", i)
@@ -78,8 +80,6 @@ func GetTxsSend(cdc *wire.Codec) func(cmd *cobra.Command, args []string) error {
 			go spammers[i].start(&nextSpammer, &stats, limiter)
 			fmt.Printf("Spammer %v: Started...\n", i)
 		}
-
-		doEvery(1*time.Second, stats.Print)
 
 		wg.Wait()
 
@@ -158,11 +158,7 @@ func SpawnSpammer(localAccountName string, spamPassword string, index int, kb cr
 	}
 
 	// calculate random share of coins to be sent
-	randomCoins := getRandomCoinsUpTo(fromAcc.GetCoins(), 1000)
-
-	if !randomCoins.IsPositive() {
-		return Spammer{}, fmt.Errorf("Iteration %v: No coins to send, skipping\n", index)
-	}
+	randomCoins := getRandomCoinsUpTo(fromAcc.GetCoins(), 100000)
 
 	fmt.Printf("Spammer %v: Finding sequence...\n", index)
 
@@ -222,7 +218,7 @@ func (sp *Spammer) start(nextSpammer *Spammer, stats *stats.Stats, limiter <-cha
 		stats.AddSuccess()
 		sp.currentSequence = sp.currentSequence + 1
 		sp.sequenceCheck = sp.sequenceCheck + 1
-		if sp.sequenceCheck >= 1000 {
+		if sp.sequenceCheck >= 50000 {
 			sp.updateContext()
 		}
 	}
