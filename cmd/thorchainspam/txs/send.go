@@ -31,7 +31,7 @@ var (
 	defaultBlockTime time.Duration = 8000
 )
 
-// Returns the command to ensure k accounts exist
+// Returns the command to send txs between accounts
 func GetTxsSend(cdc *wire.Codec) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		chainID := viper.GetString(FlagChainID)
@@ -66,26 +66,29 @@ func GetTxsSend(cdc *wire.Codec) func(cmd *cobra.Command, args []string) error {
 		//Use all cores
 		runtime.GOMAXPROCS(runtime.NumCPU())
 
-		var wg sync.WaitGroup
+		// var wg sync.WaitGroup
+		// wg.Add(1)
+
+		// TODO throw error if rateLimit * spammers would fire too often and we'd get sequence mismatches again
 
 		// rate limiter to allow x events per second
 		limiter := time.Tick(time.Duration(rateLimit) * time.Millisecond)
 
 		go doEvery(1*time.Second, stats.Print)
 
-		for i := 0; i < len(spammers); i++ {
-			wg.Add(1)
-			fmt.Printf("Spammer %v: Starting up...\n", i)
+		i := 0
+
+		for {
+			<-limiter
 			nextSpammer := spammers[(i+1)%len(spammers)]
-			go spammers[i].start(&nextSpammer, &stats, limiter)
-			fmt.Printf("Spammer %v: Started...\n", i)
+			go spammers[i].send(&nextSpammer, &stats)
+			if i == len(spammers)-1 {
+				i = 0
+			} else {
+				i++
+			}
 		}
-
-		wg.Wait()
-
-		fmt.Printf("Done.")
-
-		return nil
+		// wg.Wait()
 	}
 }
 
@@ -109,6 +112,7 @@ func createSpammers(spamPrefix string, spamPassword string, stats *stats.Stats, 
 	queryFree := make(chan bool, 1)
 	queryFree <- true
 
+	var wg sync.WaitGroup
 	var spammers []Spammer
 	var j = -1
 	for _, info := range infos {
@@ -193,35 +197,36 @@ type Spammer struct {
 	clpTo           string
 }
 
-func (sp *Spammer) start(nextSpammer *Spammer, stats *stats.Stats, limiter <-chan time.Time) {
-	for {
-		<-limiter
+func (sp *Spammer) send(nextSpammer *Spammer, stats *stats.Stats) {
+	<-sp.queryFree
 
-		// fmt.Printf("Spammer %v: Sending transaction with sequence %v...\n", sp.index, sp.currentSequence)
-		sp.ctx = sp.ctx.WithSequence(sp.currentSequence)
+	// fmt.Printf("Spammer %v: Sending transaction with sequence %v...\n", sp.index, sp.currentSequence)
+	sp.ctx = sp.ctx.WithSequence(sp.currentSequence)
 
-		clpMsg := rand.Float32() < 0.5
-		var msg sdk.Msg
-		if clpMsg {
-			msg = clpTypes.NewMsgTrade(sp.accountAddress, sp.clpFrom, sp.clpTo, 1)
-		} else {
-			msg = client.BuildMsg(sp.accountAddress, nextSpammer.accountAddress, sp.randomCoins)
-		}
-
-		_, err := helpers.PrivProcessMsg(sp.ctx, sp.priv, sp.cdc, msg)
-		if err != nil {
-			fmt.Println(err)
-			stats.AddError()
-			sp.updateContext()
-			continue
-		}
-		stats.AddSuccess()
-		sp.currentSequence = sp.currentSequence + 1
-		sp.sequenceCheck = sp.sequenceCheck + 1
-		if sp.sequenceCheck >= 50000 {
-			sp.updateContext()
-		}
+	clpMsg := rand.Float32() < 0.5
+	var msg sdk.Msg
+	if clpMsg {
+		msg = clpTypes.NewMsgTrade(sp.accountAddress, sp.clpFrom, sp.clpTo, 1)
+	} else {
+		msg = client.BuildMsg(sp.accountAddress, nextSpammer.accountAddress, sp.randomCoins)
 	}
+
+	_, err := helpers.PrivProcessMsg(sp.ctx, sp.priv, sp.cdc, msg)
+
+	if err != nil {
+		fmt.Println(err)
+		stats.AddError()
+		sp.updateContext()
+		sp.queryFree <- true
+		return
+	}
+	stats.AddSuccess()
+	sp.currentSequence = sp.currentSequence + 1
+	sp.sequenceCheck = sp.sequenceCheck + 1
+	if sp.sequenceCheck >= 50000 {
+		sp.updateContext()
+	}
+	sp.queryFree <- true
 }
 
 func (sp *Spammer) flipCLPTickers() {
@@ -233,9 +238,7 @@ func (sp *Spammer) flipCLPTickers() {
 func (sp *Spammer) updateContext() {
 	fmt.Printf("Spammer %v: time to refresh sequence, waiting for next block...\n", sp.index)
 	time.Sleep(defaultBlockTime * time.Millisecond)
-	fmt.Printf("Spammer %v: waiting for query to be free...\n", sp.index)
-	<-sp.queryFree
-	fmt.Printf("Spammer %v: query free, querying...\n", sp.index)
+	fmt.Printf("Spammer %v: querying new sequence...\n", sp.index)
 
 	nextSequence, err := sp.ctx.NextSequence(sp.accountAddress)
 	if err != nil {
@@ -243,8 +246,6 @@ func (sp *Spammer) updateContext() {
 	}
 	sp.currentSequence = nextSequence
 	fmt.Printf("Spammer %v: Sequence updated to...%v\n", sp.index, sp.currentSequence)
-	fmt.Printf("Spammer %v: Setting query free again...\n", sp.index)
-	sp.queryFree <- true
 	sp.sequenceCheck = 0
 }
 
@@ -262,11 +263,12 @@ func getRandomCoinsUpTo(coins sdk.Coins, divideBy int64) sdk.Coins {
 		if randAmount == 0 && amount >= 1 {
 			randAmount = 1
 		}
-
-		res = append(res, sdk.Coin{
-			Denom:  coin.Denom,
-			Amount: sdk.NewInt(randAmount),
-		})
+		if randAmount > 0 {
+			res = append(res, sdk.Coin{
+				Denom:  coin.Denom,
+				Amount: sdk.NewInt(randAmount),
+			})
+		}
 	}
 
 	return res
