@@ -5,7 +5,6 @@ import (
 	"math/rand"
 	"runtime"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/cosmos/cosmos-sdk/client/context"
@@ -103,28 +102,25 @@ func createSpammers(spamPrefix string, spamPassword string, stats *stats.Stats, 
 		return nil, err
 	}
 
-	var wg sync.WaitGroup
+	semaphore := make(chan bool, 50)
 	var spammers []Spammer
 	var j = -1
 	for _, info := range infos {
 		accountName := info.GetName()
 		if strings.HasPrefix(accountName, spamPrefix) {
 			j++
-			go SpawnSpammer(accountName, spamPassword, j, kb, info, stats, chainID, &spammers, &wg)
+			semaphore <- true
+			go SpawnSpammer(accountName, spamPassword, j, kb, info, stats, chainID, &spammers, semaphore)
 		}
 	}
-
-	wg.Wait()
 
 	return spammers, nil
 
 }
 
 //Spawn new spammer
-func SpawnSpammer(localAccountName string, spamPassword string, index int, kb cryptokeys.Keybase, spammerInfo cryptokeys.Info, stats *stats.Stats, chainId string, spammers *[]Spammer, wg *sync.WaitGroup) {
+func SpawnSpammer(localAccountName string, spamPassword string, index int, kb cryptokeys.Keybase, spammerInfo cryptokeys.Info, stats *stats.Stats, chainId string, spammers *[]Spammer, semaphore <-chan bool) {
 	fmt.Printf("Spammer %v: Spawning...\n", index)
-
-	wg.Add(1)
 
 	cdc := app.MakeCodec()
 	fmt.Printf("Spammer %v: Made codec...\n", index)
@@ -135,12 +131,14 @@ func SpawnSpammer(localAccountName string, spamPassword string, index int, kb cr
 	from, err := helpers.GetFromAddress(kb, localAccountName)
 	if err != nil {
 		fmt.Println(err)
+		<-semaphore
 		return
 	}
 
 	ctx, err = helpers.SetupContext(ctx, from, chainId, 0)
 	if err != nil {
 		fmt.Println(err)
+		<-semaphore
 		return
 	}
 
@@ -148,6 +146,7 @@ func SpawnSpammer(localAccountName string, spamPassword string, index int, kb cr
 	fromAcc, err := getAcc(ctx, spammerInfo)
 	if err != nil {
 		fmt.Printf("Iteration %v: Account not found, skipping\n", index)
+		<-semaphore
 		return
 	}
 
@@ -174,8 +173,7 @@ func SpawnSpammer(localAccountName string, spamPassword string, index int, kb cr
 
 	*spammers = append(*spammers, newSpammer)
 	fmt.Printf("Spammer %v: Spawned...\n", index)
-
-	wg.Done()
+	<-semaphore
 }
 
 //All the things needed for a single spammer thread
