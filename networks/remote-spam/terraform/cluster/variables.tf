@@ -1,5 +1,5 @@
 variable "name" {
-  description = "The cluster name, e.g remotetestnet"
+  description = "The cluster name, e.g remotetestnet-spam"
 }
 
 variable "regions" {
@@ -35,7 +35,7 @@ variable "ssh_public_file" {
 
 variable "instance_type" {
   description = "The AWS instance type to use"
-  default = "c5.large"
+  default = "t2.small"
 }
 
 variable "servers" {

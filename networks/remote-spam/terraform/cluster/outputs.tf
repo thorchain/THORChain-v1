@@ -12,3 +12,4 @@ output "instances" {
 output "public_ips" {
   value = ["${aws_eip.eip.*.public_ip}"]
 }
+

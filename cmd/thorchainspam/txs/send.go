@@ -5,7 +5,6 @@ import (
 	"math/rand"
 	"runtime"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/cosmos/cosmos-sdk/client/context"
@@ -31,13 +30,15 @@ var (
 	defaultBlockTime time.Duration = 8000
 )
 
-// Returns the command to ensure k accounts exist
+// Returns the command to send txs between accounts
 func GetTxsSend(cdc *wire.Codec) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		chainID := viper.GetString(FlagChainID)
 		if chainID == "" {
 			return fmt.Errorf("--chain-id is required")
 		}
+
+		rateLimit := viper.GetFloat64(FlagRateLimit)
 
 		// parse spam prefix and password
 		spamPrefix := viper.GetString(FlagSpamPrefix)
@@ -64,31 +65,30 @@ func GetTxsSend(cdc *wire.Codec) func(cmd *cobra.Command, args []string) error {
 		//Use all cores
 		runtime.GOMAXPROCS(runtime.NumCPU())
 
-		var wg sync.WaitGroup
+		// rate limiter to allow x events per second
+		limiter := time.Tick(time.Duration(rateLimit) * time.Millisecond)
 
-		for i := 0; i < len(spammers); i++ {
-			wg.Add(1)
+		go doEvery(1*time.Second, stats.Print)
 
-			fmt.Printf("Spammer %v: Starting up...\n", i)
+		i := 0
+
+		for {
+			<-limiter
 			nextSpammer := spammers[(i+1)%len(spammers)]
-			go spammers[i].start(&nextSpammer, &stats)
-			fmt.Printf("Spammer %v: Started...\n", i)
-
+			go spammers[i].send(&nextSpammer, &stats)
+			if i == len(spammers)-1 {
+				i = 0
+			} else {
+				i++
+			}
 		}
-
-		wg.Add(1)
-
-		wg.Wait()
-
-		fmt.Printf("Done.")
-
-		return nil
 	}
 }
 
-func printStats(stats *stats.Stats) {
-	time.Sleep(5 * time.Millisecond)
-	stats.Print()
+func doEvery(d time.Duration, f func()) {
+	for _ = range time.Tick(d) {
+		go f()
+	}
 }
 
 func createSpammers(spamPrefix string, spamPassword string, stats *stats.Stats, chainID string) ([]Spammer, error) {
@@ -102,18 +102,15 @@ func createSpammers(spamPrefix string, spamPassword string, stats *stats.Stats, 
 		return nil, err
 	}
 
-	queryFree := make(chan bool, 1)
-	queryFree <- true
-
+	semaphore := make(chan bool, 50)
 	var spammers []Spammer
-	var j = 0
+	var j = -1
 	for _, info := range infos {
 		accountName := info.GetName()
 		if strings.HasPrefix(accountName, spamPrefix) {
-			newSpammer := SpawnSpammer(accountName, spamPassword, j, kb, info, stats, chainID, queryFree)
-			spammers = append(spammers, newSpammer)
-			fmt.Printf("Spammer %v: Spawned...\n", j)
 			j++
+			semaphore <- true
+			go SpawnSpammer(accountName, spamPassword, j, kb, info, stats, chainID, &spammers, semaphore)
 		}
 	}
 
@@ -122,7 +119,7 @@ func createSpammers(spamPrefix string, spamPassword string, stats *stats.Stats, 
 }
 
 //Spawn new spammer
-func SpawnSpammer(localAccountName string, spamPassword string, index int, kb cryptokeys.Keybase, spammerInfo cryptokeys.Info, stats *stats.Stats, chainId string, queryFree chan bool) Spammer {
+func SpawnSpammer(localAccountName string, spamPassword string, index int, kb cryptokeys.Keybase, spammerInfo cryptokeys.Info, stats *stats.Stats, chainId string, spammers *[]Spammer, semaphore <-chan bool) {
 	fmt.Printf("Spammer %v: Spawning...\n", index)
 
 	cdc := app.MakeCodec()
@@ -134,31 +131,27 @@ func SpawnSpammer(localAccountName string, spamPassword string, index int, kb cr
 	from, err := helpers.GetFromAddress(kb, localAccountName)
 	if err != nil {
 		fmt.Println(err)
-		return Spammer{}
+		<-semaphore
+		return
 	}
 
 	ctx, err = helpers.SetupContext(ctx, from, chainId, 0)
 	if err != nil {
 		fmt.Println(err)
-		return Spammer{}
+		<-semaphore
+		return
 	}
 
 	// get account balance from sender
 	fromAcc, err := getAcc(ctx, spammerInfo)
 	if err != nil {
 		fmt.Printf("Iteration %v: Account not found, skipping\n", index)
-		stats.AddAccountNotFound()
-		return Spammer{}
+		<-semaphore
+		return
 	}
 
 	// calculate random share of coins to be sent
-	randomCoins := getRandomCoinsUpTo(fromAcc.GetCoins(), 1000)
-
-	if !randomCoins.IsPositive() {
-		fmt.Printf("Iteration %v: No coins to send, skipping\n", index)
-		stats.AddNoCoinsToSend()
-		return Spammer{}
-	}
+	randomCoins := getRandomCoinsUpTo(fromAcc.GetCoins(), 100000)
 
 	fmt.Printf("Spammer %v: Finding sequence...\n", index)
 
@@ -169,11 +162,18 @@ func SpawnSpammer(localAccountName string, spamPassword string, index int, kb cr
 
 	priv, err := kb.ExportPrivateKeyObject(localAccountName, spamPassword)
 	if err != nil {
-		fmt.Println(err)
+		panic(err)
 	}
 
-	return Spammer{localAccountName, spamPassword, from, cdc, index, sequence, ctx, priv, randomCoins, 0, queryFree, "RUNE", "ETH"}
+	queryFree := make(chan bool, 1)
+	queryFree <- true
 
+	newSpammer := Spammer{
+		localAccountName, spamPassword, from, cdc, index, sequence, ctx, priv, randomCoins, 0, queryFree, "RUNE", "ETH"}
+
+	*spammers = append(*spammers, newSpammer)
+	fmt.Printf("Spammer %v: Spawned...\n", index)
+	<-semaphore
 }
 
 //All the things needed for a single spammer thread
@@ -193,31 +193,36 @@ type Spammer struct {
 	clpTo           string
 }
 
-func (sp *Spammer) start(nextSpammer *Spammer, stats *stats.Stats) {
-	for {
-		fmt.Printf("Spammer %v: Sending transaction with sequence %v...\n", sp.index, sp.currentSequence)
-		sp.ctx = sp.ctx.WithSequence(sp.currentSequence)
+func (sp *Spammer) send(nextSpammer *Spammer, stats *stats.Stats) {
+	<-sp.queryFree
 
-		clpMsg := rand.Float32() < 0.5
-		var msg sdk.Msg
-		if clpMsg {
-			msg = clpTypes.NewMsgTrade(sp.accountAddress, sp.clpFrom, sp.clpTo, 1)
-		} else {
-			msg = client.BuildMsg(sp.accountAddress, nextSpammer.accountAddress, sp.randomCoins)
-		}
+	// fmt.Printf("Spammer %v: Sending transaction with sequence %v...\n", sp.index, sp.currentSequence)
+	sp.ctx = sp.ctx.WithSequence(sp.currentSequence)
 
-		_, err := helpers.PrivProcessMsg(sp.ctx, sp.priv, sp.cdc, msg)
-		if err != nil {
-			fmt.Println(err)
-			sp.updateContext()
-			continue
-		}
-		sp.currentSequence = sp.currentSequence + 1
-		sp.sequenceCheck = sp.sequenceCheck + 1
-		if sp.sequenceCheck >= 50000 {
-			sp.updateContext()
-		}
+	clpMsg := rand.Float32() < 0.5
+	var msg sdk.Msg
+	if clpMsg {
+		msg = clpTypes.NewMsgTrade(sp.accountAddress, sp.clpFrom, sp.clpTo, 1)
+	} else {
+		msg = client.BuildMsg(sp.accountAddress, nextSpammer.accountAddress, sp.randomCoins)
 	}
+
+	_, err := helpers.PrivProcessMsg(sp.ctx, sp.priv, sp.cdc, msg)
+
+	if err != nil {
+		fmt.Println(err)
+		stats.AddError()
+		sp.updateContext()
+		sp.queryFree <- true
+		return
+	}
+	stats.AddSuccess()
+	sp.currentSequence = sp.currentSequence + 1
+	sp.sequenceCheck = sp.sequenceCheck + 1
+	if sp.sequenceCheck >= 50000 {
+		sp.updateContext()
+	}
+	sp.queryFree <- true
 }
 
 func (sp *Spammer) flipCLPTickers() {
@@ -229,9 +234,7 @@ func (sp *Spammer) flipCLPTickers() {
 func (sp *Spammer) updateContext() {
 	fmt.Printf("Spammer %v: time to refresh sequence, waiting for next block...\n", sp.index)
 	time.Sleep(defaultBlockTime * time.Millisecond)
-	fmt.Printf("Spammer %v: waiting for query to be free...\n", sp.index)
-	<-sp.queryFree
-	fmt.Printf("Spammer %v: query free, querying...\n", sp.index)
+	fmt.Printf("Spammer %v: querying new sequence...\n", sp.index)
 
 	nextSequence, err := sp.ctx.NextSequence(sp.accountAddress)
 	if err != nil {
@@ -239,8 +242,6 @@ func (sp *Spammer) updateContext() {
 	}
 	sp.currentSequence = nextSequence
 	fmt.Printf("Spammer %v: Sequence updated to...%v\n", sp.index, sp.currentSequence)
-	fmt.Printf("Spammer %v: Setting query free again...\n", sp.index)
-	sp.queryFree <- true
 	sp.sequenceCheck = 0
 }
 
@@ -258,11 +259,12 @@ func getRandomCoinsUpTo(coins sdk.Coins, divideBy int64) sdk.Coins {
 		if randAmount == 0 && amount >= 1 {
 			randAmount = 1
 		}
-
-		res = append(res, sdk.Coin{
-			Denom:  coin.Denom,
-			Amount: sdk.NewInt(randAmount),
-		})
+		if randAmount > 0 {
+			res = append(res, sdk.Coin{
+				Denom:  coin.Denom,
+				Amount: sdk.NewInt(randAmount),
+			})
+		}
 	}
 
 	return res

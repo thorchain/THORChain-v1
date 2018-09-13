@@ -20,11 +20,6 @@ resource "aws_instance" "cluster" {
   }
   count = "${var.servers}"
 
-  ebs_block_device {
-    device_name = "/dev/xvda"
-    volume_size = 128
-  }
-
   lifecycle = {
 	  prevent_destroy = false
   }
@@ -33,24 +28,6 @@ resource "aws_instance" "cluster" {
     private_key = "${file(var.ssh_private_file)}"
     user = "ec2-user"
     timeout = "30s"
-  }
-
-  provisioner "file" {
-    source = "files/terraform.sh"
-    destination = "/tmp/terraform.sh"
-  }
-
-  provisioner "file" {
-    source = "files/thorchaind.service"
-    destination = "/tmp/thorchaind.service"
-  }
-
-  provisioner "remote-exec" {
-    inline = [
-      "sudo mv /tmp/thorchaind.service /etc/systemd/system/thorchaind.service",
-      "sudo chmod +x /tmp/terraform.sh",
-      "sudo /tmp/terraform.sh ${var.name} ${count.index}",
-    ]
   }
 }
 
