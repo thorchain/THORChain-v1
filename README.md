@@ -1,6 +1,6 @@
 # THORChain
 
-THORChain is a lightning fast decentralised exchange protocol. Read the whitepaper here: [THORChain Whitepaper](https://github.com/thorchain/Resources/tree/master/Whitepapers/THORChain)
+THORChain is a lightning fast decentralised exchange protocol with cross-chain bridges and support for a layer 2 payment network. Read the whitepaper here: [THORChain Whitepaper](https://github.com/thorchain/Resources/blob/master/Whitepapers/THORChain/whitepaper-en.md)
 
 This project is based on work done for the [Cosmos Project](https://github.com/cosmos/cosmos-sdk) by the Cosmos/Tendermint team.
 
