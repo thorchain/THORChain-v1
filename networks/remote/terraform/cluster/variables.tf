@@ -35,7 +35,7 @@ variable "ssh_public_file" {
 
 variable "instance_type" {
   description = "The AWS instance type to use"
-  default = "c5d.18xlarge"
+  default = "c5.large"
 }
 
 variable "servers" {
