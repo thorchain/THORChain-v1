@@ -5,6 +5,7 @@ import (
 	"math/rand"
 	"runtime"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/cosmos/cosmos-sdk/client/context"
@@ -102,6 +103,7 @@ func createSpammers(spamPrefix string, spamPassword string, stats *stats.Stats, 
 		return nil, err
 	}
 
+	var wg sync.WaitGroup
 	semaphore := make(chan bool, 50)
 	var spammers []Spammer
 	var j = -1
@@ -109,17 +111,21 @@ func createSpammers(spamPrefix string, spamPassword string, stats *stats.Stats, 
 		accountName := info.GetName()
 		if strings.HasPrefix(accountName, spamPrefix) {
 			j++
+			wg.Add(1)
 			semaphore <- true
-			go SpawnSpammer(accountName, spamPassword, j, kb, info, stats, chainID, &spammers, semaphore)
+			go SpawnSpammer(accountName, spamPassword, j, kb, info, stats, chainID, &spammers, &wg, semaphore)
 		}
 	}
 
-	return spammers, nil
+	wg.Wait()
 
+	return spammers, nil
 }
 
 //Spawn new spammer
-func SpawnSpammer(localAccountName string, spamPassword string, index int, kb cryptokeys.Keybase, spammerInfo cryptokeys.Info, stats *stats.Stats, chainId string, spammers *[]Spammer, semaphore <-chan bool) {
+func SpawnSpammer(localAccountName string, spamPassword string, index int, kb cryptokeys.Keybase, spammerInfo cryptokeys.Info, stats *stats.Stats, chainId string, spammers *[]Spammer, wg *sync.WaitGroup, semaphore <-chan bool) {
+	defer wg.Done()
+
 	fmt.Printf("Spammer %v: Spawning...\n", index)
 
 	cdc := app.MakeCodec()
