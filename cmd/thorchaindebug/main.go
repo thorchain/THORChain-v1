@@ -6,6 +6,8 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"io"
+	"net"
 	"os"
 	"strconv"
 	"strings"
@@ -13,6 +15,7 @@ import (
 	thorchain "github.com/thorchain/THORChain/app"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/wire"
 	"github.com/cosmos/cosmos-sdk/x/auth"
 	"github.com/spf13/cobra"
 	"github.com/tendermint/tendermint/crypto"
@@ -21,6 +24,7 @@ import (
 
 func init() {
 	rootCmd.AddCommand(txCmd)
+	rootCmd.AddCommand(txServerCmd)
 	rootCmd.AddCommand(pubkeyCmd)
 	rootCmd.AddCommand(addrCmd)
 	rootCmd.AddCommand(hackCmd)
@@ -37,6 +41,12 @@ var txCmd = &cobra.Command{
 	Use:   "tx",
 	Short: "Decode a thorchain tx from hex or base64",
 	RunE:  runTxCmd,
+}
+
+var txServerCmd = &cobra.Command{
+	Use:   "tx-decoding-server",
+	Short: "Starts a server that listens to a unix socket to decode a thorchain tx from hex or base64",
+	RunE:  runTxServerCmd,
 }
 
 var pubkeyCmd = &cobra.Command{
@@ -226,6 +236,91 @@ func runTxCmd(cmd *cobra.Command, args []string) error {
 
 	fmt.Println(buf.String())
 	return nil
+}
+
+func runTxServerCmd(cmd *cobra.Command, args []string) error {
+	os.Remove("/tmp/thorchaindebug-tx-decoding.sock")
+	l, err := net.Listen("unix", "/tmp/thorchaindebug-tx-decoding.sock")
+
+	if err != nil {
+		return fmt.Errorf("listen error %v", err)
+	}
+
+	defer l.Close()
+
+	cdc := thorchain.MakeCodec()
+
+	for {
+		c, err := l.Accept()
+		if err != nil {
+			return fmt.Errorf("accept error %v", err)
+		}
+
+		go txServer(c, cdc)
+	}
+}
+
+func txServer(c net.Conn, cdc *wire.Codec) {
+	for {
+		buf := make([]byte, 10240)
+		nr, err := c.Read(buf)
+		if err != nil {
+			if err == io.EOF {
+				// connection closed => just return the server
+				fmt.Println("Connection closed")
+				return
+			}
+			fmt.Println("Could not read:", err)
+			continue
+		}
+
+		txString := string(buf[0:nr])
+
+		fmt.Println("Server got tx:", txString)
+
+		// try hex, then base64
+		txBytes, err := hex.DecodeString(txString)
+		if err != nil {
+			var err2 error
+			txBytes, err2 = base64.StdEncoding.DecodeString(txString)
+			if err2 != nil {
+				fmt.Printf(`Expected hex or base64. Got errors:
+				hex: %v,
+				base64: %v
+				`, err, err2)
+				continue
+			}
+		}
+
+		var tx = auth.StdTx{}
+
+		err = cdc.UnmarshalBinary(txBytes, &tx)
+		if err != nil {
+			fmt.Println("Unmarshal binary error:", err)
+			continue
+		}
+
+		bz, err := cdc.MarshalJSON(tx)
+		if err != nil {
+			fmt.Println("Marshal json error:", err)
+			continue
+		}
+
+		buff := bytes.NewBuffer([]byte{})
+		err = json.Indent(buff, bz, "", "  ")
+		if err != nil {
+			fmt.Println("Json indent error:", err)
+			continue
+		}
+
+		// fmt.Println(buff.String())
+		// continue
+
+		_, err = c.Write(buff.Bytes())
+		if err != nil {
+			fmt.Println("Write error:", err)
+		}
+	}
 }
 
 func main() {
