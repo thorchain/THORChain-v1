@@ -157,7 +157,7 @@ func SpawnSpammer(localAccountName string, spamPassword string, index int, kb cr
 	}
 
 	// calculate random share of coins to be sent
-	randomCoins := getRandomCoinsUpTo(fromAcc.GetCoins(), 100000)
+	randomCoins := getRandomCoinsUpTo(fromAcc.GetCoins(), 1000)
 
 	fmt.Printf("Spammer %v: Finding sequence...\n", index)
 
@@ -225,7 +225,7 @@ func (sp *Spammer) send(nextSpammer *Spammer, stats *stats.Stats) {
 	stats.AddSuccess()
 	sp.currentSequence = sp.currentSequence + 1
 	sp.sequenceCheck = sp.sequenceCheck + 1
-	if sp.sequenceCheck >= 50000 {
+	if sp.sequenceCheck >= 200 {
 		sp.updateContext()
 	}
 	sp.queryFree <- true
@@ -238,7 +238,8 @@ func (sp *Spammer) flipCLPTickers() {
 }
 
 func (sp *Spammer) updateContext() {
-	fmt.Printf("Spammer %v: time to refresh sequence, waiting for next block...\n", sp.index)
+	fmt.Printf("Spammer %v: time to refresh sequence at %v, waiting for next block...\n", sp.index,
+		time.Now().UTC().Format(time.RFC3339))
 	time.Sleep(defaultBlockTime * time.Millisecond)
 	fmt.Printf("Spammer %v: querying new sequence...\n", sp.index)
 
@@ -247,7 +248,8 @@ func (sp *Spammer) updateContext() {
 		fmt.Println(err)
 	}
 	sp.currentSequence = nextSequence
-	fmt.Printf("Spammer %v: Sequence updated to...%v\n", sp.index, sp.currentSequence)
+	fmt.Printf("Spammer %v: Sequence updated at %v to...%v\n", sp.index, time.Now().UTC().Format(time.RFC3339),
+		sp.currentSequence)
 	sp.sequenceCheck = 0
 }
 
