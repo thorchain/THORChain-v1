@@ -215,6 +215,9 @@ func (sp *Spammer) send(nextSpammer *Spammer, stats *stats.Stats) {
 
 	_, err := helpers.PrivProcessMsg(sp.ctx, sp.priv, sp.cdc, msg)
 
+	sp.currentSequence = sp.currentSequence + 1
+	sp.sequenceCheck = sp.sequenceCheck + 1
+
 	if err != nil {
 		fmt.Println(err)
 		stats.AddError()
@@ -223,8 +226,6 @@ func (sp *Spammer) send(nextSpammer *Spammer, stats *stats.Stats) {
 		return
 	}
 	stats.AddSuccess()
-	sp.currentSequence = sp.currentSequence + 1
-	sp.sequenceCheck = sp.sequenceCheck + 1
 	if sp.sequenceCheck >= 200 {
 		sp.updateContext()
 	}
