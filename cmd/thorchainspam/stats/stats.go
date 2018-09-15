@@ -1,8 +1,9 @@
 package stats
 
 import (
-	"fmt"
 	"time"
+
+	"github.com/thorchain/THORChain/cmd/thorchainspam/log"
 )
 
 // Stats
@@ -33,11 +34,12 @@ func (s *Stats) Print() {
 	total := s.numSuccessful + s.numError
 	secsPassed := time.Now().Sub(s.startedAt).Seconds()
 
-	fmt.Printf("\n=======================================\n")
-	fmt.Printf("Total: %v\n", total)
-	fmt.Printf("Successful: %v\n", s.numSuccessful)
-	fmt.Printf("Error: %v\n", s.numError)
-	fmt.Printf("%% Successful: %v\n", float64(s.numSuccessful)/float64(total))
-	fmt.Printf("TPS: %v\n", float64(s.numSuccessful)/secsPassed)
-	fmt.Printf("=======================================\n\n")
+	log.Log.Infof("========== Stats: Total %v, Error: %v, %%Sucessful: %v, TPS: %v\n", total, s.numError, float64(s.numSuccessful)/float64(total), float64(s.numSuccessful)/secsPassed)
+	// fmt.Printf("\n=======================================\n")
+	// fmt.Printf("Total: %v\n", total)
+	// fmt.Printf("Successful: %v\n", s.numSuccessful)
+	// fmt.Printf("Error: %v\n", s.numError)
+	// fmt.Printf("%% Successful: %v\n", float64(s.numSuccessful)/float64(total))
+	// fmt.Printf("TPS: %v\n", float64(s.numSuccessful)/secsPassed)
+	// fmt.Printf("=======================================\n\n")
 }
