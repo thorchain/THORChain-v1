@@ -156,9 +156,6 @@ func SpawnSpammer(localAccountName string, spamPassword string, index int, kb cr
 		return
 	}
 
-	// calculate random share of coins to be sent
-	randomCoins := getRandomCoinsUpTo(fromAcc.GetCoins(), 1000)
-
 	fmt.Printf("Spammer %v: Finding sequence...\n", index)
 
 	sequence, err3 := ctx.NextSequence(from)
@@ -175,7 +172,7 @@ func SpawnSpammer(localAccountName string, spamPassword string, index int, kb cr
 	queryFree <- true
 
 	newSpammer := Spammer{
-		localAccountName, spamPassword, from, cdc, index, sequence, ctx, priv, randomCoins, 0, queryFree, "RUNE", "ETH"}
+		localAccountName, spamPassword, from, cdc, index, sequence, ctx, priv, fromAcc.GetCoins(), 0, queryFree}
 
 	*spammers = append(*spammers, newSpammer)
 	fmt.Printf("Spammer %v: Spawned...\n", index)
@@ -192,25 +189,41 @@ type Spammer struct {
 	currentSequence int64
 	ctx             context.CoreContext
 	priv            tmcrypto.PrivKey
-	randomCoins     sdk.Coins
+	currentCoins    sdk.Coins
 	sequenceCheck   int
 	queryFree       chan bool
-	clpFrom         string
-	clpTo           string
 }
 
 func (sp *Spammer) send(nextSpammer *Spammer, stats *stats.Stats) {
 	<-sp.queryFree
 
-	// fmt.Printf("Spammer %v: Sending transaction with sequence %v...\n", sp.index, sp.currentSequence)
+	fmt.Printf("Spammer %v: Will transaction with sequence %v...\n", sp.index, sp.currentSequence)
 	sp.ctx = sp.ctx.WithSequence(sp.currentSequence)
 
+	// calculate random share of coins to be sent
+	randomCoins := getRandomCoinsUpTo(sp.currentCoins, 100000)
+	clpFrom := "RUNE"
+	clpTo := "ETH"
+
 	clpMsg := rand.Float32() < 0.5
+
 	var msg sdk.Msg
 	if clpMsg {
-		msg = clpTypes.NewMsgTrade(sp.accountAddress, sp.clpFrom, sp.clpTo, 1)
+		if rand.Float32() < 0.5 {
+			clpFrom = "ETH"
+			clpTo = "RUNE"
+		}
+		clpAmount := randomCoins.AmountOf(clpFrom)
+		if !clpAmount.GT(sdk.NewInt(0)) {
+			clpFrom = "RUNE"
+			clpTo = "ETH"
+			clpAmount = randomCoins.AmountOf(clpFrom)
+		}
+		if clpAmount.GT(sdk.NewInt(0)) {
+			msg = clpTypes.NewMsgTrade(sp.accountAddress, clpFrom, clpTo, int(clpAmount.Int64()))
+		}
 	} else {
-		msg = client.BuildMsg(sp.accountAddress, nextSpammer.accountAddress, sp.randomCoins)
+		msg = client.BuildMsg(sp.accountAddress, nextSpammer.accountAddress, randomCoins)
 	}
 
 	_, err := helpers.PrivProcessMsg(sp.ctx, sp.priv, sp.cdc, msg)
@@ -226,16 +239,17 @@ func (sp *Spammer) send(nextSpammer *Spammer, stats *stats.Stats) {
 		return
 	}
 	stats.AddSuccess()
+
+	if clpMsg {
+		sp.currentCoins = sp.currentCoins.Minus([]sdk.Coin{sdk.NewCoin("RUNE", 1)})
+	} else {
+		sp.currentCoins = sp.currentCoins.Minus(randomCoins)
+	}
+
 	if sp.sequenceCheck >= 200 {
 		sp.updateContext()
 	}
 	sp.queryFree <- true
-}
-
-func (sp *Spammer) flipCLPTickers() {
-	tmp := sp.clpFrom
-	sp.clpFrom = sp.clpTo
-	sp.clpTo = tmp
 }
 
 func (sp *Spammer) updateContext() {
