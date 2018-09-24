@@ -100,6 +100,16 @@ func RunCLPFormula(a float64, b float64, c float64, d float64) int64 {
 	return int64(math.Round(y))
 }
 
+//CalculateCLPPrice get price
+func CalculateCLPPrice(clp *types.CLP, clpCoins sdk.Coins, coinsPaid int64, baseCoinTicker string) float64 {
+	c := float64(clpCoins.AmountOf(baseCoinTicker).Int64())
+	a := float64(clp.CurrentSupply)
+	d := float64(clp.ReserveRatio) / float64(100)
+	b := float64(coinsPaid)
+	y := a * (math.Pow(float64(1+(b/c)), d) - 1)
+	return 1.0 / y
+}
+
 //Run Formula for trading CLP coins
 func CalculateCoinsEmitted(clp *types.CLP, clpCoins sdk.Coins, coinsPaid int64, baseCoinTicker string, buy bool) int64 {
 	//baseCoinsEmitted = baseCoinBalance * ((1 + (clpCoinsPaid/clpCoinSupply))^(1/reserveRatio) - 1)

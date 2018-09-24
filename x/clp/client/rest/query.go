@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/thorchain/THORChain/x/clp"
+	clpPackage "github.com/thorchain/THORChain/x/clp"
 	clpTypes "github.com/thorchain/THORChain/x/clp/types"
 
 	"github.com/cosmos/cosmos-sdk/client/context"
@@ -37,7 +37,7 @@ func QueryAccountRequestHandlerFn(cdc *wire.Codec, decoder auth.AccountDecoder, 
 
 		ctx := context.NewCoreContextFromViper()
 
-		res, err := ctx.QueryStore(clp.MakeCLPStoreKey(ticker), storeName)
+		res, err := ctx.QueryStore(clpPackage.MakeCLPStoreKey(ticker), storeName)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
@@ -96,8 +96,9 @@ func getCLPAccountOutput(clp *clpTypes.CLP, ctx context.CoreContext, decoder aut
 
 	tickerCoinAmount := clpAccount.GetCoins().AmountOf(clp.Ticker)
 	baseCoinAmount := clpAccount.GetCoins().AmountOf(baseCoinTicker)
+	price := clpPackage.CalculateCLPPrice(clp, clpAccount.GetCoins(), 1, baseCoinTicker)
 
-	jsonOutput := fmt.Sprintf("{\"%v\":%v,\"%v\":%v}", baseCoinTicker, baseCoinAmount, clp.Ticker, tickerCoinAmount)
+	jsonOutput := fmt.Sprintf("{\"%v\":%v,\"%v\":%v,\"price\":%v}", baseCoinTicker, baseCoinAmount, clp.Ticker, tickerCoinAmount, price)
 
 	return []byte(jsonOutput), nil
 }
