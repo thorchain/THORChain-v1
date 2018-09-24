@@ -26,6 +26,8 @@ import (
 
 const (
 	appName = "ThorchainApp"
+	//AppBaseCoinTicker - Main ticker for app
+	AppBaseCoinTicker = "RUNE"
 )
 
 // default home directories for expected binaries
@@ -80,7 +82,7 @@ func NewThorchainApp(logger log.Logger, db dbm.DB, traceStore io.Writer, baseApp
 		keyGov:           sdk.NewKVStoreKey("gov"),
 		keyFeeCollection: sdk.NewKVStoreKey("fee"),
 		keyCLP:           sdk.NewKVStoreKey("clp"),
-		baseCoinTicker:   "RUNE",
+		baseCoinTicker:   AppBaseCoinTicker,
 	}
 
 	// define the accountMapper

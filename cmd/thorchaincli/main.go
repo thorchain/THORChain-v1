@@ -33,7 +33,7 @@ var (
 		Short: "THORChain light-client",
 	}
 	serveCommandCallback = func(ctx context.CoreContext, r *mux.Router, cdc *wire.Codec, kb cryptokeys.Keybase) {
-		clp.RegisterRoutes(ctx, r, cdc, kb)
+		clp.RegisterRoutes(ctx, r, cdc, kb, app.AppBaseCoinTicker)
 	}
 )
 
