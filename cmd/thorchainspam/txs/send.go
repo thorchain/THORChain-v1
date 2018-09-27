@@ -205,7 +205,7 @@ func (sp *Spammer) send(nextSpammer *Spammer, stats *stats.Stats) {
 	// calculate random share of coins to be sent
 	randomCoins := getRandomCoinsUpTo(sp.currentCoins, 100000)
 	clpFrom := "RUNE"
-	clpTo := "ETH"
+	clpTo := "XMR"
 	var clpAmount sdk.Int
 
 	clpMsg := rand.Float32() < 0.5
@@ -213,13 +213,13 @@ func (sp *Spammer) send(nextSpammer *Spammer, stats *stats.Stats) {
 	var msg sdk.Msg
 	if clpMsg {
 		if rand.Float32() < 0.5 {
-			clpFrom = "ETH"
+			clpFrom = "XMR"
 			clpTo = "RUNE"
 		}
 		clpAmount = randomCoins.AmountOf(clpFrom)
 		if !clpAmount.GT(sdk.NewInt(0)) {
 			clpFrom = "RUNE"
-			clpTo = "ETH"
+			clpTo = "XMR"
 			clpAmount = randomCoins.AmountOf(clpFrom)
 		}
 		if clpAmount.GT(sdk.NewInt(0)) {
