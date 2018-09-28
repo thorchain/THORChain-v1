@@ -17,6 +17,7 @@ import (
 	tmcrypto "github.com/tendermint/tendermint/crypto"
 	"github.com/thorchain/THORChain/app"
 	"github.com/thorchain/THORChain/cmd/thorchainspam/helpers"
+	"github.com/thorchain/THORChain/cmd/thorchainspam/log"
 	"github.com/thorchain/THORChain/cmd/thorchainspam/stats"
 
 	cryptokeys "github.com/cosmos/cosmos-sdk/crypto/keys"
@@ -28,7 +29,7 @@ import (
 )
 
 var (
-	defaultBlockTime time.Duration = 8000
+	defaultBlockTime time.Duration = 1000
 )
 
 // Returns the command to send txs between accounts
@@ -61,7 +62,7 @@ func GetTxsSend(cdc *wire.Codec) func(cmd *cobra.Command, args []string) error {
 			return fmt.Errorf("no spam accounts found, please create them with `thorchainspam account ensure`")
 		}
 
-		fmt.Printf("Found %v spam accounts\n", len(spammers))
+		log.Log.Infof("Found %v spam accounts\n", len(spammers))
 
 		//Use all cores
 		runtime.GOMAXPROCS(runtime.NumCPU())
@@ -126,24 +127,24 @@ func createSpammers(spamPrefix string, spamPassword string, stats *stats.Stats, 
 func SpawnSpammer(localAccountName string, spamPassword string, index int, kb cryptokeys.Keybase, spammerInfo cryptokeys.Info, stats *stats.Stats, chainId string, spammers *[]Spammer, wg *sync.WaitGroup, semaphore <-chan bool) {
 	defer wg.Done()
 
-	fmt.Printf("Spammer %v: Spawning...\n", index)
+	log.Log.Debugf("Spammer %v: Spawning...\n", index)
 
 	cdc := app.MakeCodec()
-	fmt.Printf("Spammer %v: Made codec...\n", index)
+	log.Log.Debugf("Spammer %v: Made codec...\n", index)
 
 	ctx := context.NewCoreContextFromViper().WithDecoder(authcmd.GetAccountDecoder(cdc))
-	fmt.Printf("Spammer %v: Made context...\n", index)
+	log.Log.Debugf("Spammer %v: Made context...\n", index)
 
 	from, err := helpers.GetFromAddress(kb, localAccountName)
 	if err != nil {
-		fmt.Println(err)
+		log.Log.Errorf(err.Error())
 		<-semaphore
 		return
 	}
 
 	ctx, err = helpers.SetupContext(ctx, from, chainId, 0)
 	if err != nil {
-		fmt.Println(err)
+		log.Log.Errorf(err.Error())
 		<-semaphore
 		return
 	}
@@ -151,19 +152,16 @@ func SpawnSpammer(localAccountName string, spamPassword string, index int, kb cr
 	// get account balance from sender
 	fromAcc, err := getAcc(ctx, spammerInfo)
 	if err != nil {
-		fmt.Printf("Iteration %v: Account not found, skipping\n", index)
+		log.Log.Errorf("Iteration %v: Account not found, skipping\n", index)
 		<-semaphore
 		return
 	}
 
-	// calculate random share of coins to be sent
-	randomCoins := getRandomCoinsUpTo(fromAcc.GetCoins(), 1000)
-
-	fmt.Printf("Spammer %v: Finding sequence...\n", index)
+	log.Log.Debugf("Spammer %v: Finding sequence...\n", index)
 
 	sequence, err3 := ctx.NextSequence(from)
 	if err3 != nil {
-		fmt.Printf("Spammer %v: Sequence Error...\n", index)
+		log.Log.Errorf("Spammer %v: Sequence Error...\n", index)
 	}
 
 	priv, err := kb.ExportPrivateKeyObject(localAccountName, spamPassword)
@@ -175,10 +173,10 @@ func SpawnSpammer(localAccountName string, spamPassword string, index int, kb cr
 	queryFree <- true
 
 	newSpammer := Spammer{
-		localAccountName, spamPassword, from, cdc, index, sequence, ctx, priv, randomCoins, 0, queryFree, "RUNE", "ETH"}
+		localAccountName, spamPassword, from, cdc, index, sequence, ctx, priv, fromAcc.GetCoins(), 0, queryFree}
 
 	*spammers = append(*spammers, newSpammer)
-	fmt.Printf("Spammer %v: Spawned...\n", index)
+	log.Log.Infof("Spammer %v: Spawned...\n", index)
 	<-semaphore
 }
 
@@ -192,65 +190,102 @@ type Spammer struct {
 	currentSequence int64
 	ctx             context.CoreContext
 	priv            tmcrypto.PrivKey
-	randomCoins     sdk.Coins
+	currentCoins    sdk.Coins
 	sequenceCheck   int
 	queryFree       chan bool
-	clpFrom         string
-	clpTo           string
 }
 
 func (sp *Spammer) send(nextSpammer *Spammer, stats *stats.Stats) {
 	<-sp.queryFree
 
-	// fmt.Printf("Spammer %v: Sending transaction with sequence %v...\n", sp.index, sp.currentSequence)
+	log.Log.Debugf("Spammer %v: Will transaction with sequence %v...\n", sp.index, sp.currentSequence)
+
 	sp.ctx = sp.ctx.WithSequence(sp.currentSequence)
 
+	// calculate random share of coins to be sent
+	randomCoins := getRandomCoinsUpTo(sp.currentCoins, 100000)
+	clpFrom := "RUNE"
+	clpTo := "XMR"
+	var clpAmount sdk.Int
+
 	clpMsg := rand.Float32() < 0.5
+
 	var msg sdk.Msg
 	if clpMsg {
-		msg = clpTypes.NewMsgTrade(sp.accountAddress, sp.clpFrom, sp.clpTo, 1)
+		if rand.Float32() < 0.5 {
+			clpFrom = "XMR"
+			clpTo = "RUNE"
+		}
+		clpAmount = randomCoins.AmountOf(clpFrom)
+		if !clpAmount.GT(sdk.NewInt(0)) {
+			clpFrom = "RUNE"
+			clpTo = "XMR"
+			clpAmount = randomCoins.AmountOf(clpFrom)
+		}
+		if clpAmount.GT(sdk.NewInt(0)) {
+			msg = clpTypes.NewMsgTrade(sp.accountAddress, clpFrom, clpTo, int(clpAmount.Int64()))
+
+			log.Log.Debugf("Spammer %v: Will trade on CLP: %v %v -> %v\n", sp.index, clpAmount, clpFrom, clpTo)
+		} else {
+			log.Log.Debugf("Spammer %v: Will not trade on CLP, has %v %v and %v %v\n", sp.index, clpAmount, clpFrom, randomCoins.AmountOf(clpTo), clpTo)
+			sp.updateSequenceAndCoins()
+			sp.queryFree <- true
+			return
+		}
 	} else {
-		msg = client.BuildMsg(sp.accountAddress, nextSpammer.accountAddress, sp.randomCoins)
+		msg = client.BuildMsg(sp.accountAddress, nextSpammer.accountAddress, randomCoins)
+
+		log.Log.Debugf("Spammer %v: Will send: %v to %v\n", sp.index, randomCoins.String(), nextSpammer.accountAddress.String())
 	}
 
 	_, err := helpers.PrivProcessMsg(sp.ctx, sp.priv, sp.cdc, msg)
 
+	sp.currentSequence = sp.currentSequence + 1
+	sp.sequenceCheck = sp.sequenceCheck + 1
+
 	if err != nil {
-		fmt.Println(err)
+		log.Log.Warningf("Spammer %v: Received error trying to send: %v\n", sp.index, err)
 		stats.AddError()
-		sp.updateContext()
+		sp.updateSequenceAndCoins()
 		sp.queryFree <- true
 		return
 	}
+	log.Log.Debugf("Spammer %v: Sending successful\n", sp.index)
 	stats.AddSuccess()
-	sp.currentSequence = sp.currentSequence + 1
-	sp.sequenceCheck = sp.sequenceCheck + 1
+
+	if clpMsg {
+		sp.currentCoins = sp.currentCoins.Minus([]sdk.Coin{sdk.NewCoin(clpFrom, clpAmount.Int64())})
+	} else {
+		sp.currentCoins = sp.currentCoins.Minus(randomCoins)
+	}
+
 	if sp.sequenceCheck >= 200 {
-		sp.updateContext()
+		sp.updateSequenceAndCoins()
 	}
 	sp.queryFree <- true
 }
 
-func (sp *Spammer) flipCLPTickers() {
-	tmp := sp.clpFrom
-	sp.clpFrom = sp.clpTo
-	sp.clpTo = tmp
-}
-
-func (sp *Spammer) updateContext() {
-	fmt.Printf("Spammer %v: time to refresh sequence at %v, waiting for next block...\n", sp.index,
-		time.Now().UTC().Format(time.RFC3339))
+func (sp *Spammer) updateSequenceAndCoins() {
+	log.Log.Debugf("Spammer %v: Time to refresh sequence and coins, waiting for next block...\n", sp.index)
 	time.Sleep(defaultBlockTime * time.Millisecond)
-	fmt.Printf("Spammer %v: querying new sequence...\n", sp.index)
+	log.Log.Debugf("Spammer %v: Querying new sequence...\n", sp.index)
 
 	nextSequence, err := sp.ctx.NextSequence(sp.accountAddress)
 	if err != nil {
-		fmt.Println(err)
+		log.Log.Errorf("Spammer %v: Error updating sequence: %v\n", sp.index, err)
 	}
 	sp.currentSequence = nextSequence
-	fmt.Printf("Spammer %v: Sequence updated at %v to...%v\n", sp.index, time.Now().UTC().Format(time.RFC3339),
-		sp.currentSequence)
+	log.Log.Debugf("Spammer %v: Sequence updated to %v\n", sp.index, sp.currentSequence)
 	sp.sequenceCheck = 0
+
+	log.Log.Debugf("Spammer %v: Querying coins...\n", sp.index)
+	fromAcc, err := getAccFromAddr(sp.ctx, sp.accountAddress)
+	if err != nil {
+		log.Log.Errorf("Spammer %v: Account not found, skipping\n", sp.index)
+		return
+	}
+
+	sp.currentCoins = fromAcc.GetCoins()
 }
 
 func getRandomCoinsUpTo(coins sdk.Coins, divideBy int64) sdk.Coins {
@@ -285,6 +320,10 @@ func getAddr(info cryptokeys.Info) []byte {
 func getAcc(ctx context.CoreContext, info cryptokeys.Info) (auth.Account, error) {
 	accAddr := getAddr(info)
 
+	return getAccFromAddr(ctx, accAddr)
+}
+
+func getAccFromAddr(ctx context.CoreContext, accAddr []byte) (auth.Account, error) {
 	accBytes, err := ctx.QueryStore(auth.AddressStoreKey(accAddr), ctx.AccountStore)
 	if err != nil {
 		return nil, err

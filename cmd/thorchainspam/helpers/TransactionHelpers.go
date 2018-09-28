@@ -1,8 +1,6 @@
 package helpers
 
 import (
-	"fmt"
-
 	"github.com/cosmos/cosmos-sdk/client/context"
 	lcdhelpers "github.com/cosmos/cosmos-sdk/client/lcd/helpers"
 	"github.com/cosmos/cosmos-sdk/crypto/keys"
@@ -11,6 +9,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/auth"
 	"github.com/pkg/errors"
 	tmcrypto "github.com/tendermint/tendermint/crypto"
+	"github.com/thorchain/THORChain/cmd/thorchainspam/log"
 )
 
 //Setup ChainID, Gas, Account number for a context
@@ -24,7 +23,7 @@ func SetupContext(ctx context.CoreContext, from sdk.AccAddress, chainID string, 
 	//add account number and sequence
 	ctx, err := lcdhelpers.EnsureAccountNumber(ctx, accountNumber, from)
 	if err != nil {
-		fmt.Println(err)
+		log.Log.Errorf(err.Error())
 		return ctx, err
 	}
 	return ctx, nil
@@ -76,7 +75,7 @@ func ProcessMsg(ctx context.CoreContext, accountName string, password string, cd
 func GetFromAddress(kb keys.Keybase, localAccountName string) (sdk.AccAddress, error) {
 	info, err := kb.Get(localAccountName)
 	if err != nil {
-		fmt.Println(err)
+		log.Log.Errorf(err.Error())
 		return sdk.AccAddress{}, err
 	}
 
