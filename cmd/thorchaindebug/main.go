@@ -267,7 +267,7 @@ func txServer(c net.Conn, cdc *wire.Codec) {
 		if err != nil {
 			if err == io.EOF {
 				// connection closed => just return the server
-				fmt.Println("Connection closed")
+				// fmt.Println("Connection closed")
 				return
 			}
 			fmt.Println("Could not read:", err)
@@ -276,7 +276,7 @@ func txServer(c net.Conn, cdc *wire.Codec) {
 
 		txString := string(buf[0:nr])
 
-		fmt.Println("Server got tx:", txString)
+		// fmt.Println("Server got tx:", txString)
 
 		// try hex, then base64
 		txBytes, err := hex.DecodeString(txString)
