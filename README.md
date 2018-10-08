@@ -4,6 +4,8 @@ THORChain is a lightning fast decentralised exchange protocol with cross-chain b
 
 This project is based on work done for the [Cosmos Project](https://github.com/cosmos/cosmos-sdk) by the Cosmos/Tendermint team.
 
+Codeclimate: https://codeclimate.com/github/thorchain/THORChain
+
 ## Getting Started
 
 These instructions will get you a copy of the project up and running on your local machine for development and testing purposes. See deployment for notes on how to deploy the project on a live system.
