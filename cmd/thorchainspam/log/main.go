@@ -6,6 +6,7 @@ import (
 	logging "github.com/op/go-logging"
 )
 
+// Logger instance
 var Log = logging.MustGetLogger("logger")
 
 // Example format string. Everything except the message has a custom color

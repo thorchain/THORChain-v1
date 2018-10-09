@@ -34,7 +34,7 @@ func (s *Stats) Print() {
 	total := s.numSuccessful + s.numError
 	secsPassed := time.Now().Sub(s.startedAt).Seconds()
 
-	log.Log.Infof("========== Stats: Total %v, Error: %v, %%Sucessful: %v, TPS: %v\n", total, s.numError, float64(s.numSuccessful)/float64(total), float64(s.numSuccessful)/secsPassed)
+	log.Log.Infof("========== Stats: Total %v, Error: %v, %%Successful: %v, TPS: %v\n", total, s.numError, float64(s.numSuccessful)/float64(total), float64(s.numSuccessful)/secsPassed)
 	// fmt.Printf("\n=======================================\n")
 	// fmt.Printf("Total: %v\n", total)
 	// fmt.Printf("Successful: %v\n", s.numSuccessful)

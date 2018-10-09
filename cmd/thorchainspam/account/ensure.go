@@ -26,8 +26,8 @@ func GetAccountEnsure(cdc *wire.Codec) func(cmd *cobra.Command, args []string) e
 	return func(cmd *cobra.Command, args []string) error {
 		ctx := context.NewCoreContextFromViper().WithDecoder(authcmd.GetAccountDecoder(cdc))
 
-		chainId := viper.GetString(FlagChainID)
-		if chainId == "" {
+		chainID := viper.GetString(FlagChainID)
+		if chainID == "" {
 			return fmt.Errorf("--chain-id is required")
 		}
 
@@ -87,7 +87,7 @@ func GetAccountEnsure(cdc *wire.Codec) func(cmd *cobra.Command, args []string) e
 
 		sendCoins(numAccsToCreate, spamPrefix, numExistingAccs,
 			kb, spamPassword, signPassword, from,
-			coins, ctx, cdc, chainId)
+			coins, ctx, cdc, chainID)
 
 		fmt.Printf("Done creating %v accounts\n", numAccsToCreate)
 
@@ -120,12 +120,12 @@ func ensureFromAccHasEnoughCoins(ctx context.CoreContext, from sdk.AccAddress, c
 
 func sendCoins(numAccsToCreate int, spamPrefix string, numExistingAccs int,
 	kb cryptokeys.Keybase, spamPassword string, signPassword string, from sdk.AccAddress,
-	coins sdk.Coins, ctx context.CoreContext, cdc *amino.Codec, chainId string) error {
+	coins sdk.Coins, ctx context.CoreContext, cdc *amino.Codec, chainID string) error {
 
 	//Set to use max CPUs
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
-	ctx, err := helpers.SetupContext(ctx, from, chainId, 0)
+	ctx, err := helpers.SetupContext(ctx, from, chainID, 0)
 	if err != nil {
 		fmt.Println(err)
 		return err

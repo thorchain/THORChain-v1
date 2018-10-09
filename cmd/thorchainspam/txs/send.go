@@ -88,7 +88,7 @@ func GetTxsSend(cdc *wire.Codec) func(cmd *cobra.Command, args []string) error {
 }
 
 func doEvery(d time.Duration, f func()) {
-	for _ = range time.Tick(d) {
+	for range time.Tick(d) {
 		go f()
 	}
 }
@@ -124,7 +124,7 @@ func createSpammers(spamPrefix string, spamPassword string, stats *stats.Stats, 
 }
 
 //Spawn new spammer
-func SpawnSpammer(localAccountName string, spamPassword string, index int, kb cryptokeys.Keybase, spammerInfo cryptokeys.Info, stats *stats.Stats, chainId string, spammers *[]Spammer, wg *sync.WaitGroup, semaphore <-chan bool) {
+func SpawnSpammer(localAccountName string, spamPassword string, index int, kb cryptokeys.Keybase, spammerInfo cryptokeys.Info, stats *stats.Stats, chainID string, spammers *[]Spammer, wg *sync.WaitGroup, semaphore <-chan bool) {
 	defer wg.Done()
 
 	log.Log.Debugf("Spammer %v: Spawning...\n", index)
@@ -142,7 +142,7 @@ func SpawnSpammer(localAccountName string, spamPassword string, index int, kb cr
 		return
 	}
 
-	ctx, err = helpers.SetupContext(ctx, from, chainId, 0)
+	ctx, err = helpers.SetupContext(ctx, from, chainID, 0)
 	if err != nil {
 		log.Log.Errorf(err.Error())
 		<-semaphore

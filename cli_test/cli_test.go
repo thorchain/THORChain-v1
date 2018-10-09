@@ -55,33 +55,33 @@ func TestThorchaincliSend(t *testing.T) {
 	barAddr, _ := executeGetAddrPK(t, fmt.Sprintf("thorchaincli keys show bar --output=json --home=%s", thorchaincliHome))
 
 	fooAcc := executeGetAccount(t, fmt.Sprintf("thorchaincli account %s %v", fooAddr, flags))
-	require.Equal(t, int64(50), fooAcc.GetCoins().AmountOf("steak").Int64())
+	require.Equal(t, int64(50000000000), fooAcc.GetCoins().AmountOf("RUNE").Int64())
 
-	executeWrite(t, fmt.Sprintf("thorchaincli send %v --amount=10steak --to=%s --from=foo", flags, barAddr), pass)
+	executeWrite(t, fmt.Sprintf("thorchaincli send %v --amount=10RUNE --to=%s --from=foo", flags, barAddr), pass)
 	tests.WaitForNextNBlocksTM(2, port)
 
 	barAcc := executeGetAccount(t, fmt.Sprintf("thorchaincli account %s %v", barAddr, flags))
-	require.Equal(t, int64(10), barAcc.GetCoins().AmountOf("steak").Int64())
+	require.Equal(t, int64(10), barAcc.GetCoins().AmountOf("RUNE").Int64())
 	fooAcc = executeGetAccount(t, fmt.Sprintf("thorchaincli account %s %v", fooAddr, flags))
-	require.Equal(t, int64(40), fooAcc.GetCoins().AmountOf("steak").Int64())
+	require.Equal(t, int64(49999999990), fooAcc.GetCoins().AmountOf("RUNE").Int64())
 
 	// test autosequencing
-	executeWrite(t, fmt.Sprintf("thorchaincli send %v --amount=10steak --to=%s --from=foo", flags, barAddr), pass)
+	executeWrite(t, fmt.Sprintf("thorchaincli send %v --amount=10RUNE --to=%s --from=foo", flags, barAddr), pass)
 	tests.WaitForNextNBlocksTM(2, port)
 
 	barAcc = executeGetAccount(t, fmt.Sprintf("thorchaincli account %s %v", barAddr, flags))
-	require.Equal(t, int64(20), barAcc.GetCoins().AmountOf("steak").Int64())
+	require.Equal(t, int64(20), barAcc.GetCoins().AmountOf("RUNE").Int64())
 	fooAcc = executeGetAccount(t, fmt.Sprintf("thorchaincli account %s %v", fooAddr, flags))
-	require.Equal(t, int64(30), fooAcc.GetCoins().AmountOf("steak").Int64())
+	require.Equal(t, int64(49999999980), fooAcc.GetCoins().AmountOf("RUNE").Int64())
 
 	// test memo
-	executeWrite(t, fmt.Sprintf("thorchaincli send %v --amount=10steak --to=%s --from=foo --memo 'testmemo'", flags, barAddr), pass)
+	executeWrite(t, fmt.Sprintf("thorchaincli send %v --amount=10RUNE --to=%s --from=foo --memo 'testmemo'", flags, barAddr), pass)
 	tests.WaitForNextNBlocksTM(2, port)
 
 	barAcc = executeGetAccount(t, fmt.Sprintf("thorchaincli account %s %v", barAddr, flags))
-	require.Equal(t, int64(30), barAcc.GetCoins().AmountOf("steak").Int64())
+	require.Equal(t, int64(30), barAcc.GetCoins().AmountOf("RUNE").Int64())
 	fooAcc = executeGetAccount(t, fmt.Sprintf("thorchaincli account %s %v", fooAddr, flags))
-	require.Equal(t, int64(20), fooAcc.GetCoins().AmountOf("steak").Int64())
+	require.Equal(t, int64(49999999970), fooAcc.GetCoins().AmountOf("RUNE").Int64())
 }
 
 func TestThorchaincliCreateValidator(t *testing.T) {
@@ -107,27 +107,27 @@ func TestThorchaincliCreateValidator(t *testing.T) {
 	barAddr, barPubKey := executeGetAddrPK(t, fmt.Sprintf("thorchaincli keys show bar --output=json --home=%s", thorchaincliHome))
 	barCeshPubKey := sdk.MustBech32ifyValPub(barPubKey)
 
-	executeWrite(t, fmt.Sprintf("thorchaincli send %v --amount=10steak --to=%s --from=foo", flags, barAddr), pass)
+	executeWrite(t, fmt.Sprintf("thorchaincli send %v --amount=10RUNE --to=%s --from=foo", flags, barAddr), pass)
 	tests.WaitForNextNBlocksTM(2, port)
 
 	barAcc := executeGetAccount(t, fmt.Sprintf("thorchaincli account %s %v", barAddr, flags))
-	require.Equal(t, int64(10), barAcc.GetCoins().AmountOf("steak").Int64())
+	require.Equal(t, int64(10), barAcc.GetCoins().AmountOf("RUNE").Int64())
 	fooAcc := executeGetAccount(t, fmt.Sprintf("thorchaincli account %s %v", fooAddr, flags))
-	require.Equal(t, int64(40), fooAcc.GetCoins().AmountOf("steak").Int64())
+	require.Equal(t, int64(49999999990), fooAcc.GetCoins().AmountOf("RUNE").Int64())
 
 	// create validator
 	cvStr := fmt.Sprintf("thorchaincli stake create-validator %v", flags)
 	cvStr += fmt.Sprintf(" --from=%s", "bar")
 	cvStr += fmt.Sprintf(" --address-validator=%s", barAddr)
 	cvStr += fmt.Sprintf(" --pubkey=%s", barCeshPubKey)
-	cvStr += fmt.Sprintf(" --amount=%v", "2steak")
+	cvStr += fmt.Sprintf(" --amount=%v", "2RUNE")
 	cvStr += fmt.Sprintf(" --moniker=%v", "bar-vally")
 
 	executeWrite(t, cvStr, pass)
 	tests.WaitForNextNBlocksTM(2, port)
 
 	barAcc = executeGetAccount(t, fmt.Sprintf("thorchaincli account %s %v", barAddr, flags))
-	require.Equal(t, int64(8), barAcc.GetCoins().AmountOf("steak").Int64(), "%v", barAcc)
+	require.Equal(t, int64(49999999988), barAcc.GetCoins().AmountOf("RUNE").Int64(), "%v", barAcc)
 
 	validator := executeGetValidator(t, fmt.Sprintf("thorchaincli stake validator %s --output=json %v", barAddr, flags))
 	require.Equal(t, validator.Owner, barAddr)
@@ -146,7 +146,7 @@ func TestThorchaincliCreateValidator(t *testing.T) {
 
 	/* // this won't be what we expect because we've only started unbonding, haven't completed
 	barAcc = executeGetAccount(t, fmt.Sprintf("thorchaincli account %v %v", barCech, flags))
-	require.Equal(t, int64(9), barAcc.GetCoins().AmountOf("steak").Int64(), "%v", barAcc)
+	require.Equal(t, int64(9), barAcc.GetCoins().AmountOf("RUNE").Int64(), "%v", barAcc)
 	*/
 	validator = executeGetValidator(t, fmt.Sprintf("thorchaincli stake validator %s --output=json %v", barAddr, flags))
 	require.Equal(t, "1/1", validator.Tokens.String())
@@ -174,23 +174,23 @@ func TestThorchaincliSubmitProposal(t *testing.T) {
 	fooAddr, _ := executeGetAddrPK(t, fmt.Sprintf("thorchaincli keys show foo --output=json --home=%s", thorchaincliHome))
 
 	fooAcc := executeGetAccount(t, fmt.Sprintf("thorchaincli account %s %v", fooAddr, flags))
-	require.Equal(t, int64(50), fooAcc.GetCoins().AmountOf("steak").Int64())
+	require.Equal(t, int64(50000000000), fooAcc.GetCoins().AmountOf("RUNE").Int64())
 
-	executeWrite(t, fmt.Sprintf("thorchaincli gov submit-proposal %v --proposer=%s --deposit=5steak --type=Text --title=Test --description=test --from=foo", flags, fooAddr), pass)
+	executeWrite(t, fmt.Sprintf("thorchaincli gov submit-proposal %v --proposer=%s --deposit=5RUNE --type=Text --title=Test --description=test --from=foo", flags, fooAddr), pass)
 	tests.WaitForNextNBlocksTM(2, port)
 
 	fooAcc = executeGetAccount(t, fmt.Sprintf("thorchaincli account %s %v", fooAddr, flags))
-	require.Equal(t, int64(45), fooAcc.GetCoins().AmountOf("steak").Int64())
+	require.Equal(t, int64(49999999995), fooAcc.GetCoins().AmountOf("RUNE").Int64())
 
 	proposal1 := executeGetProposal(t, fmt.Sprintf("thorchaincli gov query-proposal --proposalID=1 --output=json %v", flags))
 	require.Equal(t, int64(1), proposal1.GetProposalID())
 	require.Equal(t, gov.StatusDepositPeriod, proposal1.GetStatus())
 
-	executeWrite(t, fmt.Sprintf("thorchaincli gov deposit %v --depositer=%s --deposit=10steak --proposalID=1 --from=foo", flags, fooAddr), pass)
+	executeWrite(t, fmt.Sprintf("thorchaincli gov deposit %v --depositer=%s --deposit=10RUNE --proposalID=1 --from=foo", flags, fooAddr), pass)
 	tests.WaitForNextNBlocksTM(2, port)
 
 	fooAcc = executeGetAccount(t, fmt.Sprintf("thorchaincli account %s %v", fooAddr, flags))
-	require.Equal(t, int64(35), fooAcc.GetCoins().AmountOf("steak").Int64())
+	require.Equal(t, int64(49999999985), fooAcc.GetCoins().AmountOf("RUNE").Int64())
 	proposal1 = executeGetProposal(t, fmt.Sprintf("thorchaincli gov query-proposal --proposalID=1 --output=json %v", flags))
 	require.Equal(t, int64(1), proposal1.GetProposalID())
 	require.Equal(t, gov.StatusVotingPeriod, proposal1.GetStatus())
