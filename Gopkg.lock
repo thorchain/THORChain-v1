@@ -50,7 +50,7 @@
 
 [[projects]]
   branch = "thorchain_master"
-  digest = "1:3196baa55dbaa0c7cda71a2a923387575c1666d57c091165d9f930a02e079a5a"
+  digest = "1:2395aa741e288aaf9f65d9078ab0841f3f259995f949d51253d63163b8466c96"
   name = "github.com/cosmos/cosmos-sdk"
   packages = [
     "baseapp",
@@ -99,7 +99,7 @@
     "x/stake/types",
   ]
   pruneopts = "UT"
-  revision = "472543e9ea435d774984efe9f706234098922388"
+  revision = "b1098ff2c76a37d5dab4d6acaf932b354449e54d"
   source = "https://github.com/swishlabsco/cosmos-sdk.git"
 
 [[projects]]
