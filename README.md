@@ -1,6 +1,7 @@
 # THORChain
 
 [![CircleCI](https://circleci.com/gh/thorchain/THORChain.svg?style=shield&circle-token=7bb2510a13b7e60483d2d86e09326a88f6c6fd63)](https://circleci.com/gh/thorchain/THORChain)
+[![Maintainability](https://api.codeclimate.com/v1/badges/d44fc3f4756ca05a312c/maintainability)](https://codeclimate.com/github/thorchain/THORChain/maintainability)
 
 THORChain is a lightning fast decentralised exchange protocol with cross-chain bridges and support for a layer 2 payment network. Read the whitepaper here: [THORChain Whitepaper](https://github.com/thorchain/Resources/blob/master/Whitepapers/THORChain/whitepaper-en.md)
 
