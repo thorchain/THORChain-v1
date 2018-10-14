@@ -22,6 +22,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/stake"
 
 	clp "github.com/thorchain/THORChain/x/clp"
+	"github.com/thorchain/THORChain/x/exchange"
 )
 
 const (
@@ -50,6 +51,7 @@ type ThorchainApp struct {
 	keyGov           *sdk.KVStoreKey
 	keyFeeCollection *sdk.KVStoreKey
 	keyCLP           *sdk.KVStoreKey
+	keyExchange      *sdk.KVStoreKey
 
 	// Manage getting and setting accounts
 	accountMapper       auth.AccountMapper
@@ -60,6 +62,7 @@ type ThorchainApp struct {
 	slashingKeeper      slashing.Keeper
 	govKeeper           gov.Keeper
 	clpKeeper           clp.Keeper
+	exchangeKeeper      exchange.Keeper
 
 	baseCoinTicker string
 }
@@ -82,6 +85,7 @@ func NewThorchainApp(logger log.Logger, db dbm.DB, traceStore io.Writer, baseApp
 		keyGov:           sdk.NewKVStoreKey("gov"),
 		keyFeeCollection: sdk.NewKVStoreKey("fee"),
 		keyCLP:           sdk.NewKVStoreKey("clp"),
+		keyExchange:      sdk.NewKVStoreKey("exchange"),
 		baseCoinTicker:   AppBaseCoinTicker,
 	}
 
@@ -100,6 +104,7 @@ func NewThorchainApp(logger log.Logger, db dbm.DB, traceStore io.Writer, baseApp
 	app.govKeeper = gov.NewKeeper(app.cdc, app.keyGov, app.coinKeeper, app.stakeKeeper, app.RegisterCodespace(gov.DefaultCodespace))
 	app.feeCollectionKeeper = auth.NewFeeCollectionKeeper(app.cdc, app.keyFeeCollection)
 	app.clpKeeper = clp.NewKeeper(app.keyCLP, app.baseCoinTicker, app.coinKeeper, app.RegisterCodespace(clp.DefaultCodespace))
+	app.exchangeKeeper = exchange.NewKeeper(app.keyExchange, app.coinKeeper, app.RegisterCodespace(exchange.DefaultCodespace))
 
 	// register message routes
 	app.Router().
@@ -108,14 +113,15 @@ func NewThorchainApp(logger log.Logger, db dbm.DB, traceStore io.Writer, baseApp
 		AddRoute("stake", stake.NewHandler(app.stakeKeeper)).
 		AddRoute("slashing", slashing.NewHandler(app.slashingKeeper)).
 		AddRoute("gov", gov.NewHandler(app.govKeeper)).
-		AddRoute("clp", clp.NewHandler(app.clpKeeper))
+		AddRoute("clp", clp.NewHandler(app.clpKeeper)).
+		AddRoute("exchange", exchange.NewHandler(app.exchangeKeeper))
 
 	// initialize BaseApp
 	app.SetInitChainer(app.initChainer)
 	app.SetBeginBlocker(app.BeginBlocker)
 	app.SetEndBlocker(app.EndBlocker)
 	app.SetAnteHandler(auth.NewAnteHandler(app.accountMapper, app.feeCollectionKeeper))
-	app.MountStoresIAVL(app.keyMain, app.keyAccount, app.keyIBC, app.keyStake, app.keySlashing, app.keyGov, app.keyFeeCollection, app.keyCLP)
+	app.MountStoresIAVL(app.keyMain, app.keyAccount, app.keyIBC, app.keyStake, app.keySlashing, app.keyGov, app.keyFeeCollection, app.keyCLP, app.keyExchange)
 	err := app.LoadLatestVersion(app.keyMain)
 	if err != nil {
 		cmn.Exit(err.Error())
@@ -134,6 +140,7 @@ func MakeCodec() *wire.Codec {
 	gov.RegisterWire(cdc)
 	auth.RegisterWire(cdc)
 	clp.RegisterWire(cdc)
+	exchange.RegisterWire(cdc)
 	sdk.RegisterWire(cdc)
 	wire.RegisterCrypto(cdc)
 	return cdc
@@ -195,6 +202,9 @@ func (app *ThorchainApp) initChainer(ctx sdk.Context, req abci.RequestInitChain)
 		panic(err) // TODO https://github.com/cosmos/cosmos-sdk/issues/468
 		//	return sdk.ErrGenesisParse("").TraceCause(err, "")
 	}
+
+	exchange.InitGenesis(ctx, app.exchangeKeeper, genesisState.ExchangeData)
+
 	return abci.ResponseInitChain{}
 }
 
@@ -212,9 +222,10 @@ func (app *ThorchainApp) ExportAppStateAndValidators() (appState json.RawMessage
 	app.accountMapper.IterateAccounts(ctx, appendAccount)
 
 	genState := GenesisState{
-		Accounts:   accounts,
-		StakeData:  stake.WriteGenesis(ctx, app.stakeKeeper),
-		CLPGenesis: clp.WriteGenesis(ctx, app.clpKeeper),
+		Accounts:     accounts,
+		StakeData:    stake.WriteGenesis(ctx, app.stakeKeeper),
+		CLPGenesis:   clp.WriteGenesis(ctx, app.clpKeeper),
+		ExchangeData: exchange.WriteGenesis(ctx, app.exchangeKeeper),
 	}
 	appState, err = wire.MarshalJSONIndent(app.cdc, genState)
 	if err != nil {
