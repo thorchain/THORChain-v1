@@ -8,6 +8,7 @@ import (
 	"github.com/tendermint/tendermint/crypto"
 	tmtypes "github.com/tendermint/tendermint/types"
 	clpTypes "github.com/thorchain/THORChain/x/clp/types"
+	exchange "github.com/thorchain/THORChain/x/exchange"
 
 	"github.com/cosmos/cosmos-sdk/server"
 	"github.com/cosmos/cosmos-sdk/server/config"
@@ -25,9 +26,10 @@ var (
 
 // State to Unmarshal
 type GenesisState struct {
-	Accounts   []GenesisAccount   `json:"accounts"`
-	StakeData  stake.GenesisState `json:"stake"`
-	CLPGenesis clpTypes.Genesis   `json:"clp"`
+	Accounts     []GenesisAccount      `json:"accounts"`
+	StakeData    stake.GenesisState    `json:"stake"`
+	CLPGenesis   clpTypes.Genesis      `json:"clp"`
+	ExchangeData exchange.GenesisState `json:"exchange"`
 }
 
 // GenesisAccount doesn't need pubkey or sequence
@@ -189,10 +191,14 @@ func ThorchainAppGenState(cdc *wire.Codec, appGenTxs []json.RawMessage) (genesis
 		}
 	}
 
+	// get exchange genesis state
+	exchangeData := exchange.DefaultGenesisState()
+
 	// create the final app state
 	genesisState = GenesisState{
-		Accounts:  genaccs,
-		StakeData: stakeData,
+		Accounts:     genaccs,
+		StakeData:    stakeData,
+		ExchangeData: exchangeData,
 	}
 	return
 }

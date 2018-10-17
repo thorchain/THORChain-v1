@@ -23,7 +23,9 @@ import (
 	slashingcmd "github.com/cosmos/cosmos-sdk/x/slashing/client/cli"
 	stakecmd "github.com/cosmos/cosmos-sdk/x/stake/client/cli"
 	clpcmd "github.com/thorchain/THORChain/x/clp/client/cli"
-	clp "github.com/thorchain/THORChain/x/clp/client/rest"
+	clpRest "github.com/thorchain/THORChain/x/clp/client/rest"
+	exchangecmd "github.com/thorchain/THORChain/x/exchange/client/cli"
+	exchangeRest "github.com/thorchain/THORChain/x/exchange/client/rest"
 )
 
 // rootCmd is the entry point for this binary
@@ -33,7 +35,8 @@ var (
 		Short: "THORChain light-client",
 	}
 	serveCommandCallback = func(ctx context.CoreContext, r *mux.Router, cdc *wire.Codec, kb cryptokeys.Keybase) {
-		clp.RegisterRoutes(ctx, r, cdc, kb, app.AppBaseCoinTicker)
+		clpRest.RegisterRoutes(ctx, r, cdc, kb, app.AppBaseCoinTicker)
+		exchangeRest.RegisterRoutes(ctx, r, cdc, kb, "exchange")
 	}
 )
 
@@ -135,7 +138,7 @@ func main() {
 	//Add CLP commands
 	clpCmd := &cobra.Command{
 		Use:   "clp",
-		Short: "CLP Subcommands",
+		Short: "CLP subcommands",
 	}
 	clpCmd.AddCommand(
 		client.PostCommands(
@@ -149,6 +152,23 @@ func main() {
 		)...)
 	rootCmd.AddCommand(
 		clpCmd,
+	)
+
+	// Add exchange commands
+	exchangeCmd := &cobra.Command{
+		Use:   "exchange",
+		Short: "Exchange subcommands",
+	}
+	exchangeCmd.AddCommand(
+		client.PostCommands(
+			exchangecmd.GetCmdLimitOrderCreate(cdc),
+		)...)
+	exchangeCmd.AddCommand(
+		client.GetCommands(
+			exchangecmd.GetCmdQueryOrderbook("exchange", cdc),
+		)...)
+	rootCmd.AddCommand(
+		exchangeCmd,
 	)
 
 	//Add auth and bank commands
