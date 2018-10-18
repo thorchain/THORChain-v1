@@ -24,36 +24,36 @@ var (
 	sellLimOrder1 = MsgCreateLimitOrder{
 		Sender:    addr1,
 		Kind:      SellOrder,
-		Amount:    sdk.NewCoin("ETH", 70),
-		Price:     sdk.NewCoin("RUNE", 5),
+		Amount:    sdk.NewInt64Coin("ETH", 70),
+		Price:     sdk.NewInt64Coin("RUNE", 5),
 		ExpiresAt: time.Now().Add(time.Minute),
 	}
 	buyLimOrder1 = MsgCreateLimitOrder{
 		Sender:    addr2,
 		Kind:      BuyOrder,
-		Amount:    sdk.NewCoin("ETH", 90),
-		Price:     sdk.NewCoin("RUNE", 4),
+		Amount:    sdk.NewInt64Coin("ETH", 90),
+		Price:     sdk.NewInt64Coin("RUNE", 4),
 		ExpiresAt: time.Now().Add(time.Minute),
 	}
 	buyLimOrder2 = MsgCreateLimitOrder{
 		Sender:    addr2,
 		Kind:      BuyOrder,
-		Amount:    sdk.NewCoin("ETH", 50),
-		Price:     sdk.NewCoin("RUNE", 8),
+		Amount:    sdk.NewInt64Coin("ETH", 50),
+		Price:     sdk.NewInt64Coin("RUNE", 8),
 		ExpiresAt: time.Now().Add(time.Minute),
 	}
 	buyLimOrder3 = MsgCreateLimitOrder{
 		Sender:    addr2,
 		Kind:      BuyOrder,
-		Amount:    sdk.NewCoin("ETH", 50000),
-		Price:     sdk.NewCoin("RUNE", 800),
+		Amount:    sdk.NewInt64Coin("ETH", 50000),
+		Price:     sdk.NewInt64Coin("RUNE", 800),
 		ExpiresAt: time.Now().Add(time.Minute),
 	}
 	buyLimOrder4 = MsgCreateLimitOrder{
 		Sender:    addr2,
 		Kind:      BuyOrder,
-		Amount:    sdk.NewCoin("ETH", 40),
-		Price:     sdk.NewCoin("RUNE", 8),
+		Amount:    sdk.NewInt64Coin("ETH", 40),
+		Price:     sdk.NewInt64Coin("RUNE", 8),
 		ExpiresAt: time.Now().Add(-time.Minute),
 	}
 )
@@ -91,12 +91,12 @@ func TestMsgCreateLimitOrder(t *testing.T) {
 	// Construct genesis state
 	seller := &auth.BaseAccount{
 		Address:       addr1,
-		Coins:         sdk.Coins{sdk.NewCoin("ETH", 250)},
+		Coins:         sdk.Coins{sdk.NewInt64Coin("ETH", 250)},
 		AccountNumber: 0,
 	}
 	buyer := &auth.BaseAccount{
 		Address:       addr2,
-		Coins:         sdk.Coins{sdk.NewCoin("RUNE", 2000)},
+		Coins:         sdk.Coins{sdk.NewInt64Coin("RUNE", 2000)},
 		AccountNumber: 1,
 	}
 	accs := []auth.Account{seller, buyer}

@@ -83,14 +83,22 @@ recreate: check-ledger
 check_tools:
 	cd tools && $(MAKE) check_tools
 
+check_dev_tools:
+	cd tools && $(MAKE) check_dev_tools
+
 update_tools:
 	cd tools && $(MAKE) update_tools
+
+update_dev_tools:
+	cd tools && $(MAKE) update_dev_tools
 
 get_tools:
 	cd tools && $(MAKE) get_tools
 
+get_dev_tools:
+	cd tools && $(MAKE) get_dev_tools
+
 get_vendor_deps:
-	@rm -rf vendor/
 	@echo "--> Running dep ensure"
 	@dep ensure -v
 
@@ -114,7 +122,7 @@ godocs:
 test: test_unit
 
 test_cli:
-	@go test -count 1 -p 1 `go list github.com/thorchain/THORChain/cli_test`
+	@go test -count 1 -p 1 `go list github.com/thorchain/THORChain/cli_test` -tags=cli_test
 
 test_unit:
 	@go test $(PACKAGES_NOCLITEST)

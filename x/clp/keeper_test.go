@@ -20,8 +20,8 @@ import (
 
 var (
 	clpKey              = sdk.NewKVStoreKey("clpTestKey")
-	_1600Rune           = sdk.NewCoin("RUNE", 1600)
-	_1000Rune           = sdk.NewCoin("RUNE", 1000)
+	_1600Rune           = sdk.NewInt64Coin("RUNE", 1600)
+	_1000Rune           = sdk.NewInt64Coin("RUNE", 1000)
 	runeTicker          = "RUNE"
 	runeTokenName       = "Rune"
 	ethTicker           = "ETH"

@@ -9,7 +9,7 @@ import (
 )
 
 // RegisterRoutes registers exchange related REST handlers to a router
-func RegisterRoutes(ctx context.CoreContext, r *mux.Router, cdc *wire.Codec, kb keys.Keybase, storeName string) {
-	// registerCreateLimitOrderRoute(ctx, r, cdc, kb)
-	registerQueryOrderbookRoute(ctx, r, cdc, kb, storeName)
+func RegisterRoutes(cliCtx context.CLIContext, r *mux.Router, cdc *wire.Codec, kb keys.Keybase, storeName string) {
+	// registerCreateLimitOrderRoute(cliCtx, r, cdc, kb)
+	registerQueryOrderbookRoute(cliCtx, r, cdc, kb, storeName)
 }

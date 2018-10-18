@@ -58,26 +58,26 @@ func setupCreateBuyLimitOrderTest() (sdk.Context, Keeper, bank.Keeper, sdk.AccAd
 	ctx := setupContext(exchangeKey)
 	keeper, _, bankKeeper, buyer, seller := setupKeepers(exchangeKey, ctx)
 
-	bankKeeper.SetCoins(ctx, buyer, sdk.Coins{sdk.NewCoin("RUNE", 2000)})
-	bankKeeper.SetCoins(ctx, seller, sdk.Coins{sdk.NewCoin("ETH", 250)})
+	bankKeeper.SetCoins(ctx, buyer, sdk.Coins{sdk.NewInt64Coin("RUNE", 2000)})
+	bankKeeper.SetCoins(ctx, seller, sdk.Coins{sdk.NewInt64Coin("ETH", 250)})
 
 	sellOrderBook := keeper.getOrderBook(ctx, SellOrder, "ETH", "RUNE")
 	id, _ := keeper.getNewOrderID(ctx)
-	limitSellOrder1 := NewLimitOrder(id, seller, SellOrder, sdk.NewCoin("ETH", 120),
-		sdk.NewCoin("RUNE", 6), time.Now().Add(time.Minute).UTC())
+	limitSellOrder1 := NewLimitOrder(id, seller, SellOrder, sdk.NewInt64Coin("ETH", 120),
+		sdk.NewInt64Coin("RUNE", 6), time.Now().Add(time.Minute).UTC())
 	id, _ = keeper.getNewOrderID(ctx)
-	limitSellOrder2 := NewLimitOrder(id, seller, SellOrder, sdk.NewCoin("ETH", 100),
-		sdk.NewCoin("RUNE", 7), time.Now().Add(time.Minute).UTC())
+	limitSellOrder2 := NewLimitOrder(id, seller, SellOrder, sdk.NewInt64Coin("ETH", 100),
+		sdk.NewInt64Coin("RUNE", 7), time.Now().Add(time.Minute).UTC())
 	sellOrderBook.Orders = []LimitOrder{limitSellOrder1, limitSellOrder2}
 	keeper.setOrderBook(ctx, sellOrderBook)
 
 	buyOrderBook := keeper.getOrderBook(ctx, BuyOrder, "ETH", "RUNE")
 	id, _ = keeper.getNewOrderID(ctx)
-	limitBuyOrder1 := NewLimitOrder(id, buyer, BuyOrder, sdk.NewCoin("ETH", 50),
-		sdk.NewCoin("RUNE", 4), time.Now().Add(time.Minute).UTC())
+	limitBuyOrder1 := NewLimitOrder(id, buyer, BuyOrder, sdk.NewInt64Coin("ETH", 50),
+		sdk.NewInt64Coin("RUNE", 4), time.Now().Add(time.Minute).UTC())
 	id, _ = keeper.getNewOrderID(ctx)
-	limitBuyOrder2 := NewLimitOrder(id, buyer, BuyOrder, sdk.NewCoin("ETH", 80),
-		sdk.NewCoin("RUNE", 2), time.Now().Add(time.Minute).UTC())
+	limitBuyOrder2 := NewLimitOrder(id, buyer, BuyOrder, sdk.NewInt64Coin("ETH", 80),
+		sdk.NewInt64Coin("RUNE", 2), time.Now().Add(time.Minute).UTC())
 	buyOrderBook.Orders = []LimitOrder{limitBuyOrder1, limitBuyOrder2}
 	keeper.setOrderBook(ctx, buyOrderBook)
 
@@ -90,32 +90,32 @@ func TestKeeperCreateLimitOrderSad(t *testing.T) {
 	// Test invalid limit orders then confirm balances and orderbook is still untouched
 	// Invalid limit order that is expired
 	_, err := keeper.processLimitOrder(
-		ctx, buyer, BuyOrder, sdk.NewCoin("ETH", 200), sdk.NewCoin("RUNE", 3), time.Now().Add(-time.Minute))
+		ctx, buyer, BuyOrder, sdk.NewInt64Coin("ETH", 200), sdk.NewInt64Coin("RUNE", 3), time.Now().Add(-time.Minute))
 	require.EqualError(t, err, ErrOrderExpired(keeper.codespace).Error())
 
 	// Invalid limit order with wrong kind
 	_, err = keeper.processLimitOrder(
-		ctx, buyer, 0x03, sdk.NewCoin("ETH", 200), sdk.NewCoin("RUNE", 3), time.Now().Add(time.Minute))
+		ctx, buyer, 0x03, sdk.NewInt64Coin("ETH", 200), sdk.NewInt64Coin("RUNE", 3), time.Now().Add(time.Minute))
 	require.EqualError(t, err, ErrInvalidKind(keeper.codespace).Error())
 
 	// Invalid limit order token to same token
 	_, err = keeper.processLimitOrder(
-		ctx, buyer, BuyOrder, sdk.NewCoin("ETH", 200), sdk.NewCoin("ETH", 3), time.Now().Add(time.Minute))
+		ctx, buyer, BuyOrder, sdk.NewInt64Coin("ETH", 200), sdk.NewInt64Coin("ETH", 3), time.Now().Add(time.Minute))
 	require.EqualError(t, err, ErrSameDenom(keeper.codespace).Error())
 
 	// Invalid limit order negative amount
 	_, err = keeper.processLimitOrder(
-		ctx, buyer, BuyOrder, sdk.NewCoin("ETH", -200), sdk.NewCoin("RUNE", 3), time.Now().Add(time.Minute))
+		ctx, buyer, BuyOrder, sdk.NewInt64Coin("ETH", -200), sdk.NewInt64Coin("RUNE", 3), time.Now().Add(time.Minute))
 	require.EqualError(t, err, ErrAmountNotPositive(keeper.codespace).Error())
 
 	// Invalid limit order negative price
 	_, err = keeper.processLimitOrder(
-		ctx, buyer, BuyOrder, sdk.NewCoin("ETH", 200), sdk.NewCoin("RUNE", -3), time.Now().Add(time.Minute))
+		ctx, buyer, BuyOrder, sdk.NewInt64Coin("ETH", 200), sdk.NewInt64Coin("RUNE", -3), time.Now().Add(time.Minute))
 	require.EqualError(t, err, ErrPriceNotPositive(keeper.codespace).Error())
 
 	// Invalid limit order not enough coins
 	_, err = keeper.processLimitOrder(
-		ctx, buyer, BuyOrder, sdk.NewCoin("ETH", 200), sdk.NewCoin("RUNE", 11), time.Now().Add(time.Minute))
+		ctx, buyer, BuyOrder, sdk.NewInt64Coin("ETH", 200), sdk.NewInt64Coin("RUNE", 11), time.Now().Add(time.Minute))
 	require.EqualError(t, err, sdk.ErrInsufficientCoins("Must have at least 2200RUNE to place this buy limit order").Error())
 
 	// Check balances still the same after invalid trades
@@ -139,15 +139,15 @@ func TestKeeperCreateBuyLimitOrderNotFilled(t *testing.T) {
 	expiresAt := time.Now().Add(time.Minute).UTC()
 
 	limitOrderID, err := keeper.processLimitOrder(
-		ctx, buyer, BuyOrder, sdk.NewCoin("ETH", 200), sdk.NewCoin("RUNE", 3), expiresAt)
+		ctx, buyer, BuyOrder, sdk.NewInt64Coin("ETH", 200), sdk.NewInt64Coin("RUNE", 3), expiresAt)
 
 	require.Nil(t, err)
 	require.True(t, limitOrderID > 0)
 
 	orderBook := keeper.getOrderBook(ctx, BuyOrder, "ETH", "RUNE")
 	require.Equal(t, limitBuyOrder1, orderBook.Orders[0])
-	require.Equal(t, NewLimitOrder(limitBuyOrder2.OrderID+1, buyer, BuyOrder, sdk.NewCoin("ETH", 200),
-		sdk.NewCoin("RUNE", 3), expiresAt), orderBook.Orders[1])
+	require.Equal(t, NewLimitOrder(limitBuyOrder2.OrderID+1, buyer, BuyOrder, sdk.NewInt64Coin("ETH", 200),
+		sdk.NewInt64Coin("RUNE", 3), expiresAt), orderBook.Orders[1])
 	require.Equal(t, limitBuyOrder2, orderBook.Orders[2])
 }
 
@@ -158,7 +158,7 @@ func TestKeeperCreateBuyLimitOrderFilled(t *testing.T) {
 	expiresAt := time.Now().Add(time.Minute).UTC()
 
 	limitOrderID, err := keeper.processLimitOrder(
-		ctx, buyer, BuyOrder, sdk.NewCoin("ETH", 200), sdk.NewCoin("RUNE", 8), expiresAt)
+		ctx, buyer, BuyOrder, sdk.NewInt64Coin("ETH", 200), sdk.NewInt64Coin("RUNE", 8), expiresAt)
 
 	require.Nil(t, err)
 	require.Equal(t, int64(-1), limitOrderID)
@@ -173,7 +173,7 @@ func TestKeeperCreateBuyLimitOrderFilled(t *testing.T) {
 	sellOrderBook := keeper.getOrderBook(ctx, SellOrder, "ETH", "RUNE")
 	require.Len(t, sellOrderBook.Orders, 1)
 	expectedLimitSellOrder2 := limitSellOrder2
-	expectedLimitSellOrder2.Amount = sdk.NewCoin("ETH", 20)
+	expectedLimitSellOrder2.Amount = sdk.NewInt64Coin("ETH", 20)
 	require.Equal(t, expectedLimitSellOrder2, sellOrderBook.Orders[0])
 
 	// seller and buyer coins changed
@@ -190,7 +190,7 @@ func TestKeeperCreateBuyLimitOrderFilledPartially(t *testing.T) {
 	expiresAt := time.Now().Add(time.Minute).UTC()
 
 	limitOrderID, err := keeper.processLimitOrder(
-		ctx, buyer, BuyOrder, sdk.NewCoin("ETH", 210), sdk.NewCoin("RUNE", 6), expiresAt)
+		ctx, buyer, BuyOrder, sdk.NewInt64Coin("ETH", 210), sdk.NewInt64Coin("RUNE", 6), expiresAt)
 
 	require.Nil(t, err)
 	require.True(t, limitOrderID > 0)
@@ -198,8 +198,8 @@ func TestKeeperCreateBuyLimitOrderFilledPartially(t *testing.T) {
 	// buy orderbook has additional buy order over partial filling
 	buyOrderBook := keeper.getOrderBook(ctx, BuyOrder, "ETH", "RUNE")
 	require.Len(t, buyOrderBook.Orders, 3)
-	require.Equal(t, NewLimitOrder(limitOrderID, buyer, BuyOrder, sdk.NewCoin("ETH", 90),
-		sdk.NewCoin("RUNE", 6), expiresAt), buyOrderBook.Orders[0])
+	require.Equal(t, NewLimitOrder(limitOrderID, buyer, BuyOrder, sdk.NewInt64Coin("ETH", 90),
+		sdk.NewInt64Coin("RUNE", 6), expiresAt), buyOrderBook.Orders[0])
 	require.Equal(t, limitBuyOrder1, buyOrderBook.Orders[1])
 	require.Equal(t, limitBuyOrder2, buyOrderBook.Orders[2])
 
@@ -229,7 +229,7 @@ func TestKeeperCreateBuyLimitOrderFilledCheapestExpired(t *testing.T) {
 	expiresAt := time.Now().Add(time.Minute).UTC()
 
 	limitOrderID, err := keeper.processLimitOrder(
-		ctx, buyer, BuyOrder, sdk.NewCoin("ETH", 70), sdk.NewCoin("RUNE", 8), expiresAt)
+		ctx, buyer, BuyOrder, sdk.NewInt64Coin("ETH", 70), sdk.NewInt64Coin("RUNE", 8), expiresAt)
 
 	require.Nil(t, err)
 	require.Equal(t, int64(-1), limitOrderID)
@@ -244,7 +244,7 @@ func TestKeeperCreateBuyLimitOrderFilledCheapestExpired(t *testing.T) {
 	sellOrderBook := keeper.getOrderBook(ctx, SellOrder, "ETH", "RUNE")
 	require.Len(t, sellOrderBook.Orders, 1)
 	expectedLimitSellOrder2 := limitSellOrder2
-	expectedLimitSellOrder2.Amount = sdk.NewCoin("ETH", 30)
+	expectedLimitSellOrder2.Amount = sdk.NewInt64Coin("ETH", 30)
 	require.Equal(t, expectedLimitSellOrder2, sellOrderBook.Orders[0])
 
 	// seller and buyer coins changed
@@ -260,12 +260,12 @@ func TestKeeperCreateBuyLimitOrderNotEnoughCoinsSkipped(t *testing.T) {
 		setupCreateBuyLimitOrderTest()
 
 	// let seller have not enough coins
-	bankKeeper.SetCoins(ctx, seller, sdk.Coins{sdk.NewCoin("ETH", 80)})
+	bankKeeper.SetCoins(ctx, seller, sdk.Coins{sdk.NewInt64Coin("ETH", 80)})
 
 	expiresAt := time.Now().Add(time.Minute).UTC()
 
 	limitOrderID, err := keeper.processLimitOrder(
-		ctx, buyer, BuyOrder, sdk.NewCoin("ETH", 110), sdk.NewCoin("RUNE", 8), expiresAt)
+		ctx, buyer, BuyOrder, sdk.NewInt64Coin("ETH", 110), sdk.NewInt64Coin("RUNE", 8), expiresAt)
 
 	require.Nil(t, err)
 	require.True(t, limitOrderID > 0)
@@ -273,8 +273,8 @@ func TestKeeperCreateBuyLimitOrderNotEnoughCoinsSkipped(t *testing.T) {
 	// buy orderbook has additional buy order over partial filling
 	buyOrderBook := keeper.getOrderBook(ctx, BuyOrder, "ETH", "RUNE")
 	require.Len(t, buyOrderBook.Orders, 3)
-	require.Equal(t, NewLimitOrder(limitOrderID, buyer, BuyOrder, sdk.NewCoin("ETH", 110),
-		sdk.NewCoin("RUNE", 8), expiresAt), buyOrderBook.Orders[0])
+	require.Equal(t, NewLimitOrder(limitOrderID, buyer, BuyOrder, sdk.NewInt64Coin("ETH", 110),
+		sdk.NewInt64Coin("RUNE", 8), expiresAt), buyOrderBook.Orders[0])
 	require.Equal(t, limitBuyOrder1, buyOrderBook.Orders[1])
 	require.Equal(t, limitBuyOrder2, buyOrderBook.Orders[2])
 

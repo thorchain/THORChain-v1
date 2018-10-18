@@ -10,11 +10,6 @@
 #   name = "github.com/user/project"
 #   version = "1.0.0"
 #
-# [[constraint]]
-#   name = "github.com/user/project2"
-#   branch = "dev"
-#   source = "github.com/myfork/project2"
-#
 # [[override]]
 #   name = "github.com/x/y"
 #   version = "2.4.0"
@@ -24,11 +19,22 @@
 #   go-tests = true
 #   unused-packages = true
 
-
 [[constraint]]
   name = "github.com/cosmos/cosmos-sdk"
-  source = "https://github.com/swishlabsco/cosmos-sdk.git"
-  branch = "thorchain_master"
+  source = "https://github.com/thorchain/cosmos-sdk.git"
+  branch = "thorchain_master_next"
+
+[[constraint]]
+  name = "github.com/bgentry/speakeasy"
+  version = "~0.1.0"
+
+[[override]]
+  name = "github.com/golang/protobuf"
+  version = "=1.1.0"
+
+[[constraint]]
+  name = "github.com/mattn/go-isatty"
+  version = "~0.0.3"
 
 [[constraint]]
   name = "github.com/spf13/cobra"
@@ -43,12 +49,16 @@
   version = "~1.0.0"
 
 [[constraint]]
+  name = "github.com/pkg/errors"
+  version = "=0.8.0"
+
+[[constraint]]
   name = "github.com/stretchr/testify"
-  version = "1.2.1"
+  version = "=1.2.1"
 
 [[override]]
   name = "github.com/tendermint/go-amino"
-  version = "=0.10.1"
+  version = "=v0.12.0-rc0"
 
 [[override]]
   name = "github.com/tendermint/iavl"
@@ -56,7 +66,15 @@
 
 [[override]]
   name = "github.com/tendermint/tendermint"
-  version = "=v0.22.8"
+  version = "=v0.23.1-rc0"
+
+[[constraint]]
+  name = "github.com/bartekn/go-bip39"
+  revision = "a05967ea095d81c8fe4833776774cfaff8e5036c"
+
+[[constraint]]
+  name = "github.com/zondax/ledger-goclient"
+  revision = "4296ee5701e945f9b3a7dbe51f402e0b9be57259"
 
 [prune]
   go-tests = true
