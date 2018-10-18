@@ -49,7 +49,7 @@
 
 [[projects]]
   branch = "thorchain_master_next"
-  digest = "1:49071b97e967fc7ab94bcfc8bf507ab11728a7e90beae4329617545daf162fb2"
+  digest = "1:b85d753648312df6fc45a0154735bf585669c0f57f4386d41730ee80697ef128"
   name = "github.com/cosmos/cosmos-sdk"
   packages = [
     "baseapp",
@@ -101,7 +101,7 @@
     "x/stake/types",
   ]
   pruneopts = "UT"
-  revision = "dc863197e045c2605008679ed52c7712a36bb8c7"
+  revision = "f59030273bfbb7b508dda1cffa8164b92731857f"
   source = "https://github.com/thorchain/cosmos-sdk.git"
 
 [[projects]]
@@ -696,7 +696,6 @@
     "github.com/cosmos/cosmos-sdk/client/rpc",
     "github.com/cosmos/cosmos-sdk/client/tx",
     "github.com/cosmos/cosmos-sdk/client/utils",
-    "github.com/cosmos/cosmos-sdk/cmd/gaia/app",
     "github.com/cosmos/cosmos-sdk/crypto/keys",
     "github.com/cosmos/cosmos-sdk/server",
     "github.com/cosmos/cosmos-sdk/server/config",
