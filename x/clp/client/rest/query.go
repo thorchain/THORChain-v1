@@ -59,25 +59,11 @@ func queryClpRequestHandlerFn(
 		}
 
 		// print out whole account
-		output, err3 := cdc.MarshalJSON(clp)
-		if err3 != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte(fmt.Sprintf("couldn't marshall query result. Error: %s", err3.Error())))
-			return
-		}
-
-		accountOutput, err := getCLPAccountOutput(&clp, cliCtx, accountDecoder, cdc, baseCoinTicker)
+		output, err := clpToJsonOutput(cdc, cliCtx, accountDecoder, baseCoinTicker, w, &clp)
 		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte(err.Error()))
 			return
 		}
-
-		finalOutput := append([]byte("{\"clp\":"), output...)
-		finalOutput = append(finalOutput, []byte(",\"account\": ")...)
-		finalOutput = append(finalOutput, accountOutput...)
-		finalOutput = append(finalOutput, []byte("}")...)
-		w.Write(finalOutput)
+		w.Write(output)
 	}
 }
 
@@ -105,6 +91,29 @@ func getCLPAccountOutput(
 		tickerCoinAmount, price)
 
 	return []byte(jsonOutput), nil
+}
+
+func clpToJsonOutput(cdc *wire.Codec, cliCtx context.CLIContext, accountDecoder auth.AccountDecoder,
+	baseCoinTicker string, w http.ResponseWriter, clp *clpTypes.CLP) ([]byte, error) {
+	output, err3 := cdc.MarshalJSON(clp)
+	if err3 != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(fmt.Sprintf("couldn't marshall query result. Error: %s", err3.Error())))
+		return []byte(""), err3
+	}
+	accountOutput, err := getCLPAccountOutput(clp, cliCtx, accountDecoder, cdc, baseCoinTicker)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(err.Error()))
+		return []byte(""), err
+	}
+
+	finalOutput := append([]byte("{\"clp\":"), output...)
+	finalOutput = append(finalOutput, []byte(",\"account\": ")...)
+	finalOutput = append(finalOutput, accountOutput...)
+	finalOutput = append(finalOutput, []byte("}")...)
+
+	return finalOutput, nil
 }
 
 // query all Handler
@@ -141,25 +150,11 @@ func queryClpsRequestHandlerFn(
 
 		var outputs [][]byte
 		for i := 0; i < len(clps); i++ {
-			output, err3 := cdc.MarshalJSON(clps[i])
-			if err3 != nil {
-				w.WriteHeader(http.StatusInternalServerError)
-				w.Write([]byte(fmt.Sprintf("couldn't marshall query result. Error: %s", err3.Error())))
-				return
-			}
-			accountOutput, err := getCLPAccountOutput(&clps[i], cliCtx, accountDecoder, cdc, baseCoinTicker)
+			output, err := clpToJsonOutput(cdc, cliCtx, accountDecoder, baseCoinTicker, w, &clps[i])
 			if err != nil {
-				w.WriteHeader(http.StatusInternalServerError)
-				w.Write([]byte(err.Error()))
 				return
 			}
-
-			finalOutput := append([]byte("{\"clp\":"), output...)
-			finalOutput = append(finalOutput, []byte(",\"account\": ")...)
-			finalOutput = append(finalOutput, accountOutput...)
-			finalOutput = append(finalOutput, []byte("}")...)
-
-			outputs = append(outputs, finalOutput)
+			outputs = append(outputs, output)
 		}
 		w.Write([]byte("["))
 
