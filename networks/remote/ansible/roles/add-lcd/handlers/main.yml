@@ -1,0 +1,9 @@
+---
+
+- name: systemctl
+  systemd: name=thorchaincli enabled=yes daemon_reload=yes
+
+- name: restart thorchaincli
+  service: name=thorchaincli state=restarted
+
+

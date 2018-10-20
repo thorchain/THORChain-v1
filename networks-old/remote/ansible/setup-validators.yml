@@ -1,0 +1,10 @@
+---
+
+- hosts: all
+  remote_user: ec2-user
+  become: yes
+  any_errors_fatal: true
+  gather_facts: no
+  roles:
+    - setup-validators
+

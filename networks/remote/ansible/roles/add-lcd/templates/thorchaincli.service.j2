@@ -1,0 +1,17 @@
+[Unit]
+Description=thorchaincli
+Requires=network-online.target
+After=network-online.target
+
+[Service]
+Restart=on-failure
+User=thorchaind
+Group=thorchaind
+PermissionsStartOnly=true
+ExecStart=/usr/bin/thorchaincli advanced rest-server --laddr {{THORCHAIND_ADDRESS}}
+ExecReload=/bin/kill -HUP $MAINPID
+KillSignal=SIGTERM
+
+[Install]
+WantedBy=multi-user.target
+
