@@ -59,7 +59,7 @@ func queryClpRequestHandlerFn(
 		}
 
 		// print out whole account
-		output, err := clpToJsonOutput(cdc, cliCtx, accountDecoder, baseCoinTicker, w, &clp)
+		output, err := clpToJSONOutput(cdc, cliCtx, accountDecoder, baseCoinTicker, w, &clp)
 		if err != nil {
 			return
 		}
@@ -93,7 +93,7 @@ func getCLPAccountOutput(
 	return []byte(jsonOutput), nil
 }
 
-func clpToJsonOutput(cdc *wire.Codec, cliCtx context.CLIContext, accountDecoder auth.AccountDecoder,
+func clpToJSONOutput(cdc *wire.Codec, cliCtx context.CLIContext, accountDecoder auth.AccountDecoder,
 	baseCoinTicker string, w http.ResponseWriter, clp *clpTypes.CLP) ([]byte, error) {
 	output, err3 := cdc.MarshalJSON(clp)
 	if err3 != nil {
@@ -150,7 +150,7 @@ func queryClpsRequestHandlerFn(
 
 		var outputs [][]byte
 		for i := 0; i < len(clps); i++ {
-			output, err := clpToJsonOutput(cdc, cliCtx, accountDecoder, baseCoinTicker, w, &clps[i])
+			output, err := clpToJSONOutput(cdc, cliCtx, accountDecoder, baseCoinTicker, w, &clps[i])
 			if err != nil {
 				return
 			}

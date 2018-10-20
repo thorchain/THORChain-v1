@@ -1,5 +1,5 @@
-PACKAGES=$(shell go list ./... | grep -v '/vendor/')
-PACKAGES_NOCLITEST=$(shell go list ./... | grep -v '/vendor/' | grep -v github.com/thorchain/THORChain/cli_test)
+PACKAGES_NOSIMULATION=$(shell go list ./... | grep -v '/simulation')
+PACKAGES_SIMTEST=$(shell go list ./... | grep '/simulation')
 COMMIT_HASH := $(shell git rev-parse --short HEAD)
 BUILD_TAGS = netgo ledger
 BUILD_FLAGS = -tags "${BUILD_TAGS}" -ldflags "-X github.com/thorchain/THORChain/version.GitCommit=${COMMIT_HASH}"
@@ -125,10 +125,10 @@ test_cli:
 	@go test -count 1 -p 1 `go list github.com/thorchain/THORChain/cli_test` -tags=cli_test
 
 test_unit:
-	@go test $(PACKAGES_NOCLITEST)
+	@go test $(PACKAGES_NOSIMULATION)
 
 test_race:
-	@go test -race $(PACKAGES_NOCLITEST)
+	@go test -race $(PACKAGES_NOSIMULATION)
 
 test_cover:
 	@bash tests/test_cover.sh
@@ -137,13 +137,14 @@ test_lint:
 	gometalinter.v2 --config=tools/gometalinter.json ./...
 	!(gometalinter.v2 --disable-all --enable='errcheck' --vendor ./... | grep -v "client/")
 	find . -name '*.go' -type f -not -path "./vendor*" -not -path "*.git*" | xargs gofmt -d -s
+	dep status >> /dev/null
 
 format:
 	find . -name '*.go' -type f -not -path "./vendor*" -not -path "*.git*" | xargs gofmt -w -s
 	find . -name '*.go' -type f -not -path "./vendor*" -not -path "*.git*" | xargs misspell -w
 
 benchmark:
-	@go test -bench=. $(PACKAGES_NOCLITEST)
+	@go test -bench=. $(PACKAGES_NOSIMULATION)
 
 ########################################
 ### Local validator nodes using docker and docker-compose
@@ -154,7 +155,7 @@ build-docker-thorchaind-node:
 # Run a 4-node testnet locally
 localnet-start: localnet-stop
 	@if ! [ -f build/node0/thorchaind/config/genesis.json ]; then docker run --rm -v $(CURDIR)/build:/thorchaind:Z thorchain/thorchaindnode testnet --v 4 --o . --starting-ip-address 192.168.10.2 ; fi
-	docker-compose -f ./networks/local/docker-compose.yml up
+	docker-compose -f ./networks/local/docker-compose.yml up -d
 
 # Stop testnet
 localnet-stop:
