@@ -152,8 +152,8 @@ func SpawnSpammer(cdc *wire.Codec, spamPassword string, index int, kb cryptokeys
 		return
 	}
 
-	txCtx.WithAccountNumber(account.GetAccountNumber())
-	txCtx.WithSequence(account.GetSequence())
+	txCtx = txCtx.WithAccountNumber(account.GetAccountNumber())
+	txCtx = txCtx.WithSequence(account.GetSequence())
 
 	// get private key
 	priv, err := kb.ExportPrivateKeyObject(info.GetName(), spamPassword)
@@ -165,7 +165,7 @@ func SpawnSpammer(cdc *wire.Codec, spamPassword string, index int, kb cryptokeys
 	queryFree <- true
 
 	newSpammer := Spammer{
-		info.GetName(), spamPassword, address, cdc, index, account.GetSequence() + 1, cliCtx, txCtx, priv, account.GetCoins(), 0, queryFree}
+		info.GetName(), spamPassword, address, cdc, index, account.GetSequence(), cliCtx, txCtx, priv, account.GetCoins(), 0, queryFree}
 
 	*spammers = append(*spammers, newSpammer)
 	log.Log.Infof("Spammer %v: Spawned...\n", index)
@@ -273,7 +273,7 @@ func (sp *Spammer) updateSequenceAndCoins() {
 	if err != nil {
 		log.Log.Errorf("Spammer %v: Error getting sequence: %v\n", sp.index, err)
 	}
-	sp.nextSequence = sequence + 1
+	sp.nextSequence = sequence
 	log.Log.Debugf("Spammer %v: Sequence updated to %v\n", sp.index, sp.nextSequence)
 	sp.sequenceCheck = 0
 

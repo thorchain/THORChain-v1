@@ -118,12 +118,18 @@ func sendCoins(numAccsToCreate int, spamPrefix string, numExistingAccs int,
 	//Set to use max CPUs
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
-	txCtx := authctx.NewTxContextFromCLI().WithCodec(cdc)
-
-	fromSequence, err := cliCtx.GetAccountSequence(from)
+	fromAccount, err := cliCtx.GetAccount(from)
 	if err != nil {
 		return err
 	}
+
+	fromAccountNumber := fromAccount.GetAccountNumber()
+	fromAccountSequence := fromAccount.GetSequence()
+
+	txCtx := authctx.NewTxContextFromCLI().
+		WithAccountNumber(fromAccountNumber).
+		WithCodec(cdc).
+		WithGas(10000)
 
 	// how many msgs to send in 1 tx
 	// for each required account, build the required amount of keys and transfer the coins
@@ -136,8 +142,8 @@ func sendCoins(numAccsToCreate int, spamPrefix string, numExistingAccs int,
 
 		msg := client.BuildMsg(from, to, coins)
 
-		fromSequence++
-		txCtx = txCtx.WithSequence(fromSequence)
+		txCtx = txCtx.WithSequence(fromAccountSequence)
+		fromAccountSequence++
 
 		helpers.BuildSignAndBroadcastMsg(cdc, cliCtx, txCtx, cliCtx.FromAddressName, signPassword, msg)
 		if err != nil {
