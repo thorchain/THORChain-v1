@@ -8,7 +8,7 @@
 
 ## Build
 
-Build the `thorchaind` binary and the `tendermint/thorchaindnode` docker image.
+Build the `thorchaind` binary and the `thorchain/thorchaindnode` docker image.
 
 Note the binary will be mounted into the container so it can be updated without
 rebuilding the image.
@@ -19,7 +19,7 @@ cd $GOPATH/src/github.com/thorchain/THORChain
 # Build the linux binary in ./build
 make build-linux
 
-# Build tendermint/thorchaindnode image
+# Build thorchain/thorchaindnode image
 make build-docker-thorchaindnode
 ```
 
@@ -61,10 +61,10 @@ rm -rf ./build
 make build-linux
 
 # Create configuration
-docker run -v `pwd`/build:/thorchaind tendermint/thorchaindnode testnet --o . --v 1
+docker run -v `pwd`/build:/thorchaind thorchain/thorchaindnode testnet --o . --v 1
 
 #Run the node
-docker run -v `pwd`/build:/thorchaind tendermint/thorchaindnode
+docker run -v `pwd`/build:/thorchaind thorchain/thorchaindnode
 ```
 
 ## Logging
