@@ -23,7 +23,7 @@ The MVP is split into three components:
  - a signer process, that detects Bifrost requests to send to Ethereum, and signs them appropriately for Ethereum
  - a relayer process, that detects transactions to relay between THORChain and Ethereum
 
-Each node should run the relayer and signer process along with their THORChain process, which will watch both THORChain (through a local endpoint/socker) and Ethereum to trigger relaying. For the initial MVP, we can just use Infura for watching for and submitting transactions on Ethereum, but a short term priority thereafter will be to set up our own Ethereum full nodes.
+Each node should run the relayer and signer process along with their THORChain process, which will watch both THORChain (through a local endpoint/socket) and Ethereum to trigger relaying. For the initial MVP, we can just use Infura for watching for and submitting transactions on Ethereum, but a short term priority thereafter will be to set up our own Ethereum full nodes.
 
 ## Process Flow
 
