@@ -2,6 +2,7 @@ package clp
 
 import (
 	"fmt"
+	"os"
 	"strconv"
 
 	"github.com/spf13/cobra"
@@ -9,9 +10,11 @@ import (
 	clpTypes "github.com/thorchain/THORChain/x/clp/types"
 
 	"github.com/cosmos/cosmos-sdk/client/context"
+	"github.com/cosmos/cosmos-sdk/client/utils"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/wire"
 	authcmd "github.com/cosmos/cosmos-sdk/x/auth/client/cli"
+	authctx "github.com/cosmos/cosmos-sdk/x/auth/client/context"
 )
 
 // create new clp transaction
@@ -21,10 +24,14 @@ func CreateTxCmd(cdc *wire.Codec) *cobra.Command {
 		Short: "Create a token with CLP",
 		Args:  cobra.ExactArgs(5),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx := context.NewCoreContextFromViper().WithDecoder(authcmd.GetAccountDecoder(cdc))
+			txCtx := authctx.NewTxContextFromCLI().WithCodec(cdc)
+			cliCtx := context.NewCLIContext().
+				WithCodec(cdc).
+				WithLogger(os.Stdout).
+				WithAccountDecoder(authcmd.GetAccountDecoder(cdc))
 
 			// get the from address from the name flag
-			from, err := ctx.GetFromAddress()
+			from, err := cliCtx.GetFromAddress()
 			if err != nil {
 				return err
 			}
@@ -37,16 +44,9 @@ func CreateTxCmd(cdc *wire.Codec) *cobra.Command {
 			initialBaseCoinAmount, _ := strconv.Atoi(args[4])
 			msg := clpTypes.NewMsgCreate(from, ticker, name, reserveRatio, int64(initialSupply), int64(initialBaseCoinAmount))
 
-			// get account name
-			addressName := ctx.FromAddressName
-
-			// build and sign the transaction, then broadcast to Tendermint
-			err = ctx.EnsureSignBuildBroadcast(addressName, []sdk.Msg{msg}, cdc)
-			if err != nil {
-				return err
-			}
-
-			return nil
+			// Build and sign the transaction, then broadcast to a Tendermint
+			// node.
+			return utils.SendTx(txCtx, cliCtx, []sdk.Msg{msg})
 		},
 	}
 }
@@ -58,10 +58,14 @@ func TradeBaseTxCmd(cdc *wire.Codec) *cobra.Command {
 		Short: "Trade from one token to another token via CLP",
 		Args:  cobra.ExactArgs(3),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx := context.NewCoreContextFromViper().WithDecoder(authcmd.GetAccountDecoder(cdc))
+			txCtx := authctx.NewTxContextFromCLI().WithCodec(cdc)
+			cliCtx := context.NewCLIContext().
+				WithCodec(cdc).
+				WithLogger(os.Stdout).
+				WithAccountDecoder(authcmd.GetAccountDecoder(cdc))
 
 			// get the from address from the name flag
-			from, err := ctx.GetFromAddress()
+			from, err := cliCtx.GetFromAddress()
 			if err != nil {
 				return err
 			}
@@ -72,16 +76,9 @@ func TradeBaseTxCmd(cdc *wire.Codec) *cobra.Command {
 			fromAmount, _ := strconv.Atoi(args[2])
 			msg := clpTypes.NewMsgTrade(from, fromTicker, toTicker, fromAmount)
 
-			// get account name
-			addressName := ctx.FromAddressName
-
-			// build and sign the transaction, then broadcast to Tendermint
-			err = ctx.EnsureSignBuildBroadcast(addressName, []sdk.Msg{msg}, cdc)
-			if err != nil {
-				return err
-			}
-
-			return nil
+			// Build and sign the transaction, then broadcast to a Tendermint
+			// node.
+			return utils.SendTx(txCtx, cliCtx, []sdk.Msg{msg})
 		},
 	}
 }
@@ -93,11 +90,11 @@ func GetCmd(cdc *wire.Codec) *cobra.Command {
 		Short: "Get clp for given token",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			cliCtx := context.NewCLIContext().WithCodec(cdc)
 
-			ctx := context.NewCoreContextFromViper()
 			ticker := args[0]
 
-			res, err := ctx.QueryStore(clp.MakeCLPStoreKey(ticker), "clp")
+			res, err := cliCtx.QueryStore(clp.MakeCLPStoreKey(ticker), "clp")
 			if err != nil {
 				return err
 			}
@@ -124,12 +121,11 @@ func GetAllCmd(cdc *wire.Codec) *cobra.Command {
 		Use:   "get_all",
 		Short: "Get all clps",
 		RunE: func(cmd *cobra.Command, args []string) error {
-
-			ctx := context.NewCoreContextFromViper()
+			cliCtx := context.NewCLIContext().WithCodec(cdc)
 
 			clpSubspace := []byte("clp:")
 
-			res, err := ctx.QuerySubspace(cdc, clpSubspace, "clp")
+			res, err := cliCtx.QuerySubspace(clpSubspace, "clp")
 			if err != nil {
 				return err
 			}

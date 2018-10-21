@@ -13,7 +13,7 @@ import (
 	"github.com/thorchain/THORChain/x/exchange"
 )
 
-func registerQueryOrderbookRoute(ctx context.CoreContext, r *mux.Router, cdc *wire.Codec, kb keys.Keybase,
+func registerQueryOrderbookRoute(ctx context.CLIContext, r *mux.Router, cdc *wire.Codec, kb keys.Keybase,
 	storeName string) {
 	r.HandleFunc("/exchange/query-order-book",
 		handleQueryOrderbook(cdc, authcmd.GetAccountDecoder(cdc), ctx, storeName)).Methods("POST")
@@ -25,7 +25,7 @@ type queryOrderbookBody struct {
 	PriceDenom  string `json:"price_denom"`
 }
 
-func handleQueryOrderbook(cdc *wire.Codec, decoder auth.AccountDecoder, ctx context.CoreContext,
+func handleQueryOrderbook(cdc *wire.Codec, decoder auth.AccountDecoder, ctx context.CLIContext,
 	storeName string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var m queryOrderbookBody

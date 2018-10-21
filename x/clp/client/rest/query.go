@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
+	"github.com/pkg/errors"
 	clpPackage "github.com/thorchain/THORChain/x/clp"
 	clpTypes "github.com/thorchain/THORChain/x/clp/types"
 
@@ -17,73 +18,61 @@ import (
 const storeName = "clp"
 
 // register REST routes
-func registerQueryRoutes(ctx context.CoreContext, r *mux.Router, cdc *wire.Codec, baseCoinTicker string) {
+func registerQueryRoutes(cliCtx context.CLIContext, r *mux.Router, cdc *wire.Codec, baseCoinTicker string) {
 	r.HandleFunc(
 		"/clp/{ticker}",
-		QueryAccountRequestHandlerFn(cdc, authcmd.GetAccountDecoder(cdc), ctx, baseCoinTicker),
+		queryClpRequestHandlerFn(cdc, cliCtx, authcmd.GetAccountDecoder(cdc), baseCoinTicker),
 	).Methods("GET")
 	r.HandleFunc(
 		"/clps",
-		QueryAllRequestHandlerFn(cdc, authcmd.GetAccountDecoder(cdc), ctx, baseCoinTicker),
+		queryClpsRequestHandlerFn(cdc, cliCtx, authcmd.GetAccountDecoder(cdc), baseCoinTicker),
 	).Methods("GET")
 
 }
 
-// query accountREST Handler
-func QueryAccountRequestHandlerFn(cdc *wire.Codec, decoder auth.AccountDecoder, ctx context.CoreContext, baseCoinTicker string) http.HandlerFunc {
+func queryClpRequestHandlerFn(
+	cdc *wire.Codec, cliCtx context.CLIContext, accountDecoder auth.AccountDecoder, baseCoinTicker string,
+) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		cliCtx = cliCtx.WithCodec(cdc)
+
 		vars := mux.Vars(r)
 		ticker := vars["ticker"]
 
-		ctx := context.NewCoreContextFromViper()
-
-		res, err := ctx.QueryStore(clpPackage.MakeCLPStoreKey(ticker), storeName)
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-
+		res, err := cliCtx.QueryStore(clpPackage.MakeCLPStoreKey(ticker), storeName)
 		// the query will return empty if there is no data for this account
-		if len(res) == 0 {
+		if err != nil || len(res) == 0 {
 			w.WriteHeader(http.StatusNotFound)
+			err := errors.Errorf("clp for ticker [%d] does not exist", ticker)
+			w.Write([]byte(err.Error()))
+
 			return
 		}
-		// decode the value
-		clp := new(clpTypes.CLP)
 
+		// decode the value
+		var clp clpTypes.CLP
 		err2 := cdc.UnmarshalBinary(res, &clp)
 		if err2 != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			w.Write([]byte(fmt.Sprintf("couldn't parse query result. Result: %s. Error: %s", res, err2.Error())))
+			return
 		}
 
 		// print out whole account
-		output, err3 := cdc.MarshalJSON(clp)
-		if err3 != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte(fmt.Sprintf("couldn't marshall query result. Error: %s", err3.Error())))
-			return
-		}
-
-		accountOutput, err := getCLPAccountOutput(clp, ctx, decoder, cdc, baseCoinTicker)
+		output, err := clpToJSONOutput(cdc, cliCtx, accountDecoder, baseCoinTicker, w, &clp)
 		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte(err.Error()))
 			return
 		}
-
-		finalOutput := append([]byte("{\"clp\":"), output...)
-		finalOutput = append(finalOutput, []byte(",\"account\": ")...)
-		finalOutput = append(finalOutput, accountOutput...)
-		finalOutput = append(finalOutput, []byte("}")...)
-		w.Write(finalOutput)
+		w.Write(output)
 	}
 }
 
-func getCLPAccountOutput(clp *clpTypes.CLP, ctx context.CoreContext, decoder auth.AccountDecoder, cdc *wire.Codec, baseCoinTicker string) ([]byte, error) {
+func getCLPAccountOutput(
+	clp *clpTypes.CLP, cliCtx context.CLIContext, decoder auth.AccountDecoder, cdc *wire.Codec, baseCoinTicker string,
+) ([]byte, error) {
 	clpAddr := clp.AccountAddress
 
-	accountRes, err := ctx.QueryStore(auth.AddressStoreKey(clpAddr), "acc")
+	accountRes, err := cliCtx.QueryStore(auth.AddressStoreKey(clpAddr), "acc")
 	if err != nil {
 		return nil, fmt.Errorf("couldn't query clp token balances. Error: %s", err.Error())
 	}
@@ -98,19 +87,45 @@ func getCLPAccountOutput(clp *clpTypes.CLP, ctx context.CoreContext, decoder aut
 	baseCoinAmount := clpAccount.GetCoins().AmountOf(baseCoinTicker)
 	price := clpPackage.CalculateCLPPrice(clp, clpAccount.GetCoins(), 1, baseCoinTicker)
 
-	jsonOutput := fmt.Sprintf("{\"%v\":%v,\"%v\":%v,\"price\":%v}", baseCoinTicker, baseCoinAmount, clp.Ticker, tickerCoinAmount, price)
+	jsonOutput := fmt.Sprintf("{\"%v\":%v,\"%v\":%v,\"price\":%v}", baseCoinTicker, baseCoinAmount, clp.Ticker,
+		tickerCoinAmount, price)
 
 	return []byte(jsonOutput), nil
 }
 
+func clpToJSONOutput(cdc *wire.Codec, cliCtx context.CLIContext, accountDecoder auth.AccountDecoder,
+	baseCoinTicker string, w http.ResponseWriter, clp *clpTypes.CLP) ([]byte, error) {
+	output, err3 := cdc.MarshalJSON(clp)
+	if err3 != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(fmt.Sprintf("couldn't marshall query result. Error: %s", err3.Error())))
+		return []byte(""), err3
+	}
+	accountOutput, err := getCLPAccountOutput(clp, cliCtx, accountDecoder, cdc, baseCoinTicker)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(err.Error()))
+		return []byte(""), err
+	}
+
+	finalOutput := append([]byte("{\"clp\":"), output...)
+	finalOutput = append(finalOutput, []byte(",\"account\": ")...)
+	finalOutput = append(finalOutput, accountOutput...)
+	finalOutput = append(finalOutput, []byte("}")...)
+
+	return finalOutput, nil
+}
+
 // query all Handler
-func QueryAllRequestHandlerFn(cdc *wire.Codec, decoder auth.AccountDecoder, ctx context.CoreContext, baseCoinTicker string) http.HandlerFunc {
+func queryClpsRequestHandlerFn(
+	cdc *wire.Codec, cliCtx context.CLIContext, accountDecoder auth.AccountDecoder, baseCoinTicker string,
+) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		ctx := context.NewCoreContextFromViper()
+		cliCtx = cliCtx.WithCodec(cdc)
 
 		clpSubspace := []byte("clp:")
 
-		res, err := ctx.QuerySubspace(cdc, clpSubspace, "clp")
+		res, err := cliCtx.QuerySubspace(clpSubspace, "clp")
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
@@ -135,25 +150,11 @@ func QueryAllRequestHandlerFn(cdc *wire.Codec, decoder auth.AccountDecoder, ctx 
 
 		var outputs [][]byte
 		for i := 0; i < len(clps); i++ {
-			output, err3 := cdc.MarshalJSON(clps[i])
-			if err3 != nil {
-				w.WriteHeader(http.StatusInternalServerError)
-				w.Write([]byte(fmt.Sprintf("couldn't marshall query result. Error: %s", err3.Error())))
-				return
-			}
-			accountOutput, err := getCLPAccountOutput(&clps[i], ctx, decoder, cdc, baseCoinTicker)
+			output, err := clpToJSONOutput(cdc, cliCtx, accountDecoder, baseCoinTicker, w, &clps[i])
 			if err != nil {
-				w.WriteHeader(http.StatusInternalServerError)
-				w.Write([]byte(err.Error()))
 				return
 			}
-
-			finalOutput := append([]byte("{\"clp\":"), output...)
-			finalOutput = append(finalOutput, []byte(",\"account\": ")...)
-			finalOutput = append(finalOutput, accountOutput...)
-			finalOutput = append(finalOutput, []byte("}")...)
-
-			outputs = append(outputs, finalOutput)
+			outputs = append(outputs, output)
 		}
 		w.Write([]byte("["))
 

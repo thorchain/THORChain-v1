@@ -2,6 +2,7 @@ package cli
 
 import (
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -10,9 +11,11 @@ import (
 	"github.com/thorchain/THORChain/x/exchange"
 
 	"github.com/cosmos/cosmos-sdk/client/context"
+	"github.com/cosmos/cosmos-sdk/client/utils"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/wire"
 	authcmd "github.com/cosmos/cosmos-sdk/x/auth/client/cli"
+	authctx "github.com/cosmos/cosmos-sdk/x/auth/client/context"
 )
 
 const (
@@ -30,12 +33,16 @@ func GetCmdLimitOrderCreate(cdc *wire.Codec) *cobra.Command {
 		Use:   "create-limit-order",
 		Short: "Create a limit order",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx := context.NewCoreContextFromViper().WithDecoder(authcmd.GetAccountDecoder(cdc))
+			txCtx := authctx.NewTxContextFromCLI().WithCodec(cdc)
+			cliCtx := context.NewCLIContext().
+				WithCodec(cdc).
+				WithLogger(os.Stdout).
+				WithAccountDecoder(authcmd.GetAccountDecoder(cdc))
 
 			// parse inputs
 
 			// get the from address from the name flag
-			sender, err := ctx.GetFromAddress()
+			sender, err := cliCtx.GetFromAddress()
 			if err != nil {
 				return err
 			}
@@ -68,16 +75,9 @@ func GetCmdLimitOrderCreate(cdc *wire.Codec) *cobra.Command {
 				return err
 			}
 
-			// get account name
-			addressName := ctx.FromAddressName
-
-			// build and sign the transaction, then broadcast to Tendermint
-			err = ctx.EnsureSignBuildBroadcast(addressName, []sdk.Msg{msg}, cdc)
-			if err != nil {
-				return err
-			}
-
-			return nil
+			// Build and sign the transaction, then broadcast to a Tendermint
+			// node.
+			return utils.SendTx(txCtx, cliCtx, []sdk.Msg{msg})
 		},
 	}
 
@@ -95,7 +95,7 @@ func GetCmdQueryOrderbook(storeName string, cdc *wire.Codec) *cobra.Command {
 		Use:   "query-orderbook",
 		Short: "Get sell or buy orderbook for given amount and price denoms",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx := context.NewCoreContextFromViper().WithDecoder(authcmd.GetAccountDecoder(cdc))
+			cliCtx := context.NewCLIContext().WithCodec(cdc)
 
 			kind, err := exchange.ParseKind(viper.GetString(flagKind))
 			if err != nil {
@@ -105,7 +105,7 @@ func GetCmdQueryOrderbook(storeName string, cdc *wire.Codec) *cobra.Command {
 			amountDenom := viper.GetString(flagAmountDenom)
 			priceDenom := viper.GetString(flagPriceDenom)
 
-			res, err2 := ctx.QueryStore(exchange.MakeKeyOrderBook(kind, amountDenom, priceDenom), storeName)
+			res, err2 := cliCtx.QueryStore(exchange.MakeKeyOrderBook(kind, amountDenom, priceDenom), storeName)
 			if err2 != nil {
 				return err2
 			}

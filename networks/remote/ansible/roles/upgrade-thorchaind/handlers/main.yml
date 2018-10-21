@@ -1,0 +1,5 @@
+---
+
+- name: restart thorchaind
+  service: name=thorchaind state=restarted
+

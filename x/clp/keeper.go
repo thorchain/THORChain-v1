@@ -75,7 +75,7 @@ func (k Keeper) create(ctx sdk.Context, sender sdk.AccAddress, ticker string, na
 	if reserveRatio <= 0 || reserveRatio > 100 {
 		return ErrInvalidReserveRatio(DefaultCodespace).TraceSDK("")
 	}
-	initialBaseCoins := sdk.NewCoin(k.baseCoinTicker, initialBaseCoinAmount)
+	initialBaseCoins := sdk.NewInt64Coin(k.baseCoinTicker, initialBaseCoinAmount)
 	//Debit initial coins from sender
 	_, _, err2 := k.bankKeeper.SubtractCoins(ctx, sender, sdk.Coins{initialBaseCoins})
 	if err2 != nil {
@@ -87,7 +87,7 @@ func (k Keeper) create(ctx sdk.Context, sender sdk.AccAddress, ticker string, na
 	if err3 != nil {
 		return err3
 	}
-	initialCLPCoins := sdk.Coins{sdk.NewCoin(ticker, initialSupply)}
+	initialCLPCoins := sdk.Coins{sdk.NewInt64Coin(ticker, initialSupply)}
 	k.bankKeeper.AddCoins(ctx, clpAddress, initialCLPCoins)
 	k.SetCLP(ctx, clp)
 	return nil
@@ -150,8 +150,8 @@ func ProcessCLPTrade(ctx sdk.Context, sender sdk.AccAddress, clpTicker string, f
 
 	emittedCoinsAmount := CalculateCoinsEmitted(clp, clpCoins, fromAmount, k.baseCoinTicker, buy)
 
-	spentFromCoins := sdk.Coins{sdk.NewCoin(fromTicker, fromAmount)}
-	emittedCoins := sdk.Coins{sdk.NewCoin(toTicker, emittedCoinsAmount)}
+	spentFromCoins := sdk.Coins{sdk.NewInt64Coin(fromTicker, fromAmount)}
+	emittedCoins := sdk.Coins{sdk.NewInt64Coin(toTicker, emittedCoinsAmount)}
 
 	k.bankKeeper.SendCoins(ctx, sender, clp.AccountAddress, spentFromCoins)
 	k.bankKeeper.SendCoins(ctx, clp.AccountAddress, sender, emittedCoins)

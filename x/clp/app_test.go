@@ -17,7 +17,7 @@ var (
 	priv1     = ed25519.GenPrivKey()
 	pub1      = priv1.PubKey()
 	addr1     = sdk.AccAddress(pub1.Address())
-	fiftyRune = sdk.NewCoin("RUNE", 50)
+	fiftyRune = sdk.NewInt64Coin("RUNE", 50)
 
 	createMsg1 = types.MsgCreate{
 		Sender:                addr1,

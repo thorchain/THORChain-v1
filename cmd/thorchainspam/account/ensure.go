@@ -2,34 +2,32 @@ package account
 
 import (
 	"fmt"
+	"os"
 	"runtime"
 
 	"github.com/tendermint/go-amino"
 
 	"github.com/cosmos/cosmos-sdk/client/context"
 	"github.com/cosmos/cosmos-sdk/client/keys"
+	cryptokeys "github.com/cosmos/cosmos-sdk/crypto/keys"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/wire"
-	"github.com/cosmos/cosmos-sdk/x/auth"
+	authcmd "github.com/cosmos/cosmos-sdk/x/auth/client/cli"
+	authctx "github.com/cosmos/cosmos-sdk/x/auth/client/context"
 	"github.com/cosmos/cosmos-sdk/x/bank/client"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/thorchain/THORChain/cmd/thorchainspam/helpers"
-
-	cryptokeys "github.com/cosmos/cosmos-sdk/crypto/keys"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	authcmd "github.com/cosmos/cosmos-sdk/x/auth/client/cli"
 )
 
 // Returns the command to ensure k accounts exist
 func GetAccountEnsure(cdc *wire.Codec) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-		ctx := context.NewCoreContextFromViper().WithDecoder(authcmd.GetAccountDecoder(cdc))
-
-		chainID := viper.GetString(FlagChainID)
-		if chainID == "" {
-			return fmt.Errorf("--chain-id is required")
-		}
+		cliCtx := context.NewCLIContext().
+			WithCodec(cdc).
+			WithLogger(os.Stdout).
+			WithAccountDecoder(authcmd.GetAccountDecoder(cdc))
 
 		// parse spam prefix and password
 		spamPrefix := viper.GetString(FlagSpamPrefix)
@@ -65,7 +63,7 @@ func GetAccountEnsure(cdc *wire.Codec) func(cmd *cobra.Command, args []string) e
 		fmt.Printf("Found %v spam accounts, will create %v additional ones\n", numExistingAccs, numAccsToCreate)
 
 		// get the from address
-		from, err := ctx.GetFromAddress()
+		from, err := cliCtx.GetFromAddress()
 		if err != nil {
 			return err
 		}
@@ -80,14 +78,13 @@ func GetAccountEnsure(cdc *wire.Codec) func(cmd *cobra.Command, args []string) e
 		// ensure account has enough coins
 		totalCoinsNeeded := multiplyCoins(coins, numAccsToCreate)
 
-		err = ensureFromAccHasEnoughCoins(ctx, from, totalCoinsNeeded)
+		err = ensureFromAccHasEnoughCoins(cliCtx, from, totalCoinsNeeded)
 		if err != nil {
 			return err
 		}
 
-		sendCoins(numAccsToCreate, spamPrefix, numExistingAccs,
-			kb, spamPassword, signPassword, from,
-			coins, ctx, cdc, chainID)
+		sendCoins(numAccsToCreate, spamPrefix, numExistingAccs, kb, spamPassword, signPassword, from, coins, cliCtx,
+			cdc)
 
 		fmt.Printf("Done creating %v accounts\n", numAccsToCreate)
 
@@ -95,18 +92,14 @@ func GetAccountEnsure(cdc *wire.Codec) func(cmd *cobra.Command, args []string) e
 	}
 }
 
-func ensureFromAccHasEnoughCoins(ctx context.CoreContext, from sdk.AccAddress, coins sdk.Coins) error {
-	fromAcc, err := ctx.QueryStore(auth.AddressStoreKey(from), ctx.AccountStore)
+func ensureFromAccHasEnoughCoins(cliCtx context.CLIContext, from sdk.AccAddress, coins sdk.Coins) error {
+	// Check if account exists
+	err := cliCtx.EnsureAccountExistsFromAddr(from)
 	if err != nil {
-		return err
-	}
-
-	// Check if account was found
-	if fromAcc == nil {
 		return errors.Errorf("No account with address %s was found in the state.\nAre you sure there has been a transaction involving it?", from)
 	}
 
-	account, err := ctx.Decoder(fromAcc)
+	account, err := cliCtx.GetAccount(from)
 	if err != nil {
 		return err
 	}
@@ -120,21 +113,23 @@ func ensureFromAccHasEnoughCoins(ctx context.CoreContext, from sdk.AccAddress, c
 
 func sendCoins(numAccsToCreate int, spamPrefix string, numExistingAccs int,
 	kb cryptokeys.Keybase, spamPassword string, signPassword string, from sdk.AccAddress,
-	coins sdk.Coins, ctx context.CoreContext, cdc *amino.Codec, chainID string) error {
+	coins sdk.Coins, cliCtx context.CLIContext, cdc *amino.Codec) error {
 
 	//Set to use max CPUs
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
-	ctx, err := helpers.SetupContext(ctx, from, chainID, 0)
+	fromAccount, err := cliCtx.GetAccount(from)
 	if err != nil {
-		fmt.Println(err)
 		return err
 	}
 
-	fromSequence, err := ctx.NextSequence(from)
-	if err != nil {
-		fmt.Println(err)
-	}
+	fromAccountNumber := fromAccount.GetAccountNumber()
+	fromAccountSequence := fromAccount.GetSequence()
+
+	txCtx := authctx.NewTxContextFromCLI().
+		WithAccountNumber(fromAccountNumber).
+		WithCodec(cdc).
+		WithGas(10000)
 
 	// how many msgs to send in 1 tx
 	// for each required account, build the required amount of keys and transfer the coins
@@ -146,14 +141,15 @@ func sendCoins(numAccsToCreate int, spamPrefix string, numExistingAccs int,
 		}
 
 		msg := client.BuildMsg(from, to, coins)
-		ctx = ctx.WithSequence(fromSequence)
 
-		_, err2 := helpers.ProcessMsg(ctx, ctx.FromAddressName, signPassword, cdc, msg)
-		if err2 != nil {
+		txCtx = txCtx.WithSequence(fromAccountSequence)
+		fromAccountSequence++
+
+		helpers.BuildSignAndBroadcastMsg(cdc, cliCtx, txCtx, cliCtx.FromAddressName, signPassword, msg)
+		if err != nil {
 			fmt.Println(err)
 			return err
 		}
-		fromSequence++
 	}
 	return nil
 }
@@ -180,87 +176,4 @@ func multiplyCoins(coins sdk.Coins, multiplyBy int) sdk.Coins {
 		})
 	}
 	return res
-}
-
-// sign and build the transaction from the msg
-func ensureSignBuild(ctx context.CoreContext, name string, passphrase string, msgs []sdk.Msg, cdc *wire.Codec) (tyBytes []byte, err error) {
-	// ctx = ctx.WithFromAddressName(name)
-
-	err = context.EnsureAccountExists(ctx, name)
-	if err != nil {
-		return nil, err
-	}
-
-	ctx, err = context.EnsureAccountNumber(ctx)
-	if err != nil {
-		return nil, err
-	}
-	// default to next sequence number if none provided
-	ctx, err = context.EnsureSequence(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	var txBytes []byte
-
-	txBytes, err = ctx.SignAndBuild(name, passphrase, msgs, cdc)
-	if err != nil {
-		return nil, fmt.Errorf("Error signing transaction: %v", err)
-	}
-
-	return txBytes, err
-}
-
-// sign and build the transaction from the msg
-func ensureSignBuildBroadcast(ctx context.CoreContext, name string, passphrase string, msgs []sdk.Msg, cdc *wire.Codec) (err error) {
-	txBytes, err := ensureSignBuild(ctx, name, passphrase, msgs, cdc)
-	if err != nil {
-		return err
-	}
-
-	if ctx.Async {
-		res, err := ctx.BroadcastTxAsync(txBytes)
-		if err != nil {
-			return err
-		}
-		if ctx.JSON {
-			type toJSON struct {
-				TxHash string
-			}
-			valueToJSON := toJSON{res.Hash.String()}
-			JSON, err := cdc.MarshalJSON(valueToJSON)
-			if err != nil {
-				return err
-			}
-			fmt.Println(string(JSON))
-		} else {
-			fmt.Println("Async tx sent. tx hash: ", res.Hash.String())
-		}
-		return nil
-	}
-	res, err := ctx.BroadcastTx(txBytes)
-	if err != nil {
-		return err
-	}
-	if ctx.JSON {
-		// Since JSON is intended for automated scripts, always include response in JSON mode
-		type toJSON struct {
-			Height   int64
-			TxHash   string
-			Response string
-		}
-		valueToJSON := toJSON{res.Height, res.Hash.String(), fmt.Sprintf("%+v", res.DeliverTx)}
-		JSON, err := cdc.MarshalJSON(valueToJSON)
-		if err != nil {
-			return err
-		}
-		fmt.Println(string(JSON))
-		return nil
-	}
-	if ctx.PrintResponse {
-		fmt.Printf("Committed at block %d. Hash: %s Response:%+v \n", res.Height, res.Hash.String(), res.DeliverTx)
-	} else {
-		fmt.Printf("Committed at block %d. Hash: %s \n", res.Height, res.Hash.String())
-	}
-	return nil
 }
