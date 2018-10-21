@@ -145,8 +145,15 @@ jobs:
       steps:
         - checkout
         - run:
+            name: install Go 1.10
+            command: |
+              sudo add-apt-repository ppa:gophers/archive -y
+              sudo apt-get update
+              sudo apt-get install golang-1.10-go
+        - run:
             name: run localnet and exit on failure
             command: |
+              export PATH="/usr/lib/go-1.10/bin:$PATH"
               set -x
               make get_tools
               make get_vendor_deps
