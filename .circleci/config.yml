@@ -132,7 +132,7 @@ jobs:
           name: upload
           command: bash <(curl -s https://codecov.io/bash) -f coverage.txt
 
-localnet:
+  localnet:
       working_directory: /home/circleci/.go_workspace/src/github.com/thorchain/THORChain
       machine:
         image: circleci/classic:latest
