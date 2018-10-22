@@ -17,7 +17,7 @@ The main Bifrost paper describes a more complex and possibly more secure system 
 ## Overview
 The Bifrost MVP will add functionality to THORChain that allows the movement of Ether and ERC20 from Ethereum to THORChain and back, where they are represented as ERC20 tokens. It will not support movement of RUNE or THORChain native tokens to Ethereum.
 
-The MVP is split into three components:
+The MVP is split into four components:
  - the Ethereum smart contract for sending tokens into the Bifrost from Ethereum
  - the current THORChain Full Node and Validator, with additional bifrost and oracle modules
  - a signer process, that detects Bifrost requests to send to Ethereum, and signs them appropriately for Ethereum
@@ -71,9 +71,9 @@ signatures. The smart contracts supports 6 functions:
 
 ## Oracle and Bifrost modules
 
-The Oracle module, adapted from Cosmos's existing module is responsible for accepting transactions from multiple validators and waiting until an `m on n` thresold to then trigger an action in another module
+The Oracle module, adapted from Cosmos's existing module, is responsible for accepting transactions from multiple validators and waiting until an `m on n` threshold to then trigger an action in another module.
 
-The bifrost module is responsible for accepting actions from the Oracle module which result in creation of new tEth or tERC20 on THORChain, as well as accepting transactions from users who want to send tEth/tERC20 back out the Bifrost into Ethereum. It is responsible for managing transfers, mints/burns, and clp changes as part of these processes.
+The Bifrost module is responsible for accepting actions from the Oracle module which result in creation of new tEth or tERC20 on THORChain, as well as accepting transactions from users who want to send tEth/tERC20 back out the Bifrost into Ethereum. It is responsible for managing transfers, mints/burns, and CLP changes as part of these processes.
 
 ## Signer component
 
@@ -87,11 +87,11 @@ Generally anyone that wants their Bifrost to be successful has an incentive to r
 
 # Implementation steps
  - Quick audit of solidity codebase for Peggy to determine what can be used and what needs to be fixed
- - Fork of Peggy solidity codebase to be adapted into Bifrost Ethereum contract with additional needed changes
+ - Fork of Peggy solidity codebase to be adapted into Bifrost Ethereum contract with additional needed changes (pending license approval)
  - Testnet (likely Ropsten) setup and deployment of Bifrost Ethereum contacts, and of some test ERC20 contracts, test ERC20 RUNE contract to be used for testing
- - Quick audit of cosmos Oracle module to determine what can be used and what needs to be fixed
+ - Quick audit of Cosmos Oracle module to determine what can be used and what needs to be fixed
  - Completion of Oracle module functionality
- - Development of Bifrost module that accepts actions from the oracle module and mints tEth/tERC20 on THORChain and controls whitelisting
+ - Development of Bifrost module that accepts actions from the Oracle module and mints tEth/tERC20 on THORChain and controls whitelisting
  - Development of relayer service that watches Ethereum via Infura and submits transactions to the Oracle module
  - Tests and QA of transfers from Ether/ERC20 into THORChain
  - Enhance Bifrost module to be able to accept and burn tokens from users for sending back over the Bifrost to Ethereum
@@ -106,7 +106,7 @@ Once this initial MVP is complete, there are some additions that can be made to 
 
 In the short term, improvements like running our own ethereum full nodes, and distributing our architecture such that relayers, signers, ethereum full nodes, thorchain full nodes and thorchain validator nodes to not need to run on the same virtual machine will be important reliability/performance and security improvements to make.
 
-In the medium term, improvements to deal with potential malicious validator behaviour and unhappy paths in the sysem, like exploring fraud proofs for some scenarios and considering governance solutions should be explored.
+In the medium term, improvements to deal with potential malicious validator behaviour and unhappy paths in the system, like exploring fraud proofs for some scenarios and considering governance solutions should be explored.
 
 More long term, evolving the Bifrost into the more robust mechansims described in the main Bifrost whitepaper should become a priority (https://github.com/thorchain/Resources/blob/master/Whitepapers/Bifrost-Protocol/whitepaper-en.md). Some valuable additions will be the SPV and gossip network features, and an exploration of using VRFs.
 
