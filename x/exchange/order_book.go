@@ -2,7 +2,6 @@ package exchange
 
 import (
 	"fmt"
-	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
@@ -15,6 +14,8 @@ type OrderBook struct {
 	PriceDenom  string       `json:"priceDenom"`
 	Orders      []LimitOrder `json:"orders"`
 }
+
+var orderBookSubspace = []byte("orderBook:")
 
 // NewOrderBook creates a new order book for the given key
 func NewOrderBook(kind OrderKind, amountDenom string, priceDenom string) OrderBook {
@@ -91,24 +92,6 @@ func (ob *OrderBook) AddLimitOrder(limitOrder LimitOrder) sdk.Error {
 	ob.Orders = newOrders
 
 	return nil
-}
-
-// Removes limit orders that have expired
-func (ob *OrderBook) RemoveExpiredLimitOrders() {
-	// New orders list
-	newOrders := make([]LimitOrder, 0, len(ob.Orders))
-
-	for _, order := range ob.Orders {
-		// skip expired orders
-		if order.ExpiresAt.Before(time.Now()) {
-			continue
-		}
-
-		// add others
-		newOrders = append(newOrders, order)
-	}
-
-	ob.Orders = newOrders
 }
 
 // Removes limit orders that are filled (amount is zero), useful for efficient cleanup after order matching

@@ -31,8 +31,7 @@ func NewKeeper(key sdk.StoreKey, bankKeeper bank.Keeper, codespace sdk.Codespace
 
 // getOrderBook returns the orderbook for the given token pair. If no order book exists for these tokens right now,
 // a new (empty) orderbook will be returned.
-func (k Keeper) getOrderBook(
-	ctx sdk.Context, kind OrderKind, amountDenom string, priceDenom string) OrderBook {
+func (k Keeper) getOrderBook(ctx sdk.Context, kind OrderKind, amountDenom string, priceDenom string) OrderBook {
 	key := MakeKeyOrderBook(kind, amountDenom, priceDenom)
 
 	store := ctx.KVStore(k.storeKey)
@@ -92,7 +91,7 @@ func (k Keeper) processLimitOrder(
 	}
 
 	// check if enough coins to place order
-	totalPrice := sdk.Coin{price.Denom, amount.Amount.Mul(price.Amount)}
+	totalPrice := getTotalPrice(amount, price)
 	if kind == BuyOrder && !k.bankKeeper.HasCoins(ctx, sender, sdk.Coins{totalPrice}) {
 		return -1, sdk.ErrInsufficientCoins(fmt.Sprintf(
 			"Must have at least %v to place this buy limit order", totalPrice))
@@ -123,15 +122,17 @@ func (k Keeper) fillOrderIfPossible(
 	}
 	orderBook := k.getOrderBook(ctx, matchingKind, amount.Denom, price.Denom)
 
-	// remove expired
-	orderBook.RemoveExpiredLimitOrders()
-
 	// unfilled amount
 	unfilledAmt := amount
 
 	var err sdk.Error
 
 	for i, storedOrder := range orderBook.Orders {
+		// end loop if unfilled amt is 0
+		if unfilledAmt.IsZero() {
+			break
+		}
+
 		// end loop if storedOrder cannot fill our order => since orders are sorted, this means there will be no more
 		// match
 		ok, fillAmount, fillPrice := storedOrder.DoesFill(kind, unfilledAmt, price)
@@ -139,25 +140,26 @@ func (k Keeper) fillOrderIfPossible(
 			break
 		}
 
-		fillTotalPrice := sdk.Coin{fillPrice.Denom, fillAmount.Amount.Mul(fillPrice.Amount)}
+		fillTotalPrice := getTotalPrice(fillAmount, fillPrice)
 
-		// skip this stored order if sender does not have enough coins
-		// TODO: better handling of this case => delete order, lock coins at order creation lock margin?
-		if !k.hasOrderSenderEnoughCoins(ctx, storedOrder, fillAmount, fillTotalPrice) {
-			continue
-		}
+		var coinsFromSenderToStoredSender, coinsToUnlockForSender sdk.Coin
 
-		var buyer, seller sdk.AccAddress
 		if kind == BuyOrder {
-			buyer = sender
-			seller = storedOrder.Sender
+			// send totalPrice from buyer to seller
+			coinsFromSenderToStoredSender = fillTotalPrice
+
+			// give buyer locked coins from seller
+			coinsToUnlockForSender = fillAmount
 		} else {
-			buyer = storedOrder.Sender
-			seller = sender
+			// send amount from seller to buyer
+			coinsFromSenderToStoredSender = fillAmount
+
+			// give seller locked coins from buyer
+			coinsToUnlockForSender = fillTotalPrice
 		}
 
-		err := k.exchangeCoins(ctx, buyer, seller, fillAmount, fillTotalPrice)
-
+		err = k.sendAndUnlockCoins(
+			ctx, sender, storedOrder.Sender, coinsFromSenderToStoredSender, coinsToUnlockForSender)
 		if err != nil {
 			break
 		}
@@ -185,19 +187,15 @@ func (k Keeper) hasOrderSenderEnoughCoins(ctx sdk.Context, storedOrder LimitOrde
 	return k.bankKeeper.HasCoins(ctx, storedOrder.Sender, sdk.Coins{totalAmount})
 }
 
-func (k Keeper) exchangeCoins(ctx sdk.Context, buyer, seller sdk.AccAddress, totalAmount, totalPrice sdk.Coin,
+func (k Keeper) sendAndUnlockCoins(ctx sdk.Context, a, b sdk.AccAddress, coinsFromAToB, coinsToUnlockForA sdk.Coin,
 ) sdk.Error {
-	_, err := k.bankKeeper.SendCoins(ctx, seller, buyer, sdk.Coins{totalAmount})
+	_, err := k.bankKeeper.SendCoins(ctx, a, b, sdk.Coins{coinsFromAToB})
 	if err != nil {
 		return err
 	}
 
-	_, err = k.bankKeeper.SendCoins(ctx, buyer, seller, sdk.Coins{totalPrice})
-	if err != nil {
-		return err
-	}
-
-	return nil
+	_, _, err = k.bankKeeper.AddCoins(ctx, a, sdk.Coins{coinsToUnlockForA})
+	return err
 }
 
 // storeUnfilledLimitOrder creates a new limit order, finds the corresponding order book, adds the limit order
@@ -220,7 +218,19 @@ func (k Keeper) storeUnfilledLimitOrder(
 
 	limitOrder := NewLimitOrder(newOrderID, sender, kind, amount, price, expiresAt)
 
-	err = orderBook.AddLimitOrder(limitOrder) // TODO
+	err = orderBook.AddLimitOrder(limitOrder)
+	if err != nil {
+		return -1, err
+	}
+
+	// lock sender's coins to fill order in the future
+	var coinToLock sdk.Coin
+	if kind == BuyOrder {
+		coinToLock = getTotalPrice(amount, price)
+	} else {
+		coinToLock = amount
+	}
+	_, _, err = k.bankKeeper.SubtractCoins(ctx, sender, sdk.Coins{coinToLock})
 	if err != nil {
 		return -1, err
 	}
@@ -229,17 +239,6 @@ func (k Keeper) storeUnfilledLimitOrder(
 
 	return newOrderID, nil
 }
-
-// GetCLP - returns the clp
-// func (k Keeper) GetCLP(ctx sdk.Context, ticker string) *CLP { // TODO
-// 	store := ctx.KVStore(k.storeKey)
-// 	valueBytes := store.Get(MakeCLPStoreKey(ticker))
-
-// 	clp := new(CLP)
-// 	k.cdc.UnmarshalBinary(valueBytes, &clp)
-
-// 	return clp
-// }
 
 func (k Keeper) setInitialOrderID(ctx sdk.Context, orderID int64) sdk.Error {
 	store := ctx.KVStore(k.storeKey)
@@ -274,4 +273,64 @@ func (k Keeper) getNewOrderID(ctx sdk.Context) (orderID int64, err sdk.Error) {
 	bz = k.cdc.MustMarshalBinary(orderID + 1)
 	store.Set(KeyNextOrderID, bz)
 	return orderID, nil
+}
+
+func (k Keeper) refundExpiredLimitOrders(ctx sdk.Context) {
+	// Iterate over all orderbooks
+	store := ctx.KVStore(k.storeKey)
+	iter := sdk.KVStorePrefixIterator(store, orderBookSubspace)
+
+	now := time.Now()
+	obsToUpdate := make([]OrderBook, 0)
+	osToRefund := make([]LimitOrder, 0)
+
+	for ; iter.Valid(); iter.Next() {
+		ob := new(OrderBook)
+		k.cdc.UnmarshalBinary(iter.Value(), &ob)
+
+		containsExpired := false
+		newOrders := make([]LimitOrder, 0, len(ob.Orders))
+
+		// iterate over orders, only keeping not expired ones, and add expired ones to refund array
+		for _, order := range ob.Orders {
+			if order.ExpiresAt.Before(now) {
+				containsExpired = true
+				osToRefund = append(osToRefund, order)
+				continue
+			}
+
+			newOrders = append(newOrders, order)
+		}
+
+		// if orderbook contains expired orders, add them to the slice we need to update
+		if containsExpired {
+			ob.Orders = newOrders
+			obsToUpdate = append(obsToUpdate, *ob)
+		}
+	}
+
+	iter.Close()
+
+	// save the orderbooks that need to be updated
+	for _, ob := range obsToUpdate {
+		k.setOrderBook(ctx, ob)
+	}
+
+	// refund orders that were expired
+	for _, order := range osToRefund {
+		var coinsToUnlock sdk.Coin
+		if order.Kind == BuyOrder {
+			coinsToUnlock = getTotalPrice(order.Amount, order.Price)
+		} else {
+			coinsToUnlock = order.Amount
+		}
+		_, _, err := k.bankKeeper.AddCoins(ctx, order.Sender, sdk.Coins{coinsToUnlock})
+		if err != nil {
+			panic(err)
+		}
+	}
+}
+
+func getTotalPrice(amt sdk.Coin, price sdk.Coin) sdk.Coin {
+	return sdk.Coin{price.Denom, amt.Amount.Mul(price.Amount)}
 }

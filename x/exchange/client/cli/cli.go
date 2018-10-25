@@ -118,8 +118,6 @@ func GetCmdQueryOrderbook(storeName string, cdc *wire.Codec) *cobra.Command {
 				orderbook = exchange.NewOrderBook(kind, amountDenom, priceDenom)
 			}
 
-			orderbook.RemoveExpiredLimitOrders()
-
 			output, err2 := wire.MarshalJSONIndent(cdc, orderbook)
 			if err2 != nil {
 				return err2

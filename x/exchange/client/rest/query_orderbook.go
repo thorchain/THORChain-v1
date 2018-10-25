@@ -73,8 +73,6 @@ func handleQueryOrderbook(cdc *wire.Codec, decoder auth.AccountDecoder, ctx cont
 			orderbook = exchange.NewOrderBook(kind, m.AmountDenom, m.PriceDenom)
 		}
 
-		orderbook.RemoveExpiredLimitOrders()
-
 		output, err2 := wire.MarshalJSONIndent(cdc, orderbook)
 		if err2 != nil {
 			w.WriteHeader(http.StatusInternalServerError)
