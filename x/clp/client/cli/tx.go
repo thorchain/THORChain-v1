@@ -23,7 +23,7 @@ func CreateTxCmd(cdc *wire.Codec) *cobra.Command {
 		Use:   "create <ticker> <name> <reserve_ratio> <initial_supply> <initial_rune_amount>",
 		Short: "Create a token with CLP",
 		Args:  cobra.ExactArgs(5),
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, args []string) error {
 			txCtx := authctx.NewTxContextFromCLI().WithCodec(cdc)
 			cliCtx := context.NewCLIContext().
 				WithCodec(cdc).
@@ -57,7 +57,7 @@ func TradeBaseTxCmd(cdc *wire.Codec) *cobra.Command {
 		Use:   "trade <from_ticker> <to_ticker> <from_amount>",
 		Short: "Trade from one token to another token via CLP",
 		Args:  cobra.ExactArgs(3),
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, args []string) error {
 			txCtx := authctx.NewTxContextFromCLI().WithCodec(cdc)
 			cliCtx := context.NewCLIContext().
 				WithCodec(cdc).
@@ -89,7 +89,7 @@ func GetCmd(cdc *wire.Codec) *cobra.Command {
 		Use:   "get <ticker>",
 		Short: "Get clp for given token",
 		Args:  cobra.ExactArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, args []string) error {
 			cliCtx := context.NewCLIContext().WithCodec(cdc)
 
 			ticker := args[0]
@@ -120,7 +120,7 @@ func GetAllCmd(cdc *wire.Codec) *cobra.Command {
 	return &cobra.Command{
 		Use:   "get_all",
 		Short: "Get all clps",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			cliCtx := context.NewCLIContext().WithCodec(cdc)
 
 			clpSubspace := []byte("clp:")

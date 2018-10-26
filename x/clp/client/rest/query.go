@@ -68,7 +68,7 @@ func queryClpRequestHandlerFn(
 }
 
 func getCLPAccountOutput(
-	clp *clpTypes.CLP, cliCtx context.CLIContext, decoder auth.AccountDecoder, cdc *wire.Codec, baseCoinTicker string,
+	clp *clpTypes.CLP, cliCtx context.CLIContext, decoder auth.AccountDecoder, _ *wire.Codec, baseCoinTicker string,
 ) ([]byte, error) {
 	clpAddr := clp.AccountAddress
 
@@ -120,7 +120,7 @@ func clpToJSONOutput(cdc *wire.Codec, cliCtx context.CLIContext, accountDecoder 
 func queryClpsRequestHandlerFn(
 	cdc *wire.Codec, cliCtx context.CLIContext, accountDecoder auth.AccountDecoder, baseCoinTicker string,
 ) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, _ *http.Request) {
 		cliCtx = cliCtx.WithCodec(cdc)
 
 		clpSubspace := []byte("clp:")

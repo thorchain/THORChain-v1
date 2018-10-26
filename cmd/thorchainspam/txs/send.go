@@ -31,7 +31,7 @@ var (
 
 // Returns the command to send txs between accounts
 func GetTxsSend(cdc *wire.Codec) func(cmd *cobra.Command, args []string) error {
-	return func(cmd *cobra.Command, args []string) error {
+	return func(_ *cobra.Command, _ []string) error {
 		chainID := viper.GetString(FlagChainID)
 		if chainID == "" {
 			return fmt.Errorf("--chain-id is required")

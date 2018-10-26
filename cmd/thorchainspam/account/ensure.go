@@ -22,8 +22,8 @@ import (
 )
 
 // Returns the command to ensure k accounts exist
-func GetAccountEnsure(cdc *wire.Codec) func(cmd *cobra.Command, args []string) error {
-	return func(cmd *cobra.Command, args []string) error {
+func GetAccountEnsure(cdc *wire.Codec) func(cnd *cobra.Command, args []string) error {
+	return func(_ *cobra.Command, _ []string) error {
 		cliCtx := context.NewCLIContext().
 			WithCodec(cdc).
 			WithLogger(os.Stdout).

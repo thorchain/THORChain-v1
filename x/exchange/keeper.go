@@ -102,7 +102,7 @@ func (k Keeper) processLimitOrder(
 	}
 
 	// fill order if possible
-	amount, err := k.fillOrderIfPossible(ctx, sender, kind, amount, price, expiresAt)
+	amount, err := k.fillOrderIfPossible(ctx, sender, kind, amount, price)
 	if err != nil {
 		return -1, err
 	}
@@ -113,7 +113,7 @@ func (k Keeper) processLimitOrder(
 
 // k. tries to fill the order. Returns the amount that could not be filled.
 func (k Keeper) fillOrderIfPossible(
-	ctx sdk.Context, sender sdk.AccAddress, kind OrderKind, amount sdk.Coin, price sdk.Coin, expiresAt time.Time,
+	ctx sdk.Context, sender sdk.AccAddress, kind OrderKind, amount sdk.Coin, price sdk.Coin,
 ) (sdk.Coin, sdk.Error) {
 	// get matching order book to fill the order
 	matchingKind := SellOrder

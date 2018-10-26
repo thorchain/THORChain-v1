@@ -25,7 +25,7 @@ func GetVersion() string {
 }
 
 // CMD
-func printVersion(cmd *cobra.Command, args []string) {
+func printVersion(_ *cobra.Command, _ []string) {
 	v := GetVersion()
 	fmt.Println(v)
 }
