@@ -22,13 +22,6 @@
     force: yes
   notify: restart thorchaind
 
-- name: Copy config.toml file, if available
-  when: "CONFIGFILE is defined"
-  copy:
-    src: "{{CONFIGFILE}}"
-    dest: /home/thorchaind/.thorchaind/config/config.toml
-  notify: restart thorchaind
-
 - name: Reset network
   when: UNSAFE_RESET_ALL | default(false) | bool
   command: "sudo -u thorchaind thorchaind unsafe_reset_all"

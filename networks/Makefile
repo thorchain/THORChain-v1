@@ -77,8 +77,8 @@ validators-stop: disclaimer
 validators-status: disclaimer
 	cd remote/ansible && ansible-playbook -i inventory/ec2.py -l "tag_Environment_$(CLUSTER_NAME)" status.yml
 
-#validators-clear:
-#	cd remote/ansible && ansible-playbook -i inventory/ec2.py -l "tag_Environment_$(CLUSTER_NAME)" -u centos -b clear-config.yml
+validators-clear:
+	cd remote/ansible && ansible-playbook -i inventory/ec2.py -l "tag_Environment_$(CLUSTER_NAME)" -u centos -b clear-config.yml
 
 
 ########################################
@@ -107,7 +107,7 @@ upgrade-thorchaind: disclaimer
 	#Make sure you have AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY or your IAM roles set for AWS API access.
 	@if ! [ -f $(HOME)/.ssh/id_rsa.pub ]; then ssh-keygen ; fi
 	@if [ -z "`file $(BINARY) | grep 'ELF 64-bit'`" ]; then echo "Please build a linux binary using 'make build-linux'." ; false ; fi
-	cd remote/ansible && ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i inventory/ec2.py -l "tag_Environment_$(CLUSTER_NAME)" -u centos -b -e BINARY=$(BINARY) -e GENESISFILE="$(GENESISFILE)" -e CONFIGFILE="$(CONFIGFILE)" -e UNSAFE_RESET_ALL=$(UNSAFE_RESET_ALL) upgrade-thorchaind.yml
+	cd remote/ansible && ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i inventory/ec2.py -l "tag_Environment_$(CLUSTER_NAME)" -u centos -b -e BINARY=$(BINARY) -e GENESISFILE="$(GENESISFILE)" -e UNSAFE_RESET_ALL=$(UNSAFE_RESET_ALL) upgrade-thorchaind.yml
 
 upgrade-seeds: disclaimer
 	#Make sure you have AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY or your IAM roles set for AWS API access.
