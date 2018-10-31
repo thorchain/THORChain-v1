@@ -55,7 +55,7 @@ resource "aws_security_group" "secgroup" {
     to_port = 0
     protocol = "-1"
     cidr_blocks = ["0.0.0.0/0"]
-
+    
   }
 }
 
@@ -79,7 +79,7 @@ resource "aws_instance" "node" {
   }
 
   root_block_device {
-    volume_size = 20
+    volume_size = 40
   }
 
   connection {
@@ -93,14 +93,8 @@ resource "aws_instance" "node" {
     destination = "/tmp/terraform.sh"
   }
 
-  provisioner "file" {
-    source = "files/thorchaind.service"
-    destination = "/tmp/thorchaind.service"
-  }
-
   provisioner "remote-exec" {
     inline = [
-      "sudo cp /tmp/thorchaind.service /etc/systemd/system/thorchaind.service",
       "chmod +x /tmp/terraform.sh",
       "sudo /tmp/terraform.sh ${var.name} ${var.multiplier} ${count.index}",
     ]

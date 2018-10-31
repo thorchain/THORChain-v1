@@ -6,14 +6,21 @@
   run_once: true
   become: no
 
+- name: Create thorchaind user
+  user: name=thorchaind home=/home/thorchaind shell=/bin/bash
+
 - name: Copy binary
   copy:
     src: "{{BINARY}}"
     dest: /usr/bin
     mode: 0755
 
+- name: Copy service file
+  copy: src=thorchaind.service dest=/etc/systemd/system/thorchaind.service mode=0755
+  notify: reload systemd
+
 - name: Get node ID
-  command: "cat /etc/thorchaind-nodeid"
+  command: "cat /etc/nodeid"
   changed_when: false
   register: nodeid
 
@@ -23,6 +30,7 @@
   become: yes
   become_user: thorchaind
   args:
+    stdin: 12345678
     creates: /home/thorchaind/.thorchaind/config/gentx
 
 - name: Get wallet word seed from result of initial transaction locally
@@ -30,6 +38,7 @@
   shell: "echo '{{gentxresult.stdout}}' | python -c 'import json,sys ; print json.loads(\"\".join(sys.stdin.readlines()))[\"app_message\"][\"secret\"]'"
   changed_when: false
   register: walletkey
+  become: no
   connection: local
 
 - name: Write wallet word seed to local files
@@ -46,6 +55,7 @@
 - name: Clear local gen-tx list
   file: path=files/ state=absent
   connection: local
+  become: no
   run_once: yes
 
 - name: Get gen-tx file
@@ -57,6 +67,7 @@
 - name: Compress gathered gen-tx files locally
   archive: path=files/ exclude_path=files/gen-tx.tgz dest=files/gen-tx.tgz
   run_once: yes
+  become: no
   connection: local
 
 - name: Unpack gen-tx archive

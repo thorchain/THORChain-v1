@@ -7,13 +7,5 @@
 REGION="$(($2 + 1))"
 RNODE="$(($3 + 1))"
 ID="$((${REGION} * 100 + ${RNODE}))"
-echo "$ID" > /etc/thorchaind-nodeid
-
-#Create thorchaind user
-useradd -m -s /bin/bash thorchaind
-
-#Reload services to enable the thorchaind service (note that the thorchaind binary is not available yet)
-systemctl daemon-reload
-systemctl enable thorchaind
-
+echo "$ID" > /etc/nodeid
 

@@ -3,7 +3,7 @@
 - name: Copy binary
   copy:
     src: "{{THORCHAINCLI_BINARY}}"
-    dest: /usr/bin
+    dest: /usr/bin/thorchaincli
     mode: 0755
   notify: restart thorchaincli
 

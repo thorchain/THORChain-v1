@@ -3,7 +3,7 @@
 - name: Copy binary
   copy:
     src: "{{BINARY}}"
-    dest: /usr/bin
+    dest: /usr/bin/thorchaind
     mode: 0755
   notify: restart thorchaind
 
@@ -20,6 +20,13 @@
     url: "{{GENESISURL}}"
     dest: /home/thorchaind/.thorchaind/config/genesis.json
     force: yes
+  notify: restart thorchaind
+
+- name: Copy config.toml file, if available
+  when: "CONFIGFILE is defined"
+  copy:
+    src: "{{CONFIGFILE}}"
+    dest: /home/thorchaind/.thorchaind/config/config.toml
   notify: restart thorchaind
 
 - name: Reset network

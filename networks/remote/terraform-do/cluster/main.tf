@@ -29,11 +29,6 @@ resource "digitalocean_droplet" "cluster" {
     destination = "/tmp/terraform.sh"
   }
 
-  provisioner "file" {
-    source = "files/thorchaind.service"
-    destination = "/etc/systemd/system/thorchaind.service"
-  }
-
   provisioner "remote-exec" {
     inline = [
       "chmod +x /tmp/terraform.sh",

@@ -187,14 +187,6 @@ remotenet-reset-with-genesis:
 	ansible-playbook -i ./networks/remote/ansible/inventory/hosts.yml ./networks/remote/ansible/set-toml-values.yml
 	ansible-playbook -i ./networks/remote/ansible/inventory/hosts.yml -e TESTNET_NAME="$(TESTNET_NAME)" ./networks/remote/ansible/start.yml
 
-remotenet-stop:
-	@if [ -z "$(AWS_SECRET_KEY)" ]; then echo "AWS_SECRET_KEY environment variable not set." ; false ; fi
-	@if [ -z "$(AWS_ACCESS_KEY)" ]; then echo "AWS_ACCESS_KEY environment variable not set." ; false ; fi
-	terraform destroy -var AWS_SECRET_KEY="$(AWS_SECRET_KEY)" -var AWS_ACCESS_KEY="$(AWS_ACCESS_KEY)" -var SSH_KEY_NAME="$(SSH_KEY_NAME)" -var SSH_PRIVATE_FILE="$(SSH_PRIVATE_FILE)" -var SSH_PUBLIC_FILE="$(SSH_PUBLIC_FILE)"
-
-remotenet-status:
-	ansible-playbook -i ./networks/remote/ansible/inventory/hosts.yml ./networks/remote/ansible/status.yml
-
 ########################################
 ### Remote spam nodes using terraform and ansible
 
