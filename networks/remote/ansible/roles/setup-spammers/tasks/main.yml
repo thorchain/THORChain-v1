@@ -3,11 +3,11 @@
 - name: Copy spam binary
   copy:
     src: "{{SPAM_BINARY}}"
-    dest: /usr/bin
+    dest: /usr/bin/thorchainspam
     mode: 0755
 
-- name: Copy cli binary
+- name: Copy sli binary
   copy:
     src: "{{CLI_BINARY}}"
-    dest: /usr/bin
+    dest: /usr/bin/thorchaincli
     mode: 0755
