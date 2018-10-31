@@ -161,70 +161,11 @@ localnet-start: localnet-stop
 localnet-stop:
 	docker-compose -f ./networks/local/docker-compose.yml down
 
-########################################
-### Remote validator nodes using terraform and ansible
-
-TESTNET_NAME?=remotetestnet
-SERVERS?=4
-SSH_KEY_NAME?="$(TESTNET_NAME)-deployer"
-SSH_PRIVATE_FILE?="$(HOME)/.ssh/id_rsa"
-SSH_PUBLIC_FILE?="$(HOME)/.ssh/id_rsa.pub"
-BINARY=$(CURDIR)/build/thorchaind
-
-remotenet-start:
-	@if [ -z "$(AWS_SECRET_KEY)" ]; then echo "AWS_SECRET_KEY environment variable not set." ; false ; fi
-	@if [ -z "$(AWS_ACCESS_KEY)" ]; then echo "AWS_ACCESS_KEY environment variable not set." ; false ; fi
-	@if ! [ -f $(SSH_PUBLIC_FILE) ]; then ssh-keygen ; fi
-	@if [ -z "`file $(BINARY) | grep 'ELF 64-bit'`" ]; then echo "Please build a linux binary using 'make build-linux'." ; false ; fi
-	cd networks/remote/terraform && terraform init && terraform apply -var TESTNET_NAME="$(TESTNET_NAME)" -var SERVERS="$(SERVERS)" -var AWS_SECRET_KEY="$(AWS_SECRET_KEY)" -var AWS_ACCESS_KEY="$(AWS_ACCESS_KEY)" -var SSH_KEY_NAME="$(SSH_KEY_NAME)" -var SSH_PRIVATE_FILE="$(SSH_PRIVATE_FILE)" -var SSH_PUBLIC_FILE="$(SSH_PUBLIC_FILE)"
-	ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i ./networks/remote/ansible/inventory/hosts.yml -e BINARY=$(BINARY) -e TESTNET_NAME="$(TESTNET_NAME)" ./networks/remote/ansible/setup-validators.yml
-	ansible-playbook -i ./networks/remote/ansible/inventory/hosts.yml ./networks/remote/ansible/set-toml-values.yml
-	ansible-playbook -i ./networks/remote/ansible/inventory/hosts.yml -e TESTNET_NAME="$(TESTNET_NAME)" ./networks/remote/ansible/start.yml
-
-remotenet-reset-with-genesis:
-	@if ! [ -f $(GENESIS_FILE) ]; then echo "GENESIS_FILE environment variable not set." ; false ; fi
-	ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i ./networks/remote/ansible/inventory/hosts.yml -e GENESIS_FILE=$(GENESIS_FILE) ./networks/remote/ansible/reset-validators-with-genesis.yml
-	ansible-playbook -i ./networks/remote/ansible/inventory/hosts.yml ./networks/remote/ansible/set-toml-values.yml
-	ansible-playbook -i ./networks/remote/ansible/inventory/hosts.yml -e TESTNET_NAME="$(TESTNET_NAME)" ./networks/remote/ansible/start.yml
-
-########################################
-### Remote spam nodes using terraform and ansible
-
-SPAM_CLUSTER_NAME?="$(TESTNET_NAME)-spammer"
-SERVERS?=4
-SPAM_SSH_KEY_NAME?="$(SPAM_CLUSTER_NAME)-deployer"
-SSH_PRIVATE_FILE?="$(HOME)/.ssh/id_rsa"
-SSH_PUBLIC_FILE?="$(HOME)/.ssh/id_rsa.pub"
-SPAM_BINARY=$(CURDIR)/build/thorchainspam
-CLI_BINARY=$(CURDIR)/build/thorchaincli
-
-remotenet-spam-start:
-	@if [ -z "$(AWS_SECRET_KEY)" ]; then echo "AWS_SECRET_KEY environment variable not set." ; false ; fi
-	@if [ -z "$(AWS_ACCESS_KEY)" ]; then echo "AWS_ACCESS_KEY environment variable not set." ; false ; fi
-	@if ! [ -f $(SSH_PUBLIC_FILE) ]; then ssh-keygen ; fi
-	@if [ -z "`file $(SPAM_BINARY) | grep 'ELF 64-bit'`" ]; then echo "Please build a linux binary using 'make build-spam-linux'." ; false ; fi
-	@if [ -z "`file $(CLI_BINARY) | grep 'ELF 64-bit'`" ]; then echo "Please build a linux binary using 'make build-linux'." ; false ; fi
-	cd networks/remote-spam/terraform && terraform init && terraform apply -var CLUSTER_NAME="$(SPAM_CLUSTER_NAME)" -var SERVERS="$(SERVERS)" -var AWS_SECRET_KEY="$(AWS_SECRET_KEY)" -var AWS_ACCESS_KEY="$(AWS_ACCESS_KEY)" -var SSH_KEY_NAME="$(SPAM_SSH_KEY_NAME)" -var SSH_PRIVATE_FILE="$(SSH_PRIVATE_FILE)" -var SSH_PUBLIC_FILE="$(SSH_PUBLIC_FILE)"
-	cd networks/remote-spam/terraform && ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i /usr/local/bin/terraform-inventory -e SPAM_BINARY=$(SPAM_BINARY) -e CLI_BINARY=$(CLI_BINARY) ../ansible/setup-spammers.yml
-
-remotenet-spam-deploy-binaries:
-	@if [ -z "$(AWS_SECRET_KEY)" ]; then echo "AWS_SECRET_KEY environment variable not set." ; false ; fi
-	@if [ -z "$(AWS_ACCESS_KEY)" ]; then echo "AWS_ACCESS_KEY environment variable not set." ; false ; fi
-	@if ! [ -f $(SSH_PUBLIC_FILE) ]; then ssh-keygen ; fi
-	@if [ -z "`file $(SPAM_BINARY) | grep 'ELF 64-bit'`" ]; then echo "Please build a linux binary using 'make build-spam-linux'." ; false ; fi
-	@if [ -z "`file $(CLI_BINARY) | grep 'ELF 64-bit'`" ]; then echo "Please build a linux binary using 'make build-linux'." ; false ; fi
-	cd networks/remote-spam/terraform && ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i /usr/local/bin/terraform-inventory -e SPAM_BINARY=$(SPAM_BINARY) -e CLI_BINARY=$(CLI_BINARY) ../ansible/setup-spammers.yml
-
-remotenet-spam-stop:
-	@if [ -z "$(AWS_SECRET_KEY)" ]; then echo "AWS_SECRET_KEY environment variable not set." ; false ; fi
-	@if [ -z "$(AWS_ACCESS_KEY)" ]; then echo "AWS_ACCESS_KEY environment variable not set." ; false ; fi
-	cd networks/remote-spam/terraform && terraform destroy -var AWS_SECRET_KEY="$(AWS_SECRET_KEY)" -var AWS_ACCESS_KEY="$(AWS_ACCESS_KEY)" -var SSH_KEY_NAME="$(SSH_KEY_NAME)" -var SSH_PRIVATE_FILE="$(SSH_PRIVATE_FILE)" -var SSH_PUBLIC_FILE="$(SSH_PUBLIC_FILE)"
-
 # To avoid unintended conflicts with file names, always add to .PHONY
 # unless there is a reason not to.
 # https://www.gnu.org/software/make/manual/html_node/Phony-Targets.html
-.PHONY: build install install_debug dist \
-check_tools get_tools get_vendor_deps draw_deps test test_cli test_unit \
-test_cover test_lint benchmark \
-build-linux build-docker-thorchaindnode localnet-start localnet-stop remotenet-start \
-remotenet-stop remotenet-status format check-ledger
+.PHONY: all ci check-ledger build build-debug build-spam build-linux build-debug-linux build-spam-linux \
+install install_debug install_spam recreate dist \
+check_tools check_dev_tools update_tools update_dev_tools get_tools get_dev_tools get_vendor_deps draw_deps godocs \
+test test_cli test_unit test_race test_cover test_lint format benchmark \
+build-docker-thorchaind-node localnet-start localnet-stop

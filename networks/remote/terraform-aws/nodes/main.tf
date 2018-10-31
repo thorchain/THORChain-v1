@@ -55,12 +55,12 @@ resource "aws_security_group" "secgroup" {
     to_port = 0
     protocol = "-1"
     cidr_blocks = ["0.0.0.0/0"]
-    
+
   }
 }
 
 resource "aws_instance" "node" {
-  count = "${var.execute?var.SERVERS*length(data.aws_availability_zones.zones.names):0}"
+  count = "${var.execute?var.SERVERS*min(length(data.aws_availability_zones.zones.names),var.max_zones):0}"
   ami = "${data.aws_ami.linux.image_id}"
   instance_type = "${var.instance_type}"
   key_name = "${aws_key_pair.testnets.key_name}"
