@@ -6,7 +6,7 @@
     dest: /usr/bin/thorchainspam
     mode: 0755
 
-- name: Copy sli binary
+- name: Copy cli binary
   copy:
     src: "{{CLI_BINARY}}"
     dest: /usr/bin/thorchaincli
