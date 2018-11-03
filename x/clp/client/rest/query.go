@@ -43,7 +43,7 @@ func queryClpRequestHandlerFn(
 		// the query will return empty if there is no data for this account
 		if err != nil || len(res) == 0 {
 			w.WriteHeader(http.StatusNotFound)
-			err := errors.Errorf("clp for ticker [%d] does not exist", ticker)
+			err := errors.Errorf("clp for ticker [%v] does not exist", ticker)
 			w.Write([]byte(err.Error()))
 
 			return
