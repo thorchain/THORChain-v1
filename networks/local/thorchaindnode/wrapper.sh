@@ -23,7 +23,7 @@ fi
 ##
 ## Run binary with all parameters
 ##
-export THORCHAINDHOME="/thorchaind/node${ID}/thorchaind"
+export THORCHAINDHOME="/thorchaind/node${ID}/gaiad" # TODO gaiad is a workaround, since the config folders for the daemon and cli are hardcoded at the moment in cosmos-sdk. Open PR: https://github.com/cosmos/cosmos-sdk/pull/1993/
 
 if [ -d "`dirname ${THORCHAINDHOME}/${LOG}`" ]; then
   "$BINARY" --home "$THORCHAINDHOME" "$@" | tee "${THORCHAINDHOME}/${LOG}"
