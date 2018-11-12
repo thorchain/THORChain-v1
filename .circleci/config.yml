@@ -158,7 +158,6 @@ jobs:
               make get_tools
               make get_vendor_deps
               make build-linux
-              make build-docker-thorchaind-node
               make localnet-start
               ./scripts/localnet-blocks-test.sh 40 5 10 localhost
 

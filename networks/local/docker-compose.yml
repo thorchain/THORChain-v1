@@ -1,0 +1,67 @@
+version: '3'
+
+services:
+  thorchaindnode0:
+    container_name: thorchaindnode0
+    image: "thorchain/thorchaindnode"
+    ports:
+      - "26656-26657:26656-26657"
+    environment:
+      - ID=0
+      - LOG=$${LOG:-thorchaind.log}
+    volumes:
+      - ../../build:/thorchaind:Z
+    networks:
+      localnet:
+        ipv4_address: 192.168.10.2
+
+  thorchaindnode1:
+    container_name: thorchaindnode1
+    image: "thorchain/thorchaindnode"
+    ports:
+      - "26659-26660:26656-26657"
+    environment:
+      - ID=1
+      - LOG=$${LOG:-thorchaind.log}
+    volumes:
+      - ../../build:/thorchaind:Z
+    networks:
+      localnet:
+        ipv4_address: 192.168.10.3
+
+  thorchaindnode2:
+    container_name: thorchaindnode2
+    image: "thorchain/thorchaindnode"
+    environment:
+      - ID=2
+      - LOG=$${LOG:-thorchaind.log}
+    ports:
+      - "26661-26662:26656-26657"
+    volumes:
+      - ../../build:/thorchaind:Z
+    networks:
+      localnet:
+        ipv4_address: 192.168.10.4
+
+  thorchaindnode3:
+    container_name: thorchaindnode3
+    image: "thorchain/thorchaindnode"
+    environment:
+      - ID=3
+      - LOG=$${LOG:-thorchaind.log}
+    ports:
+      - "26663-26664:26656-26657"
+    volumes:
+      - ../../build:/thorchaind:Z
+    networks:
+      localnet:
+        ipv4_address: 192.168.10.5
+
+networks:
+  localnet:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+      -
+        subnet: 192.168.10.0/16
