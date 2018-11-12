@@ -17,7 +17,7 @@ These instructions will get you a copy of the project up and running on your loc
 
 What things you need to install the software and how to install them:
 
-* Install Go (Vesion 1.10) and set GOPATH: [https://golang.org/doc/install](https://golang.org/doc/install)
+* Install Go (Version 1.11) and set GOPATH: [https://golang.org/doc/install](https://golang.org/doc/install)
 
 ### Installing
 
@@ -33,10 +33,13 @@ Then install dependencies:
 
 ```sh
 cd $GOPATH/src/github.com/thorchain/THORChain
+dep ensure -update github.com/brejski/hid
 make get_tools
 make get_vendor_deps
 make install
 ```
+
+(`dep ensure` above is a workaround until https://github.com/cosmos/cosmos-sdk/issues/2253 is fixed.)
 
 Verify that everything worked by running:
 
