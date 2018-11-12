@@ -3,7 +3,7 @@
 - name: Copy binary
   copy:
     src: "{{BINARY}}"
-    dest: /usr/bin
+    dest: /usr/bin/thorchaind
     mode: 0755
   notify: restart thorchaind
 

@@ -24,6 +24,11 @@ variable "SERVERS" {
   default = "1"
 }
 
+variable "MAX_ZONES" {
+  description = "Maximum number of availability zones to use"
+  default = "4"
+}
+
 variable "SSH_PRIVATE_FILE" {
   description = "SSH private key file to be used to connect to the nodes"
   type = "string"
@@ -43,7 +48,7 @@ variable "image" {
 
 variable "instance_type" {
   description = "AWS instance type"
-  default = "t2.medium"
+  default = "t2.large"
 }
 
 module "nodes-0" {
@@ -57,6 +62,7 @@ module "nodes-0" {
   ssh_public_file  = "${var.SSH_PUBLIC_FILE}"
   ssh_private_file = "${var.SSH_PRIVATE_FILE}"
   SERVERS          = "${var.SERVERS}"
+  max_zones        = "${var.MAX_ZONES}"
 }
 
 module "nodes-1" {
@@ -70,6 +76,7 @@ module "nodes-1" {
   ssh_public_file  = "${var.SSH_PUBLIC_FILE}"
   ssh_private_file = "${var.SSH_PRIVATE_FILE}"
   SERVERS          = "${var.SERVERS}"
+  max_zones        = "${var.MAX_ZONES}"
 }
 
 module "nodes-2" {
@@ -83,6 +90,7 @@ module "nodes-2" {
   ssh_public_file  = "${var.SSH_PUBLIC_FILE}"
   ssh_private_file = "${var.SSH_PRIVATE_FILE}"
   SERVERS          = "${var.SERVERS}"
+  max_zones        = "${var.MAX_ZONES}"
 }
 
 module "nodes-3" {
@@ -96,6 +104,7 @@ module "nodes-3" {
   ssh_public_file  = "${var.SSH_PUBLIC_FILE}"
   ssh_private_file = "${var.SSH_PRIVATE_FILE}"
   SERVERS          = "${var.SERVERS}"
+  max_zones        = "${var.MAX_ZONES}"
 }
 
 module "nodes-4" {
@@ -109,6 +118,7 @@ module "nodes-4" {
   ssh_public_file  = "${var.SSH_PUBLIC_FILE}"
   ssh_private_file = "${var.SSH_PRIVATE_FILE}"
   SERVERS          = "${var.SERVERS}"
+  max_zones        = "${var.MAX_ZONES}"
 }
 
 module "nodes-5" {
@@ -122,6 +132,7 @@ module "nodes-5" {
   ssh_public_file  = "${var.SSH_PUBLIC_FILE}"
   ssh_private_file = "${var.SSH_PRIVATE_FILE}"
   SERVERS          = "${var.SERVERS}"
+  max_zones        = "${var.MAX_ZONES}"
 }
 
 module "nodes-6" {
@@ -135,6 +146,7 @@ module "nodes-6" {
   ssh_public_file  = "${var.SSH_PUBLIC_FILE}"
   ssh_private_file = "${var.SSH_PRIVATE_FILE}"
   SERVERS          = "${var.SERVERS}"
+  max_zones        = "${var.MAX_ZONES}"
 }
 
 module "nodes-7" {
@@ -148,6 +160,7 @@ module "nodes-7" {
   ssh_public_file  = "${var.SSH_PUBLIC_FILE}"
   ssh_private_file = "${var.SSH_PRIVATE_FILE}"
   SERVERS          = "${var.SERVERS}"
+  max_zones        = "${var.MAX_ZONES}"
 }
 
 module "nodes-8" {
@@ -161,6 +174,7 @@ module "nodes-8" {
   ssh_public_file  = "${var.SSH_PUBLIC_FILE}"
   ssh_private_file = "${var.SSH_PRIVATE_FILE}"
   SERVERS          = "${var.SERVERS}"
+  max_zones        = "${var.MAX_ZONES}"
 }
 
 module "nodes-9" {
@@ -174,6 +188,7 @@ module "nodes-9" {
   ssh_public_file  = "${var.SSH_PUBLIC_FILE}"
   ssh_private_file = "${var.SSH_PRIVATE_FILE}"
   SERVERS          = "${var.SERVERS}"
+  max_zones        = "${var.MAX_ZONES}"
 }
 
 module "nodes-10" {
@@ -187,6 +202,7 @@ module "nodes-10" {
   ssh_public_file  = "${var.SSH_PUBLIC_FILE}"
   ssh_private_file = "${var.SSH_PRIVATE_FILE}"
   SERVERS          = "${var.SERVERS}"
+  max_zones        = "${var.MAX_ZONES}"
 }
 
 module "nodes-11" {
@@ -200,6 +216,7 @@ module "nodes-11" {
   ssh_public_file  = "${var.SSH_PUBLIC_FILE}"
   ssh_private_file = "${var.SSH_PRIVATE_FILE}"
   SERVERS          = "${var.SERVERS}"
+  max_zones        = "${var.MAX_ZONES}"
 }
 
 module "nodes-12" {
@@ -213,6 +230,7 @@ module "nodes-12" {
   ssh_public_file  = "${var.SSH_PUBLIC_FILE}"
   ssh_private_file = "${var.SSH_PRIVATE_FILE}"
   SERVERS          = "${var.SERVERS}"
+  max_zones        = "${var.MAX_ZONES}"
 }
 
 module "nodes-13" {
@@ -226,6 +244,7 @@ module "nodes-13" {
   ssh_public_file  = "${var.SSH_PUBLIC_FILE}"
   ssh_private_file = "${var.SSH_PRIVATE_FILE}"
   SERVERS          = "${var.SERVERS}"
+  max_zones        = "${var.MAX_ZONES}"
 }
 
 output "public_ips" {

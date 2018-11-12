@@ -60,7 +60,7 @@ resource "aws_security_group" "secgroup" {
 }
 
 resource "aws_instance" "node" {
-  count = "${var.execute?var.SERVERS*length(data.aws_availability_zones.zones.names):0}"
+  count = "${var.execute?var.SERVERS*min(length(data.aws_availability_zones.zones.names),var.max_zones):0}"
   ami = "${data.aws_ami.linux.image_id}"
   instance_type = "${var.instance_type}"
   key_name = "${aws_key_pair.testnets.key_name}"
@@ -79,7 +79,7 @@ resource "aws_instance" "node" {
   }
 
   root_block_device {
-    volume_size = 20
+    volume_size = 40
   }
 
   connection {
@@ -93,14 +93,8 @@ resource "aws_instance" "node" {
     destination = "/tmp/terraform.sh"
   }
 
-  provisioner "file" {
-    source = "files/thorchaind.service"
-    destination = "/tmp/thorchaind.service"
-  }
-
   provisioner "remote-exec" {
     inline = [
-      "sudo cp /tmp/thorchaind.service /etc/systemd/system/thorchaind.service",
       "chmod +x /tmp/terraform.sh",
       "sudo /tmp/terraform.sh ${var.name} ${var.multiplier} ${count.index}",
     ]

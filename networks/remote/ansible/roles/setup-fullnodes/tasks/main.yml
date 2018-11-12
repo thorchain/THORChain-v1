@@ -6,14 +6,21 @@
   run_once: true
   become: no
 
+- name: Create thorchaind user
+  user: name=thorchaind home=/home/thorchaind shell=/bin/bash
+
 - name: Copy binary
   copy:
     src: "{{BINARY}}"
     dest: /usr/bin
     mode: 0755
 
+- name: Copy service file
+  copy: src=thorchaind.service dest=/etc/systemd/system/thorchaind.service mode=0755
+  notify: reload systemd
+
 - name: Get node ID
-  command: "cat /etc/thorchaind-nodeid"
+  command: "cat /etc/nodeid"
   changed_when: false
   register: nodeid
 

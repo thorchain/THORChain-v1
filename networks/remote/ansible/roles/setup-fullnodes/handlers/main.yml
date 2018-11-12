@@ -1,0 +1,5 @@
+---
+
+- name: reload systemd
+  systemd: name=thorchaind enabled=yes daemon_reload=yes
+

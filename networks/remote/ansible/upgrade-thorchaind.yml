@@ -7,5 +7,6 @@
   any_errors_fatal: true
   gather_facts: no
   roles:
+    - set-toml-values
     - upgrade-thorchaind
 

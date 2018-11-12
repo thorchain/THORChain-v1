@@ -1,0 +1,9 @@
+---
+
+#BINARY required
+
+- hosts: all
+  any_errors_fatal: true
+  gather_facts: no
+  roles:
+    - setup-spammers

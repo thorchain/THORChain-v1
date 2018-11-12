@@ -30,6 +30,11 @@ variable "SERVERS" {
   default = "1"
 }
 
+variable "max_zones" {
+  description = "Maximum number of availability zones to use"
+  default = "1"
+}
+
 variable "ssh_private_file" {
   description = "SSH private key file to be used to connect to the nodes"
   type = "string"

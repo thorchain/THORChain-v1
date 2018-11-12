@@ -1,0 +1,5 @@
+---
+
+- name: Set tcp_tw_reuse
+  become: yes
+  shell: "echo 1 > /proc/sys/net/ipv4/tcp_tw_reuse"

@@ -83,8 +83,11 @@ func GetAccountEnsure(cdc *wire.Codec) func(cnd *cobra.Command, args []string) e
 			return err
 		}
 
-		sendCoins(numAccsToCreate, spamPrefix, numExistingAccs, kb, spamPassword, signPassword, from, coins, cliCtx,
-			cdc)
+		err = sendCoins(numAccsToCreate, spamPrefix, numExistingAccs, kb, spamPassword, signPassword, from, coins,
+			cliCtx, cdc)
+		if err != nil {
+			return err
+		}
 
 		fmt.Printf("Done creating %v accounts\n", numAccsToCreate)
 
@@ -145,7 +148,7 @@ func sendCoins(numAccsToCreate int, spamPrefix string, numExistingAccs int,
 		txCtx = txCtx.WithSequence(fromAccountSequence)
 		fromAccountSequence++
 
-		helpers.BuildSignAndBroadcastMsg(cdc, cliCtx, txCtx, cliCtx.FromAddressName, signPassword, msg)
+		_, err = helpers.BuildSignAndBroadcastMsg(cdc, cliCtx, txCtx, cliCtx.FromAddressName, signPassword, msg)
 		if err != nil {
 			fmt.Println(err)
 			return err
