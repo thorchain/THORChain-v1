@@ -13,7 +13,7 @@ import (
 	"github.com/thorchain/THORChain/x/exchange"
 )
 
-func registerQueryOrderbookRoute(ctx context.CLIContext, r *mux.Router, cdc *wire.Codec, kb keys.Keybase,
+func registerQueryOrderbookRoute(ctx context.CLIContext, r *mux.Router, cdc *wire.Codec, _ keys.Keybase,
 	storeName string) {
 	r.HandleFunc("/exchange/query-order-book",
 		handleQueryOrderbook(cdc, authcmd.GetAccountDecoder(cdc), ctx, storeName)).Methods("POST")
@@ -25,7 +25,7 @@ type queryOrderbookBody struct {
 	PriceDenom  string `json:"price_denom"`
 }
 
-func handleQueryOrderbook(cdc *wire.Codec, decoder auth.AccountDecoder, ctx context.CLIContext,
+func handleQueryOrderbook(cdc *wire.Codec, _ auth.AccountDecoder, ctx context.CLIContext,
 	storeName string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var m queryOrderbookBody
@@ -72,8 +72,6 @@ func handleQueryOrderbook(cdc *wire.Codec, decoder auth.AccountDecoder, ctx cont
 		} else {
 			orderbook = exchange.NewOrderBook(kind, m.AmountDenom, m.PriceDenom)
 		}
-
-		orderbook.RemoveExpiredLimitOrders()
 
 		output, err2 := wire.MarshalJSONIndent(cdc, orderbook)
 		if err2 != nil {

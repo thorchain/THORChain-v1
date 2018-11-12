@@ -32,7 +32,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/stake"
 )
 
-func runHackCmd(cmd *cobra.Command, args []string) error {
+func runHackCmd(_ *cobra.Command, args []string) error {
 
 	if len(args) != 1 {
 		return fmt.Errorf("Expected 1 arg")

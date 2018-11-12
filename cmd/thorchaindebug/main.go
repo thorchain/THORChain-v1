@@ -73,7 +73,7 @@ var rawBytesCmd = &cobra.Command{
 	RunE:  runRawBytesCmd,
 }
 
-func runRawBytesCmd(cmd *cobra.Command, args []string) error {
+func runRawBytesCmd(_ *cobra.Command, args []string) error {
 	if len(args) != 1 {
 		return fmt.Errorf("Expected single arg")
 	}
@@ -94,7 +94,7 @@ func runRawBytesCmd(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func runPubKeyCmd(cmd *cobra.Command, args []string) error {
+func runPubKeyCmd(_ *cobra.Command, args []string) error {
 	if len(args) != 1 {
 		return fmt.Errorf("Expected single arg")
 	}
@@ -157,7 +157,7 @@ func runPubKeyCmd(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func runAddrCmd(cmd *cobra.Command, args []string) error {
+func runAddrCmd(_ *cobra.Command, args []string) error {
 	if len(args) != 1 {
 		return fmt.Errorf("Expected single arg")
 	}
@@ -195,7 +195,7 @@ func runAddrCmd(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func runTxCmd(cmd *cobra.Command, args []string) error {
+func runTxCmd(_ *cobra.Command, args []string) error {
 	if len(args) != 1 {
 		return fmt.Errorf("Expected single arg")
 	}
@@ -238,7 +238,7 @@ func runTxCmd(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func runTxServerCmd(cmd *cobra.Command, args []string) error {
+func runTxServerCmd(_ *cobra.Command, _ []string) error {
 	os.Remove("/tmp/thorchaindebug-tx-decoding.sock")
 	l, err := net.Listen("unix", "/tmp/thorchaindebug-tx-decoding.sock")
 

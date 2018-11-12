@@ -32,7 +32,7 @@ func GetCmdLimitOrderCreate(cdc *wire.Codec) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "create-limit-order",
 		Short: "Create a limit order",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			txCtx := authctx.NewTxContextFromCLI().WithCodec(cdc)
 			cliCtx := context.NewCLIContext().
 				WithCodec(cdc).
@@ -94,7 +94,7 @@ func GetCmdQueryOrderbook(storeName string, cdc *wire.Codec) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "query-orderbook",
 		Short: "Get sell or buy orderbook for given amount and price denoms",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			cliCtx := context.NewCLIContext().WithCodec(cdc)
 
 			kind, err := exchange.ParseKind(viper.GetString(flagKind))
@@ -117,8 +117,6 @@ func GetCmdQueryOrderbook(storeName string, cdc *wire.Codec) *cobra.Command {
 			} else {
 				orderbook = exchange.NewOrderBook(kind, amountDenom, priceDenom)
 			}
-
-			orderbook.RemoveExpiredLimitOrders()
 
 			output, err2 := wire.MarshalJSONIndent(cdc, orderbook)
 			if err2 != nil {

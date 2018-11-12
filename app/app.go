@@ -174,6 +174,7 @@ func MakeCodec() *wire.Codec {
 // by the application.
 func (app *ThorchainApp) BeginBlocker(ctx sdk.Context, req abci.RequestBeginBlock) abci.ResponseBeginBlock {
 	tags := slashing.BeginBlocker(ctx, req, app.slashingKeeper)
+	exchange.BeginBlocker(ctx, app.exchangeKeeper)
 
 	return abci.ResponseBeginBlock{
 		Tags: tags.ToKVPairs(),

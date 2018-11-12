@@ -125,38 +125,6 @@ func TestAddLimitOrderToSellOrderBook(t *testing.T) {
 	require.Equal(t, lo3, orderBook1.Orders[3])
 }
 
-func TestRemoveExpiredLimitOrders(t *testing.T) {
-	orderBook1 := NewOrderBook(BuyOrder, "ETH", "BTC")
-
-	lo1 := LimitOrder{
-		OrderID:   4,
-		Kind:      BuyOrder,
-		Amount:    sdk.NewInt64Coin("ETH", 60),
-		Price:     sdk.NewInt64Coin("BTC", 150),
-		ExpiresAt: time.Now().Add(-time.Minute),
-	}
-	lo2 := LimitOrder{
-		OrderID:   5,
-		Kind:      BuyOrder,
-		Amount:    sdk.NewInt64Coin("ETH", 30),
-		Price:     sdk.NewInt64Coin("BTC", 130),
-		ExpiresAt: time.Now().Add(time.Minute),
-	}
-
-	err := orderBook1.AddLimitOrder(lo1)
-	require.Nil(t, err)
-	err = orderBook1.AddLimitOrder(lo2)
-	require.Nil(t, err)
-
-	require.Len(t, orderBook1.Orders, 2)
-	require.Equal(t, lo1, orderBook1.Orders[0])
-	require.Equal(t, lo2, orderBook1.Orders[1])
-
-	orderBook1.RemoveExpiredLimitOrders()
-	require.Len(t, orderBook1.Orders, 1)
-	require.Equal(t, lo2, orderBook1.Orders[0])
-}
-
 func TestRemoveFilledLimitOrders(t *testing.T) {
 	orderBook1 := NewOrderBook(BuyOrder, "ETH", "BTC")
 
