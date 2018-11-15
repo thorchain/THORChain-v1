@@ -79,7 +79,11 @@ func (msg MsgCreateLimitOrder) ValidateBasic() sdk.Error {
 
 // Get the bytes for the message signer to sign on
 func (msg MsgCreateLimitOrder) GetSignBytes() []byte {
-	b, err := json.Marshal(msg)
+	// ensure expires at is in UTC to have deterministic sign bytes
+	msgUtc := msg
+	msgUtc.ExpiresAt = msgUtc.ExpiresAt.UTC()
+
+	b, err := json.Marshal(msgUtc)
 	if err != nil {
 		panic(err)
 	}
