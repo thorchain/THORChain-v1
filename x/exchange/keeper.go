@@ -172,7 +172,7 @@ func (k Keeper) fillOrderIfPossible(
 			break
 		}
 
-		filledOrders = append(filledOrders, FilledLimitOrder{storedOrder.OrderID, fillAmount})
+		filledOrders = append(filledOrders, FilledLimitOrder{storedOrder.OrderID, fillAmount, fillPrice})
 
 		// update unfilled amount
 		unfilledAmt = unfilledAmt.Minus(fillAmount)

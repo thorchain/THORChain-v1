@@ -39,7 +39,7 @@ func handleMsgCreateLimitOrder(k Keeper, ctx sdk.Context, msg MsgCreateLimitOrde
 		return sdk.ErrInternal(fmt.Sprintf("Error marshalling json: %v", err2)).Result()
 	}
 
-	resultLog := fmt.Sprintf("json%vjson", b)
+	resultLog := fmt.Sprintf("json%vjson", string(b))
 
 	return sdk.Result{Log: resultLog}
 }

@@ -173,8 +173,10 @@ func TestKeeperCreateBuyLimitOrderFilled(t *testing.T) {
 	require.Len(t, filled, 2)
 	require.Equal(t, limitSellOrder1.OrderID, filled[0].OrderID)
 	require.Equal(t, sdk.NewInt64Coin("ETH", 120), filled[0].FilledAmount)
+	require.Equal(t, sdk.NewInt64Coin("RUNE", 6), filled[0].FilledPrice)
 	require.Equal(t, limitSellOrder2.OrderID, filled[1].OrderID)
 	require.Equal(t, sdk.NewInt64Coin("ETH", 80), filled[1].FilledAmount)
+	require.Equal(t, sdk.NewInt64Coin("RUNE", 7), filled[1].FilledPrice)
 
 	// buy orderbook untouched
 	buyOrderBook := keeper.getOrderBook(ctx, BuyOrder, "ETH", "RUNE")
@@ -212,6 +214,7 @@ func TestKeeperCreateBuyLimitOrderFilledPartially(t *testing.T) {
 	require.Len(t, filled, 1)
 	require.Equal(t, limitSellOrder1.OrderID, filled[0].OrderID)
 	require.Equal(t, sdk.NewInt64Coin("ETH", 120), filled[0].FilledAmount)
+	require.Equal(t, sdk.NewInt64Coin("RUNE", 6), filled[0].FilledPrice)
 
 	// buy orderbook has additional buy order over partial filling
 	buyOrderBook := keeper.getOrderBook(ctx, BuyOrder, "ETH", "RUNE")

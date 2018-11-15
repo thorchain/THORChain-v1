@@ -38,7 +38,8 @@ type ProcessedLimitOrder struct {
 // which amount
 type FilledLimitOrder struct {
 	OrderID      int64    `json:"order_id"`
-	FilledAmount sdk.Coin `json:"fiiled_amt"`
+	FilledAmount sdk.Coin `json:"filled_amt"`
+	FilledPrice  sdk.Coin `json:"filled_price"`
 }
 
 // NewLimitOrder creates a new limit order
