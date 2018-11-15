@@ -27,6 +27,20 @@ type LimitOrder struct {
 	ExpiresAt time.Time      `json:"expires_at"`
 }
 
+// ProcessedLimitOrder is return after order matching as a log entry to signal whether the order is fully filled or
+// there is an open amount still sitting in the orderbook
+type ProcessedLimitOrder struct {
+	OrderID    int64    `json:"order_id"`
+	OpenAmount sdk.Coin `json:"open_amt"`
+}
+
+// FilledLimitOrder is return after order matching as a log entry to signal what orders have been filled with
+// which amount
+type FilledLimitOrder struct {
+	OrderID      int64    `json:"order_id"`
+	FilledAmount sdk.Coin `json:"fiiled_amt"`
+}
+
 // NewLimitOrder creates a new limit order
 func NewLimitOrder(orderID int64, sender sdk.AccAddress, kind OrderKind, amount sdk.Coin, price sdk.Coin, expiresAt time.Time) LimitOrder {
 	newLimitOrder := LimitOrder{

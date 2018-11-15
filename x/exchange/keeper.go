@@ -63,58 +63,63 @@ func (k Keeper) setOrderBook(ctx sdk.Context, orderBook OrderBook) {
 // nolint gocyclo
 func (k Keeper) processLimitOrder(
 	ctx sdk.Context, sender sdk.AccAddress, kind OrderKind, amount sdk.Coin, price sdk.Coin,
-	expiresAt time.Time) (int64, sdk.Error) {
+	expiresAt time.Time) (ProcessedLimitOrder, []FilledLimitOrder, sdk.Error) {
 
 	// error if already expired
 	if expiresAt.Before(time.Now()) {
-		return -1, ErrOrderExpired(k.codespace)
+		return ProcessedLimitOrder{}, []FilledLimitOrder{}, ErrOrderExpired(k.codespace)
 	}
 
 	// error if kind not supported
 	if kind != BuyOrder && kind != SellOrder {
-		return -1, ErrInvalidKind(k.codespace)
+		return ProcessedLimitOrder{}, []FilledLimitOrder{}, ErrInvalidKind(k.codespace)
 	}
 
 	// error if amount and price denom are the same
 	if amount.Denom == price.Denom {
-		return -1, ErrSameDenom(k.codespace)
+		return ProcessedLimitOrder{}, []FilledLimitOrder{}, ErrSameDenom(k.codespace)
 	}
 
 	// error if amount negative
 	if !amount.IsPositive() {
-		return -1, ErrAmountNotPositive(k.codespace)
+		return ProcessedLimitOrder{}, []FilledLimitOrder{}, ErrAmountNotPositive(k.codespace)
 	}
 
 	// error if price negative
 	if !price.IsPositive() {
-		return -1, ErrPriceNotPositive(k.codespace)
+		return ProcessedLimitOrder{}, []FilledLimitOrder{}, ErrPriceNotPositive(k.codespace)
 	}
 
 	// check if enough coins to place order
 	totalPrice := getTotalPrice(amount, price)
 	if kind == BuyOrder && !k.bankKeeper.HasCoins(ctx, sender, sdk.Coins{totalPrice}) {
-		return -1, sdk.ErrInsufficientCoins(fmt.Sprintf(
+		return ProcessedLimitOrder{}, []FilledLimitOrder{}, sdk.ErrInsufficientCoins(fmt.Sprintf(
 			"Must have at least %v to place this buy limit order", totalPrice))
 	}
 	if kind == SellOrder && !k.bankKeeper.HasCoins(ctx, sender, sdk.Coins{amount}) {
-		return -1, sdk.ErrInsufficientCoins(fmt.Sprintf(
+		return ProcessedLimitOrder{}, []FilledLimitOrder{}, sdk.ErrInsufficientCoins(fmt.Sprintf(
 			"Must have at least %v to place this sell limit order", amount))
 	}
 
 	// fill order if possible
-	amount, err := k.fillOrderIfPossible(ctx, sender, kind, amount, price)
+	unfilledAmt, filledOrders, err := k.fillOrderIfPossible(ctx, sender, kind, amount, price)
 	if err != nil {
-		return -1, err
+		return ProcessedLimitOrder{}, []FilledLimitOrder{}, err
 	}
 
 	// store unfilled order
-	return k.storeUnfilledLimitOrder(ctx, sender, kind, amount, price, expiresAt)
+	processedOrder, err := k.storeUnfilledLimitOrder(ctx, sender, kind, unfilledAmt, price, expiresAt)
+	if err != nil {
+		return ProcessedLimitOrder{}, []FilledLimitOrder{}, err
+	}
+
+	return processedOrder, filledOrders, nil
 }
 
-// k. tries to fill the order. Returns the amount that could not be filled.
+// fillOrderIfPossible tries to fill the order. Returns the amount that could not be filled and a slice of limit orders that have been filled
 func (k Keeper) fillOrderIfPossible(
 	ctx sdk.Context, sender sdk.AccAddress, kind OrderKind, amount sdk.Coin, price sdk.Coin,
-) (sdk.Coin, sdk.Error) {
+) (sdk.Coin, []FilledLimitOrder, sdk.Error) {
 	// get matching order book to fill the order
 	matchingKind := SellOrder
 	if kind == SellOrder {
@@ -124,6 +129,9 @@ func (k Keeper) fillOrderIfPossible(
 
 	// unfilled amount
 	unfilledAmt := amount
+
+	// slice of filled orderIds, prices and amounts
+	filledOrders := make([]FilledLimitOrder, 0, 10)
 
 	var err sdk.Error
 
@@ -164,6 +172,8 @@ func (k Keeper) fillOrderIfPossible(
 			break
 		}
 
+		filledOrders = append(filledOrders, FilledLimitOrder{storedOrder.OrderID, fillAmount})
+
 		// update unfilled amount
 		unfilledAmt = unfilledAmt.Minus(fillAmount)
 
@@ -175,7 +185,7 @@ func (k Keeper) fillOrderIfPossible(
 
 	k.setOrderBook(ctx, orderBook)
 
-	return unfilledAmt, err
+	return unfilledAmt, filledOrders, err
 }
 
 func (k Keeper) hasOrderSenderEnoughCoins(ctx sdk.Context, storedOrder LimitOrder, totalAmount, totalPrice sdk.Coin,
@@ -199,28 +209,28 @@ func (k Keeper) sendAndUnlockCoins(ctx sdk.Context, a, b sdk.AccAddress, coinsFr
 }
 
 // storeUnfilledLimitOrder creates a new limit order, finds the corresponding order book, adds the limit order
-// to the right place and saves the orderbook. Returns the id of the new order.
+// to the right place and saves the orderbook. Returns a ProcessedLimitOrder
 func (k Keeper) storeUnfilledLimitOrder(
 	ctx sdk.Context, sender sdk.AccAddress, kind OrderKind, amount sdk.Coin, price sdk.Coin, expiresAt time.Time,
-) (int64, sdk.Error) {
+) (ProcessedLimitOrder, sdk.Error) {
+	// create a new limit order and then add it to the orderbook
+	newOrderID, err := k.getNewOrderID(ctx)
+	if err != nil {
+		return ProcessedLimitOrder{}, err
+	}
+
 	if amount.IsZero() {
-		return -1, nil
+		return ProcessedLimitOrder{newOrderID, amount}, nil
 	}
 
 	// get orderbook
 	orderBook := k.getOrderBook(ctx, kind, amount.Denom, price.Denom)
 
-	// create a new limit order and then add it to the orderbook
-	newOrderID, err := k.getNewOrderID(ctx)
-	if err != nil {
-		return -1, err
-	}
-
 	limitOrder := NewLimitOrder(newOrderID, sender, kind, amount, price, expiresAt)
 
 	err = orderBook.AddLimitOrder(limitOrder)
 	if err != nil {
-		return -1, err
+		return ProcessedLimitOrder{}, err
 	}
 
 	// lock sender's coins to fill order in the future
@@ -232,12 +242,12 @@ func (k Keeper) storeUnfilledLimitOrder(
 	}
 	_, _, err = k.bankKeeper.SubtractCoins(ctx, sender, sdk.Coins{coinToLock})
 	if err != nil {
-		return -1, err
+		return ProcessedLimitOrder{}, err
 	}
 
 	k.setOrderBook(ctx, orderBook)
 
-	return newOrderID, nil
+	return ProcessedLimitOrder{newOrderID, amount}, nil
 }
 
 func (k Keeper) setInitialOrderID(ctx sdk.Context, orderID int64) sdk.Error {
