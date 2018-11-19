@@ -24,13 +24,17 @@ var (
 	_1000Rune           = sdk.NewInt64Coin("RUNE", 1000)
 	runeTicker          = "RUNE"
 	runeTokenName       = "Rune"
+	runeDecimals        = uint8(18)
 	ethTicker           = "ETH"
 	ethTokenName        = "ethereum"
+	ethDecimals         = uint8(18)
 	ethClpAddress       = types.NewCLPAddress(ethTicker)
 	btcTicker           = "BTC"
 	btcTokenName        = "bitcoin"
+	btcDecimals         = uint8(8)
 	tokTicker           = "TOK"
 	tokTokenName        = "Token"
+	tokDecimals         = uint8(0)
 	blankTicker         = ""
 	invalidTicker       = "INVALID"
 	reserveRatio        = 100
@@ -67,9 +71,9 @@ func setupTradingTest() (sdk.Context, Keeper, bank.Keeper, sdk.AccAddress) {
 
 	bankKeeper.SetCoins(ctx, address, sdk.Coins{_1600Rune})
 
-	keeper.create(ctx, address, ethTicker, ethTokenName, 100, int64(500), int64(500))
-	keeper.create(ctx, address, btcTicker, btcTokenName, 100, int64(500), int64(500))
-	keeper.create(ctx, address, tokTicker, tokTokenName, 100, 1000000, 100)
+	keeper.create(ctx, address, ethTicker, ethTokenName, ethDecimals, 100, int64(500), int64(500))
+	keeper.create(ctx, address, btcTicker, btcTokenName, btcDecimals, 100, int64(500), int64(500))
+	keeper.create(ctx, address, tokTicker, tokTokenName, tokDecimals, 100, 1000000, 100)
 
 	return ctx, keeper, bankKeeper, address
 }
@@ -78,11 +82,11 @@ func TestCoolKeeperCreate(t *testing.T) {
 	ctx := setupContext(clpKey)
 	keeper, _, bankKeeper, senderAddress := setupKeepers(clpKey, ctx)
 
-	validCLP := types.NewCLP(senderAddress, ethTicker, ethTokenName, 100, int64(500), ethClpAddress)
+	validCLP := types.NewCLP(senderAddress, ethTicker, ethTokenName, ethDecimals, 100, int64(500), ethClpAddress)
 	bankKeeper.SetCoins(ctx, senderAddress, sdk.Coins{_1000Rune})
 
 	//Test happy path creation
-	err1 := keeper.create(ctx, senderAddress, ethTicker, ethTokenName, 100, int64(500), int64(500))
+	err1 := keeper.create(ctx, senderAddress, ethTicker, ethTokenName, ethDecimals, 100, int64(500), int64(500))
 	require.Nil(t, err1)
 
 	//Get created CLP and confirm values are correct
@@ -102,33 +106,33 @@ func TestCoolKeeperCreate(t *testing.T) {
 	require.Equal(t, clpEthAmount, int64(500))
 
 	//Test duplicate ticker
-	err2 := keeper.create(ctx, senderAddress, ethTicker, ethTokenName, reserveRatio, initialCoinSupply, initialBaseCoins)
+	err2 := keeper.create(ctx, senderAddress, ethTicker, ethTokenName, ethDecimals, reserveRatio, initialCoinSupply, initialBaseCoins)
 	require.Error(t, err2)
 
 	//Test bad ratios
-	err4 := keeper.create(ctx, senderAddress, btcTicker, btcTokenName, zeroReserveRatio, initialCoinSupply, initialBaseCoins)
+	err4 := keeper.create(ctx, senderAddress, btcTicker, btcTokenName, btcDecimals, zeroReserveRatio, initialCoinSupply, initialBaseCoins)
 	require.Error(t, err4)
-	err5 := keeper.create(ctx, senderAddress, btcTicker, btcTokenName, over100ReserveRatio, initialCoinSupply, initialBaseCoins)
+	err5 := keeper.create(ctx, senderAddress, btcTicker, btcTokenName, btcDecimals, over100ReserveRatio, initialCoinSupply, initialBaseCoins)
 	require.Error(t, err5)
 
 	//Test cannot create CLP for base token
-	err6 := keeper.create(ctx, senderAddress, runeTicker, runeTokenName, reserveRatio, initialCoinSupply, initialBaseCoins)
+	err6 := keeper.create(ctx, senderAddress, runeTicker, runeTokenName, runeDecimals, reserveRatio, initialCoinSupply, initialBaseCoins)
 	require.Error(t, err6)
 
 	//Test cannot create CLP with bad initial supply
-	err7 := keeper.create(ctx, senderAddress, btcTicker, btcTokenName, reserveRatio, 0, initialBaseCoins)
+	err7 := keeper.create(ctx, senderAddress, btcTicker, btcTokenName, btcDecimals, reserveRatio, 0, initialBaseCoins)
 	require.Error(t, err7)
-	err8 := keeper.create(ctx, senderAddress, btcTicker, btcTokenName, reserveRatio, -5, initialBaseCoins)
+	err8 := keeper.create(ctx, senderAddress, btcTicker, btcTokenName, btcDecimals, reserveRatio, -5, initialBaseCoins)
 	require.Error(t, err8)
 
 	//Test cannot create CLP with bad initial coins
-	err9 := keeper.create(ctx, senderAddress, btcTicker, btcTokenName, reserveRatio, initialCoinSupply, 0)
+	err9 := keeper.create(ctx, senderAddress, btcTicker, btcTokenName, btcDecimals, reserveRatio, initialCoinSupply, 0)
 	require.Error(t, err9)
-	err10 := keeper.create(ctx, senderAddress, btcTicker, btcTokenName, reserveRatio, initialCoinSupply, -5)
+	err10 := keeper.create(ctx, senderAddress, btcTicker, btcTokenName, btcDecimals, reserveRatio, initialCoinSupply, -5)
 	require.Error(t, err10)
 
 	//Test cannot create CLP with more initial coins than owned
-	err11 := keeper.create(ctx, senderAddress, btcTicker, btcTokenName, reserveRatio, initialCoinSupply, 5000)
+	err11 := keeper.create(ctx, senderAddress, btcTicker, btcTokenName, btcDecimals, reserveRatio, initialCoinSupply, 5000)
 	require.Error(t, err11)
 }
 

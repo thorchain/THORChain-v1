@@ -12,17 +12,20 @@ type MsgCreate struct {
 	Sender                sdk.AccAddress
 	Ticker                string
 	Name                  string
+	Decimals              uint8
 	ReserveRatio          int
 	InitialSupply         int64
 	InitialBaseCoinAmount int64
 }
 
 // new create message
-func NewMsgCreate(sender sdk.AccAddress, ticker string, name string, reserveRatio int, initialSupply int64, initialBaseCoinAmount int64) MsgCreate {
+func NewMsgCreate(sender sdk.AccAddress, ticker string, name string, decimals uint8, reserveRatio int,
+	initialSupply int64, initialBaseCoinAmount int64) MsgCreate {
 	return MsgCreate{
 		Sender:                sender,
 		Ticker:                ticker,
 		Name:                  name,
+		Decimals:              decimals,
 		ReserveRatio:          reserveRatio,
 		InitialSupply:         initialSupply,
 		InitialBaseCoinAmount: initialBaseCoinAmount,
@@ -41,7 +44,7 @@ func (msg MsgCreate) GetSigners() []sdk.AccAddress {
 }
 
 func (msg MsgCreate) String() string {
-	return fmt.Sprintf("MsgCreate{Sender: %v, Ticker: %v,  Name: %v,  ReserveRatio: %v,  InitialSupply: %v,  InitialBaseCoinAmount: %v}", msg.Sender, msg.Ticker, msg.Name, msg.ReserveRatio, msg.InitialSupply, msg.InitialBaseCoinAmount)
+	return fmt.Sprintf("MsgCreate{Sender: %v, Ticker: %v, Name: %v, Decimals: %v, ReserveRatio: %v, InitialSupply: %v, InitialBaseCoinAmount: %v}", msg.Sender, msg.Ticker, msg.Name, msg.Decimals, msg.ReserveRatio, msg.InitialSupply, msg.InitialBaseCoinAmount)
 }
 
 // Validate Basic is used to quickly disqualify obviously invalid messages quickly

@@ -20,7 +20,7 @@ import (
 // create new clp transaction
 func CreateTxCmd(cdc *wire.Codec) *cobra.Command {
 	return &cobra.Command{
-		Use:   "create <ticker> <name> <reserve_ratio> <initial_supply> <initial_rune_amount>",
+		Use:   "create <ticker> <name> <decimals> <reserve_ratio> <initial_supply> <initial_rune_amount>",
 		Short: "Create a token with CLP",
 		Args:  cobra.ExactArgs(5),
 		RunE: func(_ *cobra.Command, args []string) error {
@@ -39,10 +39,18 @@ func CreateTxCmd(cdc *wire.Codec) *cobra.Command {
 			// create the message
 			ticker := args[0]
 			name := args[1]
-			reserveRatio, _ := strconv.Atoi(args[2])
-			initialSupply, _ := strconv.Atoi(args[3])
-			initialBaseCoinAmount, _ := strconv.Atoi(args[4])
-			msg := clpTypes.NewMsgCreate(from, ticker, name, reserveRatio, int64(initialSupply), int64(initialBaseCoinAmount))
+			decimalsInt, _ := strconv.Atoi(args[2])
+			reserveRatio, _ := strconv.Atoi(args[3])
+
+			if decimalsInt < 0 || decimalsInt > 255 {
+				return clp.ErrInvalidDecimals(clp.DefaultCodespace)
+			}
+
+			decimals := uint8(decimalsInt)
+
+			initialSupply, _ := strconv.Atoi(args[4])
+			initialBaseCoinAmount, _ := strconv.Atoi(args[5])
+			msg := clpTypes.NewMsgCreate(from, ticker, name, decimals, reserveRatio, int64(initialSupply), int64(initialBaseCoinAmount))
 
 			// Build and sign the transaction, then broadcast to a Tendermint
 			// node.
@@ -109,7 +117,7 @@ func GetCmd(cdc *wire.Codec) *cobra.Command {
 			if err2 != nil {
 				return err2
 			}
-			fmt.Printf("CLP details \nCreator: %s \nTicker: %v \nName: %v \nReserve Ratio: %v \nInitial Supply: %v \nAccount Address: %v \n", clp.Creator, clp.Ticker, clp.Name, clp.ReserveRatio, clp.InitialSupply, clp.AccountAddress.String())
+			fmt.Printf("CLP details \nCreator: %s \nTicker: %v \nName: %v \nDecimals: %v \nReserve Ratio: %v \nInitial Supply: %v \nAccount Address: %v \n", clp.Creator, clp.Ticker, clp.Name, clp.Decimals, clp.ReserveRatio, clp.InitialSupply, clp.AccountAddress.String())
 			return nil
 		},
 	}
@@ -146,7 +154,7 @@ func GetAllCmd(cdc *wire.Codec) *cobra.Command {
 			fmt.Printf("CLP details \n\n")
 
 			for i := 0; i < len(clps); i++ {
-				fmt.Printf("Creator: %s \nTicker: %v \nName: %v \nReserve Ratio: %v \nInitial Supply: %v \nAccount Address: %v \n\n", clps[i].Creator, clps[i].Ticker, clps[i].Name, clps[i].ReserveRatio, clps[i].InitialSupply, clps[i].AccountAddress.String())
+				fmt.Printf("Creator: %s \nTicker: %v \nName: %v \nDecimals: %v \nReserve Ratio: %v \nInitial Supply: %v \nAccount Address: %v \n\n", clps[i].Creator, clps[i].Ticker, clps[i].Name, clps[i].Decimals, clps[i].ReserveRatio, clps[i].InitialSupply, clps[i].AccountAddress.String())
 			}
 
 			return nil

@@ -21,6 +21,7 @@ const (
 	CodeInvalidInitialBaseCoins CodeType = 148
 	CodeCLPEmpty                CodeType = 149
 	CodeSameCoin                CodeType = 150
+	CodeInvalidDecimals         CodeType = 151
 )
 
 //Reserve ratio error
@@ -71,5 +72,9 @@ func ErrCLPEmpty(codespace sdk.CodespaceType) sdk.Error {
 //Same coin err
 func ErrSameCoin(codespace sdk.CodespaceType) sdk.Error {
 	return sdk.NewError(codespace, CodeSameCoin, "cannot trade same coin")
+}
 
+//Same coin err
+func ErrInvalidDecimals(codespace sdk.CodespaceType) sdk.Error {
+	return sdk.NewError(codespace, CodeInvalidDecimals, "decimals need to be between 0 and 255")
 }
