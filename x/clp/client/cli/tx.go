@@ -22,7 +22,7 @@ func CreateTxCmd(cdc *wire.Codec) *cobra.Command {
 	return &cobra.Command{
 		Use:   "create <ticker> <name> <decimals> <reserve_ratio> <initial_supply> <initial_rune_amount>",
 		Short: "Create a token with CLP",
-		Args:  cobra.ExactArgs(5),
+		Args:  cobra.ExactArgs(6),
 		RunE: func(_ *cobra.Command, args []string) error {
 			txCtx := authctx.NewTxContextFromCLI().WithCodec(cdc)
 			cliCtx := context.NewCLIContext().
