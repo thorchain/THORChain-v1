@@ -132,7 +132,7 @@ func sendCoins(numAccsToCreate int, spamPrefix string, numExistingAccs int,
 	txCtx := authctx.NewTxContextFromCLI().
 		WithAccountNumber(fromAccountNumber).
 		WithCodec(cdc).
-		WithGas(10000)
+		WithGas(20000)
 
 	// how many msgs to send in 1 tx
 	// for each required account, build the required amount of keys and transfer the coins
