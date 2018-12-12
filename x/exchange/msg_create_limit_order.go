@@ -66,6 +66,11 @@ func (msg MsgCreateLimitOrder) ValidateBasic() sdk.Error {
 		return ErrSameDenom(DefaultCodespace)
 	}
 
+	// if rune is involved, it always must be the price denom, otherwise denoms must be sorted
+	if msg.Amount.Denom == "RUNE" || (msg.Amount.Denom != "RUNE" && msg.Amount.Denom < msg.Price.Denom) {
+		return ErrOrderBookDirection(DefaultCodespace)
+	}
+
 	if msg.ExpiresAt.Before(time.Now()) {
 		return ErrOrderExpired(DefaultCodespace)
 	}
