@@ -58,7 +58,8 @@ func (k Keeper) ensureNonexistentCLP(ctx sdk.Context, ticker string) sdk.Error {
 }
 
 // Create CLP.
-func (k Keeper) create(ctx sdk.Context, sender sdk.AccAddress, ticker string, name string, reserveRatio int, initialSupply int64, initialBaseCoinAmount int64) sdk.Error {
+func (k Keeper) create(ctx sdk.Context, sender sdk.AccAddress, ticker string, name string, decimals uint8,
+	reserveRatio int, initialSupply int64, initialBaseCoinAmount int64) sdk.Error {
 	if initialSupply <= 0 {
 		return ErrInvalidInitialSupply(DefaultCodespace).TraceSDK("")
 	}
@@ -82,7 +83,7 @@ func (k Keeper) create(ctx sdk.Context, sender sdk.AccAddress, ticker string, na
 		return err2
 	}
 	clpAddress := types.NewCLPAddress(ticker)
-	clp := types.NewCLP(sender, ticker, name, reserveRatio, initialSupply, clpAddress)
+	clp := types.NewCLP(sender, ticker, name, decimals, reserveRatio, initialSupply, clpAddress)
 	_, _, err3 := k.bankKeeper.AddCoins(ctx, clpAddress, sdk.Coins{initialBaseCoins})
 	if err3 != nil {
 		return err3

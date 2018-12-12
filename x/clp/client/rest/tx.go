@@ -22,6 +22,7 @@ type clpCreateBody struct {
 	BaseReq           baseReq `json:"base_req"`
 	Ticker            string  `json:"ticker"`
 	TokenName         string  `json:"token_name"`
+	Decimals          uint8   `json:"decimals"`
 	ReserveRatio      int     `json:"reserve_ratio"`
 	InitialSupply     int64   `json:"initial_supply"`
 	InitialRuneAmount int64   `json:"initial_rune_amount"`
@@ -55,7 +56,7 @@ func postClpHandlerFn(cdc *wire.Codec, kb keys.Keybase, cliCtx context.CLIContex
 
 		// create the message
 		msg := clpTypes.NewMsgCreate(sdk.AccAddress(info.GetPubKey().Address()), req.Ticker, req.TokenName,
-			req.ReserveRatio, req.InitialSupply, req.InitialRuneAmount)
+			req.Decimals, req.ReserveRatio, req.InitialSupply, req.InitialRuneAmount)
 		err = msg.ValidateBasic()
 		if err != nil {
 			writeErr(&w, http.StatusBadRequest, err.Error())

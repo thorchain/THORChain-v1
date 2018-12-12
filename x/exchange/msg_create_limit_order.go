@@ -33,7 +33,7 @@ func NewMsgCreateLimitOrder(
 var _ sdk.Msg = MsgCreateLimitOrder{}
 
 // Parser for OrderKind. Returns an error if str is neither "buy" nor "sell"
-func ParseKind(str string) (OrderKind, sdk.Error) {
+func ParseKind(str string) (OrderKind, error) {
 	if str == "buy" {
 		return BuyOrder, nil
 	}

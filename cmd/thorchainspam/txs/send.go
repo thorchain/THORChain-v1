@@ -173,7 +173,7 @@ func SpawnSpammer(spamCtx *spamCtx, cdc *wire.Codec, spamPassword string, index 
 
 	txCtx := authctx.TxContext{
 		Codec:   cdc,
-		Gas:     10000,
+		Gas:     20000,
 		ChainID: spamCtx.chainID,
 	}
 
