@@ -11,12 +11,13 @@ type CodeType = sdk.CodeType
 const (
 	DefaultCodespace sdk.CodespaceType = 15
 
-	CodeInvalidKind       CodeType = 1
-	CodeInvalidGenesis    CodeType = 2
-	CodeOrderExpired      CodeType = 3
-	CodeSameDenom         CodeType = 4
-	CodeAmountNotPositive CodeType = 5
-	CodePriceNotPositive  CodeType = 6
+	CodeInvalidKind        CodeType = 1
+	CodeInvalidGenesis     CodeType = 2
+	CodeOrderExpired       CodeType = 3
+	CodeSameDenom          CodeType = 4
+	CodeAmountNotPositive  CodeType = 5
+	CodePriceNotPositive   CodeType = 6
+	CodeOrderBookDirection CodeType = 7
 )
 
 // Invalid order kind error
@@ -47,4 +48,10 @@ func ErrAmountNotPositive(codespace sdk.CodespaceType) sdk.Error {
 // Price not positive error
 func ErrPriceNotPositive(codespace sdk.CodespaceType) sdk.Error {
 	return sdk.NewError(codespace, CodePriceNotPositive, "price must be positive")
+}
+
+// Orderbook dircetion error
+func ErrOrderBookDirection(codespace sdk.CodespaceType) sdk.Error {
+	return sdk.NewError(codespace, CodeOrderBookDirection,
+		"orderbook direction is not supported, please swap amount and price denoms")
 }

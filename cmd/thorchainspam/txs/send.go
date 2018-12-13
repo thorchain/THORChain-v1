@@ -33,6 +33,7 @@ var (
 type spamCtx struct {
 	chainID         string
 	stats           *stats.Stats
+	clps            []string
 	limitOrderPairs [][]string
 }
 
@@ -55,12 +56,16 @@ func GetTxsSend(cdc *wire.Codec) func(cmd *cobra.Command, args []string) error {
 
 		stats := stats.NewStats()
 
+		clps, err := parseClps(viper.GetString(FlagClps))
+		if err != nil {
+			return err
+		}
 		limitOrderPairs, err := parseLimitOrderPairs(viper.GetString(FlagLimitOrderPairs))
 		if err != nil {
 			return err
 		}
 
-		spamCtx := spamCtx{chainID, &stats, limitOrderPairs}
+		spamCtx := spamCtx{chainID, &stats, clps, limitOrderPairs}
 
 		// create context and all spammer objects
 		spammers, err := createSpammers(&spamCtx, cdc, spamPrefix, spamPassword)
@@ -96,6 +101,16 @@ func GetTxsSend(cdc *wire.Codec) func(cmd *cobra.Command, args []string) error {
 			}
 		}
 	}
+}
+
+func parseClps(input string) (clps []string, err error) {
+	if input == "" {
+		err = fmt.Errorf("--clps is required")
+		return
+	}
+
+	clps = strings.Split(input, ",")
+	return
 }
 
 func parseLimitOrderPairs(input string) (result [][]string, err error) {
@@ -239,7 +254,7 @@ func (sp *Spammer) send(spamCtx *spamCtx, nextSpammer *Spammer) {
 	case randType < 0.5:
 		msg, coinsUsed, ok = sp.makeRandomTxMsg(nextSpammer)
 	case randType < 0.99:
-		msg, coinsUsed, ok = sp.makeRandomClpMsg()
+		msg, coinsUsed, ok = sp.makeRandomClpMsg(spamCtx)
 	default:
 		msg, coinsUsed, ok = sp.makeRandomLimitOrderMsg(spamCtx)
 	}
@@ -321,34 +336,47 @@ func getRandomCoinsUpTo(coins sdk.Coins, divideBy int64) sdk.Coins {
 	return res
 }
 
-func (sp *Spammer) makeRandomClpMsg() (sdk.Msg, sdk.Coins, bool) {
-	clpFrom := "RUNE"
-	clpTo := "XMR"
+func getRandomCoin(coins sdk.Coins) sdk.Coin {
+	return coins[rand.Intn(len(coins))]
+}
 
-	if rand.Float32() < 0.5 {
-		clpFrom = "XMR"
-		clpTo = "RUNE"
+func getRandomClpDenomExcept(denoms []string, exceptDenom string) (denom string, ok bool) {
+	validDenoms := make([]string, 0, len(denoms))
+
+	for _, denom := range denoms {
+		if denom != exceptDenom {
+			validDenoms = append(validDenoms, denom)
+		}
 	}
 
+	if len(validDenoms) == 0 {
+		return "", false
+	}
+
+	return validDenoms[rand.Intn(len(validDenoms))], true
+}
+
+func (sp *Spammer) makeRandomClpMsg(spamCtx *spamCtx) (sdk.Msg, sdk.Coins, bool) {
 	randomCoins := getRandomCoinsUpTo(sp.currentCoins, 100000)
-	clpAmount := randomCoins.AmountOf(clpFrom)
 
-	if !clpAmount.GT(sdk.NewInt(0)) {
-		clpFrom = "RUNE"
-		clpTo = "XMR"
-		clpAmount = randomCoins.AmountOf(clpFrom)
-	}
-
-	if !clpAmount.GT(sdk.NewInt(0)) {
-		log.Log.Debugf("Spammer %v: Will not trade on CLP, has %v %v and %v %v\n", sp.index, clpAmount, clpFrom, randomCoins.AmountOf(clpTo), clpTo)
+	if randomCoins.Len() == 0 || !randomCoins.IsNotNegative() || randomCoins.IsZero() {
+		log.Log.Debugf("Spammer %v: Will not trade on CLP, has no positive random coins: %v\n", sp.index, randomCoins)
 		return nil, sdk.Coins{}, false
 	}
 
-	msg := clpTypes.NewMsgTrade(sp.accountAddress, clpFrom, clpTo, int(clpAmount.Int64()))
+	clpFrom := getRandomCoin(randomCoins)
+	clpTo, ok := getRandomClpDenomExcept(spamCtx.clps, clpFrom.Denom)
+	if !ok {
+		log.Log.Debugf("Spammer %v: Will not trade on CLP, has no valid denom, clps: %v, from: %v %v\n", sp.index,
+			spamCtx.clps, clpFrom.Amount, clpFrom.Denom)
+		return nil, sdk.Coins{}, false
+	}
 
-	log.Log.Debugf("Spammer %v: Will trade on CLP: %v %v -> %v\n", sp.index, clpAmount, clpFrom, clpTo)
+	msg := clpTypes.NewMsgTrade(sp.accountAddress, clpFrom.Denom, clpTo, int(clpFrom.Amount.Int64()))
 
-	return msg, sdk.Coins{sdk.NewCoin(clpFrom, clpAmount)}, true
+	log.Log.Debugf("Spammer %v: Will trade on CLP: %v %v -> %v\n", sp.index, clpFrom.Amount, clpFrom.Denom, clpTo)
+
+	return msg, sdk.Coins{clpFrom}, true
 }
 
 func (sp *Spammer) makeRandomTxMsg(nextSpammer *Spammer) (sdk.Msg, sdk.Coins, bool) {

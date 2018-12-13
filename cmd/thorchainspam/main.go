@@ -66,6 +66,7 @@ func main() {
 	txsSendCmd.Flags().Float64(txs.FlagRateLimit, 200, "Time to wait between sending in ms")
 	txsSendCmd.Flags().String(txs.FlagSpamPrefix, "spam", "Prefix for the name of spam account keys")
 	txsSendCmd.Flags().String(txs.FlagSpamPassword, "", "Password for spam account keys")
+	txsSendCmd.Flags().String(txs.FlagClps, "XMR", "CLPs for CLP trade spam, e. g. 'XMR,ETH'")
 	txsSendCmd.Flags().String(txs.FlagLimitOrderPairs, "XMR:RUNE", "Pairs for limit order spam, e. g. 'XMR:RUNE,ETH:RUNE'")
 	txsSendCmd.Flags().String(txs.FlagChainID, "", "Chain ID of tendermint node")
 	txsSendCmd.Flags().String(txs.FlagNode, "tcp://localhost:26657", "<host>:<port> to tendermint rpc interface for this chain")
