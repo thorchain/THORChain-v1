@@ -4,30 +4,49 @@
 
 This document acts as a guide to implementors of the THORChain/Ethereum Bifrost to allow for Ethereum and ERC-20 tokens to move between THORChain and Ethereum.
 
-## Related Reading
+### Related Reading
 This spec is heavily based on the Cosmos Peggy project spec (https://github.com/cosmos/peggy/blob/master/spec/readme.md) and new Cosmos oracle module (https://github.com/cosmos/cosmos-sdk/blob/master/examples/democoin/x/oracle/README.md). Make sure to read and understand both of those first.
 
 Code from those projects will be relevant too, but the license has not yet been confirmed for Peggy (see https://github.com/cosmos/peggy/issues/44). The Solidity Ethereum smart contract code looks fairly usable, but may require some adaptation and additions. The Peggy Go code is mostly boilerplate and not really useful. The Rust witness code should probably not be used. The Cosmos oracle module looks usable, but may require some adaptation and additions.
 
-The spec is written under the assumption that the LICENCE for Peggy will be Apache 2.0, like the Cosmos SDK, or that all code can be easily used. The project has not been completed nor updated in the last few months. I suggest contacting the Peggy team and possibly even considering asking for a grant to do the work of getting it completed.
+## Design Principles
+To ensure the Bifrost Protocol is widely extensible to most other blockchains, the following are the principles that are adhered to:
 
-## Relation to main Bifrost paper
-The main Bifrost paper describes a more complex and possibly more secure system with a custom `m of n` validator signatures required, support for a changing validator set, random reshuffling and VRFs, SPV proofs and gossip-layer communication. The spec is constrained to a very simple MVP that can be used for a Testnet and get real users running and playing with it asap, and does not include any of those features or security/performance improvements.
+1) The protocol is assymetrically complex to THORChain. 
+The modules that govern bridge logic and security are implementated on the THORChain side. All that is required on the blockchain side is an ability to process multi-signatures (bitcoin, monero) or multi-signature emulatations (ethereum). Sponsoring, registering and maintaining a bridge is all completed from THORChain modules. This reduces technical burden and allows bridges to scale to many blockchains.
+
+2) The protocol is opt-in. 
+Validators on THORChain opt-in to maintain bridges based on economic incentives only. This minimises risk to validators who may or may not want to support bridges from jurisdictional pressure, as well as ensuring the bridges are scalable across many blockchains. 
+
+3) Bridges have observable security. 
+Continuous liquidity pools allow asset pricing on THORChain which enables validators to preserve security thresholds on each bridge. Bridges with weak security are corrected by diluting the value of escrowed assets across more bridges. 
+
+>For this Ethereum spec, we do not treat the process for nominating a new blockchain to be bridged (will require robust on-chain goverance), so we require that the bridge is already instantiated with the starting signature set in the deployed multi-signature. 
 
 ## Overview
 The Bifrost MVP will add functionality to THORChain that allows the movement of Ether and ERC20 from Ethereum to THORChain and back, where they are represented as ERC20 tokens. It will not support movement of RUNE or THORChain native tokens to Ethereum.
 
 The MVP is split into four components:
- - the Ethereum smart contract for sending tokens into the Bifrost from Ethereum
- - the current THORChain Full Node and Validator, with additional bifrost and oracle modules
- - a signer process, that detects Bifrost requests to send to Ethereum, and signs them appropriately for Ethereum
- - a relayer process, that detects transactions to relay between THORChain and Ethereum
+ - the Ethereum smart contract for sending tokens into the Bifrost from Ethereum `ethBridge`
+ - the current THORChain Full Node and Validator `thorchaind`, with additional bifrost `tcBrifrost` and oracle modules `tcOracle`
+ - a signer process, that detects Bifrost requests to send to Ethereum, and signs them appropriately for Ethereum `tcSigner`
+ - a relayer process, that detects transactions to relay between THORChain and Ethereum `tcRelayer`
 
-Each node should run the relayer and signer process along with their THORChain process, which will watch both THORChain (through a local endpoint/socket) and Ethereum to trigger relaying. For the initial MVP, we can just use Infura for watching for and submitting transactions on Ethereum, but a short term priority thereafter will be to set up our own Ethereum full nodes.
+Each validator should run the relayer and signer process along with their THORChain process, which will watch both THORChain (through a local endpoint/socket) and Ethereum to trigger relaying. Validators can elect to run full or remote nodes (such as through infura) and is a optimisation decision only. 
 
-## Process Flow
+### Prerequisites
 
-Here's an example of the flow of an asset transfer of Ether or an ERC20 token from the Ethereum blockchain to THORChain:
+1) At least 4 validators running all processes
+2) All validators have a hot wallet with ether to pay for gas, and have logged their public addresses
+
+### Instantiating a Bridge
+
+1) A sponsoring validator "sponsor" proposes a new bridge to ethereum, by deploying the factory `ethBridge` contract. 
+2) Once deployed, the sponsor adds the `ethBridge` contract address in the `tcBridgeRegistry` module. 
+3) Opt-in validators nominate their public ethereum addresses in the `tcBridgeRegistry` module.
+4) Once the minimum quorum number `n + 1` is reached, the sponsor adds `n` validators as signatories to the `ethBridge` contract. 
+
+## User Experience Flow
 
 1. Alice sends a transaction with 10 Ether and a destination address to the Ethereum smart contract. The destination address is Alice's on THORChain.
 
@@ -41,33 +60,61 @@ Here's an example of the flow of an asset transfer of Ether or an ERC20 token fr
 
 6. Alice now sends 4 tEth to Bob on THORChain.
 
-7. Bob now sends those 4 tEth to Ethereum by submitting a transaction to the Bifrost module.
+7. Bob now sends those 4 tEth to Ethereum by submitting a transaction to the Bifrost module, which includes his ethereum address and the exit fee `f`.
 
 8. The signers each watch for and detect Bob's transaction. When they see it, they generate a signature and submit a transaction signing their approval to the Bifrost module.
 
 9. Once any relayer sees that `m of n` transactions are received by the Bifrost module, it posts Bob's original message and all signed messages to the Ethereum smart contract. (Note: For these steps 8 and 9, we may want to consider implementing/adapting the oracle module into some kind of 'reverse Oracle' like module that deals with aggregation and pruning of votes outside of the Bifrost module)
 
-10. The ethereum smart contract credits Bob with 4 Ether.
+10. The ethereum smart contract credits Bob with `4 - f` Ether, and `f / n` tEther to each of `n` participating validators.
 
-Alice started with 10 Ether on Ethereum. She sent all of them to THORChain. There she sent 4 tEth to Bob. Bob then redeemed those 4 tEth back to Ethereum.
+Alice started with 10 Ether on Ethereum. She sent all of them to THORChain. There she sent 4 tEth to Bob. Bob then redeemed those 4 tEth back to Ethereum (minus the exit fee).
 
-The end result is that Alice holds 6 tEth and 0 Ether and Bob holds 4 Ether and 0 tEth.
+The end result is that Alice holds 6 tEth and 0 Ether and Bob holds `4 - f` Ether and 0 tEth, and `n` validators have `f / n` tEth.
+
+### Updating a bridge
+
+Rotating a validator:
+
+1) Every `c` blocks on THORChain the `tcBifrost` module removes a validator, and adds a new one from the `tcBridgeRegistry` module. 
+2) All validators sign the process on the `ethBridge` contract
+
+
 
 # Components
 
-## Ethereum smart contract component
+## Ethereum bridge smart contract
 
-The smart contracts verify updates coming from THORChain
-using the known keys of the signing apps. The smart contracts
-track updates to the set of signer components, and their associated
-signatures. The smart contracts supports 6 functions:
+The smart contracts verify updates coming from THORChain using the known keys of the signing apps. The smart contracts track updates to the set of signer components, and their associated signatures. The smart contracts supports 6 functions:
 
 * `lock` ETH or ERC20 tokens for use in THORChain
 * `unlock` previously-locked (encumbered) ETH or ERC20 tokens
 * `update` signing app set signatures
-* `mint` ERC20 tokens for encumbered denominations
-* `burn` ERC20 tokens for encumbered denominations
 * `register` denomination
+
+### Lock
+
+```
+function lock(address _token, uint256 _value, uint256 _tcaddr) public payable returns(bool){
+
+require(_value > 0, "Must be attempting to send a non zero amount of tokens");
+
+        if(_token == address(0)){
+            require(msg.value == _value, "Sender must send ETH as payment");
+        } else {
+            IERC20 token = IERC20(_token);                                        
+            require(token.transferFrom(msg.sender, address(this), _value), "Sender must have approved the TKN transfer");
+        }
+
+        emit locked(_token, msg.sender, _tcaddr, _value);
+    }
+}
+```
+
+### Unlock, Update
+
+Adaption of the [Gnosis Multsig](https://github.com/gnosis/MultiSigWallet/blob/master/contracts/MultiSigWallet.sol) which checks the number of signatories first before making a transfer. 
+
 
 ## Oracle and Bifrost modules
 
@@ -81,9 +128,8 @@ The signing apps sign transactions using secp256k1 such that the Ethereum smart 
 
 ## Relayer component
 
-The relayer process is responsible for communication of state changes between Tendermint and Ethereum. It is stateless, and has at-least-once delivery semantics from one chain to another. If multiple relayers submit the same transaction to Ethereum and collide, they should get a nice error that informs them that the job is already done. If one relayer submits the same transaction to THORChain more than once, it should get a nice error informing it that the transaction has already been received. Then, every update delivered to either chain is idempotent.
+The relayer process is responsible for communication of state changes between Tendermint and Ethereum. It is stateless, and has at-least-once delivery semantics from one chain to another. If multiple relayers submit the same transaction to Ethereum and collide, they should get an error that informs them that the job is already done. If one relayer submits the same transaction to THORChain more than once, it should get an error informing it that the transaction has already been received. Then, every update delivered to either chain is idempotent.
 
-Generally anyone that wants their Bifrost to be successful has an incentive to run the relayer process.
 
 # Implementation steps
  - Quick audit of solidity codebase for Peggy to determine what can be used and what needs to be fixed
@@ -104,7 +150,7 @@ Generally anyone that wants their Bifrost to be successful has an incentive to r
 # Future additions
 Once this initial MVP is complete, there are some additions that can be made to improve the system.
 
-In the short term, improvements like running our own ethereum full nodes, and distributing our architecture such that relayers, signers, ethereum full nodes, thorchain full nodes and thorchain validator nodes to not need to run on the same virtual machine will be important reliability/performance and security improvements to make.
+In the short term, improvements like running ethereum full nodes, and distributing our architecture such that relayers, signers, ethereum full nodes, thorchain full nodes and thorchain validator nodes to not need to run on the same virtual machine will be important reliability/performance and security improvements to make.
 
 In the medium term, improvements to deal with potential malicious validator behaviour and unhappy paths in the system, like exploring fraud proofs for some scenarios and considering governance solutions should be explored.
 
