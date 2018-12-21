@@ -90,7 +90,7 @@ RelayerData is reported as:
 ```go
 type relayerData struct {
   dataPath        string               //  Filepath to the chaindata '/home/user/gethDataDir/geth/chaindata'
-  confRPC         uint256              //  API or RPC to get conf number 'web3.eth.blockNumber-web3.eth.getTransaction(<txhash>).blockNumber'
+  confRPC         string               //  API or RPC to get conf number 'web3.eth.blockNumber-web3.eth.getTransaction(<txhash>).blockNumber'
   chainHash         uint256             //  Hash of full chain data
 }
 ```
