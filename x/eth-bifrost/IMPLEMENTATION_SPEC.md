@@ -1,4 +1,4 @@
-# The THORChain <--> Ethereum bifrost
+# The THORChain <--> Ethereum Bifrost
 
 ## Introduction
 
@@ -6,8 +6,6 @@ This document acts as a guide to implementors of the THORChain/Ethereum Bifrost 
 
 ### Related Reading
 This spec is heavily based on the Cosmos Peggy project spec (https://github.com/cosmos/peggy/blob/master/spec/readme.md) and new Cosmos oracle module (https://github.com/cosmos/cosmos-sdk/blob/master/examples/democoin/x/oracle/README.md). Make sure to read and understand both of those first.
-
-Code from those projects will be relevant too, but the license has not yet been confirmed for Peggy (see https://github.com/cosmos/peggy/issues/44). The Solidity Ethereum smart contract code looks fairly usable, but may require some adaptation and additions. The Peggy Go code is mostly boilerplate and not really useful. The Rust witness code should probably not be used. The Cosmos oracle module looks usable, but may require some adaptation and additions.
 
 ## Design Principles
 To ensure the Bifrost Protocol is widely extensible to most other blockchains, the following are the principles that are adhered to:
@@ -21,30 +19,128 @@ Validators on THORChain opt-in to maintain bridges based on economic incentives 
 3) Bridges have observable security. 
 Continuous liquidity pools allow asset pricing on THORChain which enables validators to preserve security thresholds on each bridge. Bridges with weak security are corrected by diluting the value of escrowed assets across more bridges. 
 
->For this Ethereum spec, we do not treat the process for nominating a new blockchain to be bridged (will require robust on-chain goverance), so we require that the bridge is already instantiated with the starting signature set in the deployed multi-signature. 
+4) Bridge parties are never trusted. 
+An important distinction with the Bifrost Protocol is that it is signed by `m of n of k` signatures, which is a subset to the full validator set. This ensures liveness to the bridge, and allows a dynamic validator set, and by extension, a dynamic signing set. 
+
+`m` - minimum number of signatures
+`n` - quorum size
+`k` - maximum number of validators able to be quorum members
+
+> As starting defaults we choose `7 of 10 of 15`: 7 signatures required per bridge, quorum size of 10, with 15 cycled through the quorum. 
 
 ## Overview
-The Bifrost MVP will add functionality to THORChain that allows the movement of Ether and ERC20 from Ethereum to THORChain and back, where they are represented as ERC20 tokens. It will not support movement of RUNE or THORChain native tokens to Ethereum.
+The Bifrost MVP will add functionality to THORChain that allows the movement of Ether and ERC20 from Ethereum to THORChain and back, where they are represented as ERC20 tokens. For now it will not support movement of RUNE or THORChain native tokens to Ethereum.
 
-The MVP is split into four components:
+The MVP is split into five components:
  - the Ethereum smart contract for sending tokens into the Bifrost from Ethereum `ethBridge`
- - the current THORChain Full Node and Validator `thorchaind`, with additional bifrost `tcBrifrost` and oracle modules `tcOracle`
+ - the current THORChain Full Node and Validator `thorchaind`, with additional bifrost `tcBifrost` and oracle modules `tcOracle`
  - a signer process, that detects Bifrost requests to send to Ethereum, and signs them appropriately for Ethereum `tcSigner`
  - a relayer process, that detects transactions to relay between THORChain and Ethereum `tcRelayer`
+ - a datastore containing the registry and configuration for bridges `tcBridgeRegistry`
 
 Each validator should run the relayer and signer process along with their THORChain process, which will watch both THORChain (through a local endpoint/socket) and Ethereum to trigger relaying. Validators can elect to run full or remote nodes (such as through infura) and is a optimisation decision only. 
 
 ### Prerequisites
 
-1) At least 4 validators running all processes
-2) All validators have a hot wallet with ether to pay for gas, and have logged their public addresses
+1) At least 15 validators running all processes.
+
+### Registering a Bridged Blockchain
+
+Validators elect to add blockchains to THORChain's Bifrost. They propose a new blockchain which contains details on how to sync and report on chainstate, as well as deterministic information about the blockchain. 
+
+1) A sponsoring validator "sponsor" proposes a new entry to `tcBridgeRegistry` with flag `proposed` which contains:
+
+```go
+type bridgeProposal struct {
+  Name              string              //  Name of Bridged Blockchain
+  Ticker .          string              //  Ticker of base token
+  Description       string              //  Description of Blockchain
+  URI               string              //  Resource URI for blockchain (logo, website, github)
+  factoryContract   bytes               //  ABI code for the factory contract
+  RelayerInst       string              //  Plaintext of how to link Relayer (including code for ABI)
+  RelayerData       relayerData .       //  Object describing relayerData
+  ChainData         chainData           //  Object describing chainData
+  Cycle             int64               //  Number of blocks to cycle quorum
+  Confirmations     int64               //  Number of confirmations to observe for on chain
+  QuorumBuffer      int64               //  Number of blocks that a validator can enter quorum with
+  minAssets         int64               //  The minimum amount of ether on the public address for gas
+  Votes             map[string]int64    //  Votes for each option (Yes, No, Abstain)
+  Address           map[uint256]address //  Public addresses mapped after voting
+}
+```
+
+ChainData is reported as:
+
+```go
+type chainData struct {
+  blockHeight       int64               //  Blockheight declared
+  blockHash         uint256             //  Blockhash at Blockheight
+  chainHash         uint256             //  Hash of full chain data
+}
+```
+
+RelayerData is reported as:
+```go
+type relayerData struct {
+  dataPath        string               //  Filepath to the chaindata '/home/user/gethDataDir/geth/chaindata'
+  confRPC         uint256              //  API or RPC to get conf number 'web3.eth.blockNumber-web3.eth.getTransaction(<txhash>).blockNumber'
+  chainHash         uint256             //  Hash of full chain data
+}
+```
+
+>The Relayer is instructed on where to look for the new chaindata on disk by registering the filepath to the chaindata, such as `'/home/user/gethDataDir/geth/chaindata'`. Once linked, the relayer will scan the chaindata for the matching blockheight and hash, using `confRPC` to check for confirmation count. These details can be over-ridden in a local config file if the validator is using a different client. 
+
+2) Via Cosmos on-chain governance, the proposal is accepted and flagged as `approved` once 15 signatures are collected:
+* 15 validators must agree with the declared blockheight, blockhash and chaindata hash. 
+* Accepting validators register their public address in the data store
+
+>The index accepted for the blockchain now becomes the CLP index. The CLP inherits the proposed details of the blockchain (Name, ticker, description, URI). All 15 validators are now added to `tcBridgeRegistry` as quorum-compliant. 
+
+> If a group of validators disagree with the chaindata, they can propose a corrected proposal. If both proposals are accepted, then two different blockchains are linked - this is fine, since it indicates the external blockchain is forked. 
+
+The quorum list in `tcBridgeRegistry` now contains the full list of validators in the following states:
+
+* `Non-compliant` - reporting outdated chaindata (older than `QuorumBuffer`)
+* `Compliant` - reporting chaindata inside of `QuorumBuffer`
+* `Quorum` - participating in quorum for a bridge. Requires a bridge index.
+* `BridgeIndex` - if more than one bridge per blockchain.
+
+3) Anyone can now send a genesis transaction `genTx` that will create the CLP for the bridge. The `genTx` has the following details:
+* The `approved` CLP to `activate`.
+* The Rune used in the `genTX` is the Rune side of the CLP.
+* The Token side is created with 0 tokens, which effectively locks the CLP.
+* The CLP is linked to whatever blockchain that is reported on in `tcBridgeRegistry` under the correct index.
+
+The blockchain is now bridged from the THORChain side. Even without assets the shuffling process begin:
+
+4) Every cycle the proposing validator removes the psuedo-randomly chosen validator from quorum from each bridge, and replaces them with a compliant validator.
+* The `tcBifrost` module orchestrates the update to the states of validators `tcBridgeRegistry`.
+* The `tcSigner` process then collects signatures for the `ethBridge` smart contract to enact the signature shuffling. 
+* The `tcRelayer` process reports the events.
+
+> If the number of bridges exceed `k - m`, then validators will be shuffled through each bridge quorum, before idling in a compliant state. 
+
+> ChainData is continually reported to ensure compliant validators. 
+
+#### Error Handling
+
+1) Insufficient `minAssets` on validator wallets
+>  Validators are required to keep the minimum amount of assets on-chain to pay for gas. If below, the become `non-compliant` with a reason
+
+2) Mismatched/non-existant ChainData reported. 
+> Validator is removed from quorum on next cycle, and labelled as `non-compliant`. Note - they may still be able to sign transactions. 
+
 
 ### Instantiating a Bridge
 
+Once a bridge is registered, it needs to be functionally linked. 
+
 1) A sponsoring validator "sponsor" proposes a new bridge to ethereum, by deploying the factory `ethBridge` contract. 
-2) Once deployed, the sponsor adds the `ethBridge` contract address in the `tcBridgeRegistry` module. 
-3) Opt-in validators nominate their public ethereum addresses in the `tcBridgeRegistry` module.
-4) Once the minimum quorum number `n + 1` is reached, the sponsor adds `n` validators as signatories to the `ethBridge` contract. 
+* The sponsor proposes the `ethBridge` contract address in the `tcBridgeRegistry` module.
+* If validators agree the `ethBridge` contract meets the factory standard (check `factoryContract` bytecode), then they vote to integrate. 
+* The sponsor adds all quorum validators to the `ethBridge` contract.
+
+> Another
 
 ## User Experience Flow
 
