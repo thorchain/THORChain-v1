@@ -10,16 +10,20 @@ This spec is heavily based on the Cosmos Peggy project spec (https://github.com/
 ## Design Principles
 To ensure the Bifrost Protocol is widely extensible to most other blockchains, the following are the principles that are adhered to:
 
-1) The protocol is assymetrically complex to THORChain. 
+1) *The protocol is assymetrically complex to THORChain.* 
+
 The modules that govern bridge logic and security are implementated on the THORChain side. All that is required on the blockchain side is an ability to process multi-signatures (bitcoin, monero) or multi-signature emulatations (ethereum). Sponsoring, registering and maintaining a bridge is all completed from THORChain modules. This reduces technical burden and allows bridges to scale to many blockchains.
 
-2) The protocol is opt-in. 
+2) *The protocol is opt-in.*
+
 Validators on THORChain opt-in to maintain bridges based on economic incentives only. This minimises risk to validators who may or may not want to support bridges from jurisdictional pressure, as well as ensuring the bridges are scalable across many blockchains. 
 
-3) Bridges have observable security. 
+3) *Bridges have observable security.*
+
 Continuous liquidity pools allow asset pricing on THORChain which enables validators to preserve security thresholds on each bridge. Bridges with weak security are corrected by diluting the value of escrowed assets across more bridges. 
 
-4) Bridge parties are never trusted. 
+4) *Bridge parties are never trusted.*
+
 An important distinction with the Bifrost Protocol is that it is signed by `m of n of k` signatures, which is a subset to the full validator set. This ensures liveness to the bridge, and allows a dynamic validator set, and by extension, a dynamic signing set. 
 
 `m` - minimum number of signatures
@@ -303,11 +307,58 @@ Updating signatories:
     }
 ```
 
-## Oracle and Bifrost modules
+## THORChain Modules
+
+### Oracle Module
 
 The Oracle module, adapted from Cosmos's existing module, is responsible for accepting transactions from multiple validators and waiting until an `m on n` threshold to then trigger an action in another module.
 
+### Bifrost Module
 The Bifrost module is responsible for accepting actions from the Oracle module which result in creation of new tEth or tERC20 on THORChain, as well as accepting transactions from users who want to send tEth/tERC20 back out the Bifrost into Ethereum. It is responsible for managing transfers, mints/burns, and CLP changes as part of these processes.
+
+#### Fee Sub-module
+The fee component utilises the Relayer process in order to determine the loss of fungibility in the bridge, and uses outgoing transactions to restore it, as well as incentivising validators to be part of quorum. Users are shown the expected fees to exit, as well as choosing a miner fee. Miner fee pays for the gas of the outgoing transaction. 
+
+*Exit Fee*
+1) The total number of assets in the bridge are monitored `a`
+2) The total number of assets in the CLP are monitored `a'`
+3) The deficiency is `d = a' - a`
+4) The miner fee `mfee` is calculated as `g * n`, where `g = gas estimated`
+5) The exit fee is thus `2 * (d + mfee)`, charged to the user. 
+
+*Validator Reward*
+The exit fee pays the deficiency (if any), the mining fee, as well as the bridge reward, such that each validator party to the bridge receives `(d + mfee) / n`. 
+
+> The multi-signature contract should be adjusted to pay out to `n` validators in ether the `mfee / n` with the outgoing transaction to cover the mining fee. If this is difficult, the mining fee can be paid alongside the actual reward in tEther, to prevent a continual unnecessary bleed of assets out of THORChain. 
+
+#### Rebalancing Module
+
+The rebalancing module continually tracks the total value of assets based on CLP pricing, and ensures they are evenly distributed along enough bridges. This prevents a bridge having more assets than is safe. 
+
+1) The total value of `m` stakes in quorum is tracked `quorumStake`
+2) The value of the bridge is monitored `v`, 
+3) If `quorumStake < (2 * v)`, then the bridge is insecure, with the difference `s`
+4) The difference `s` is then atomically sent to a bridge that does not exceed security in a designated cycle
+
+#### Fraud-proof Module
+
+The fraud-proof module process fraud-proofs and enables slashing of malicious validators. A user who wishes to exit a bridge performs the following transaction on THORChain, called an exitRequestTx:
+
+exit[<coin>, <amount>, <bridge>, <destinationAddr>, <fee>]
+
+Once published on-chain, bridge nodes will be in possession of the `exitRequestTx` (instantly final) and any one of them will initiate the spend transaction by gossiping their signed spend transaction, based on the user’s request. The spend transaction will include a hash of the `exitRequestTx`. The rest of the nodes will also gossip their spend transaction and collect incoming signatures. Any gossiped `spendTx` that are received by Bridge nodes with the following conditions, will result in the offending node being booted from Quorum, and the `spendTx` marked as invalid:
+
+* Missing an accompanying `exitRequestTx` hash
+* SpendTx differing from exitRequestTx in any manner (addr, amount, fee)
+
+This will prevent an incorrect (or fraudulent) spendTX from being propagated. If any of the nodes observe another node publishing on the bridgeChain a `spendTx`, the following is true:
+
+* Any node can prove a fraud exists (`onChainSpendtx` differs to `exitRequestTx`)
+* Any node can prove the fraudulent actor (the signed tx matches the previously declared Bitcoin Public Key).
+
+> Note: the assets are still safe as the multi-sig bridge wallet requires a supermajority to sign on-chain.
+
+The bridge nodes will then sign and gossip a `FraudProofTX` with the `onChainSpendtx` and the `exitRequestTx` to the Quorum. Each node in the Quorum that receives a `FraudProofTX` will add their signature if they agree, until 67% of the signatures are collected. At this point any node can publish the final signed FraudProofTx on-chain to THORChain. The block producer for that block (which may not have visibility of the BridgeChain) will be able to validate the `FraudProofTX` as long 67% of the quorum have signed (which they do have visibility of). The block will be fully-validated by 67% of THORChain validators, which includes a transaction to slash the offending Node and distribute to all non-offending Validators.
 
 ## Signer component
 
