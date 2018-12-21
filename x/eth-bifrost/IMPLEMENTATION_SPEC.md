@@ -10,19 +10,19 @@ This spec is heavily based on the Cosmos Peggy project spec (https://github.com/
 ## Design Principles
 To ensure the Bifrost Protocol is widely extensible to most other blockchains, the following are the principles that are adhered to:
 
-1) *The protocol is assymetrically complex to THORChain.* 
+1) **The protocol is assymetrically complex to THORChain.**
 
 The modules that govern bridge logic and security are implementated on the THORChain side. All that is required on the blockchain side is an ability to process multi-signatures (bitcoin, monero) or multi-signature emulatations (ethereum). Sponsoring, registering and maintaining a bridge is all completed from THORChain modules. This reduces technical burden and allows bridges to scale to many blockchains.
 
-2) *The protocol is opt-in.*
+2) **The protocol is opt-in.**
 
 Validators on THORChain opt-in to maintain bridges based on economic incentives only. This minimises risk to validators who may or may not want to support bridges from jurisdictional pressure, as well as ensuring the bridges are scalable across many blockchains. 
 
-3) *Bridges have observable security.*
+3) **Bridges have observable security.**
 
 Continuous liquidity pools allow asset pricing on THORChain which enables validators to preserve security thresholds on each bridge. Bridges with weak security are corrected by diluting the value of escrowed assets across more bridges. 
 
-4) *Bridge parties are never trusted.*
+4) **Bridge parties are never trusted.**
 
 An important distinction with the Bifrost Protocol is that it is signed by `m of n of k` signatures, which is a subset to the full validator set. This ensures liveness to the bridge, and allows a dynamic validator set, and by extension, a dynamic signing set. 
 
@@ -319,14 +319,14 @@ The Bifrost module is responsible for accepting actions from the Oracle module w
 #### Fee Sub-module
 The fee component utilises the Relayer process in order to determine the loss of fungibility in the bridge, and uses outgoing transactions to restore it, as well as incentivising validators to be part of quorum. Users are shown the expected fees to exit, as well as choosing a miner fee. Miner fee pays for the gas of the outgoing transaction. 
 
-*Exit Fee*
+**Exit Fee**
 1) The total number of assets in the bridge are monitored `a`
 2) The total number of assets in the CLP are monitored `a'`
 3) The deficiency is `d = a' - a`
 4) The miner fee `mfee` is calculated as `g * n`, where `g = gas estimated`
 5) The exit fee is thus `2 * (d + mfee)`, charged to the user. 
 
-*Validator Reward*
+**Validator Reward**
 The exit fee pays the deficiency (if any), the mining fee, as well as the bridge reward, such that each validator party to the bridge receives `(d + mfee) / n`. 
 
 > The multi-signature contract should be adjusted to pay out to `n` validators in ether the `mfee / n` with the outgoing transaction to cover the mining fee. If this is difficult, the mining fee can be paid alongside the actual reward in tEther, to prevent a continual unnecessary bleed of assets out of THORChain. 
@@ -342,9 +342,9 @@ The rebalancing module continually tracks the total value of assets based on CLP
 
 #### Fraud-proof Module
 
-The fraud-proof module process fraud-proofs and enables slashing of malicious validators. A user who wishes to exit a bridge performs the following transaction on THORChain, called an exitRequestTx:
+The fraud-proof module process fraud-proofs and enables slashing of malicious validators. A user who wishes to exit a bridge performs the following transaction on THORChain, called an `exitRequestTx`:
 
-exit[<coin>, <amount>, <bridge>, <destinationAddr>, <fee>]
+`exit[<coin>, <amount>, <bridge>, <destinationAddr>, <fee>]`
 
 Once published on-chain, bridge nodes will be in possession of the `exitRequestTx` (instantly final) and any one of them will initiate the spend transaction by gossiping their signed spend transaction, based on the user’s request. The spend transaction will include a hash of the `exitRequestTx`. The rest of the nodes will also gossip their spend transaction and collect incoming signatures. Any gossiped `spendTx` that are received by Bridge nodes with the following conditions, will result in the offending node being booted from Quorum, and the `spendTx` marked as invalid:
 
