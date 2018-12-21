@@ -23,7 +23,9 @@ Continuous liquidity pools allow asset pricing on THORChain which enables valida
 An important distinction with the Bifrost Protocol is that it is signed by `m of n of k` signatures, which is a subset to the full validator set. This ensures liveness to the bridge, and allows a dynamic validator set, and by extension, a dynamic signing set. 
 
 `m` - minimum number of signatures
+
 `n` - quorum size
+
 `k` - maximum number of validators able to be quorum members
 
 > As starting defaults we choose `7 of 10 of 15`: 7 signatures required per bridge, quorum size of 10, with 15 cycled through the quorum. 
@@ -80,6 +82,7 @@ type chainData struct {
 ```
 
 RelayerData is reported as:
+
 ```go
 type relayerData struct {
   dataPath        string               //  Filepath to the chaindata '/home/user/gethDataDir/geth/chaindata'
@@ -92,7 +95,7 @@ type relayerData struct {
 
 2) Via Cosmos on-chain governance, the proposal is accepted and flagged as `approved` once 15 signatures are collected:
 * 15 validators must agree with the declared blockheight, blockhash and chaindata hash. 
-* Accepting validators register their public address in the data store
+* Accepting validators register their public address in the data store.
 
 >The index accepted for the blockchain now becomes the CLP index. The CLP inherits the proposed details of the blockchain (Name, ticker, description, URI). All 15 validators are now added to `tcBridgeRegistry` as quorum-compliant. 
 
@@ -111,12 +114,10 @@ The quorum list in `tcBridgeRegistry` now contains the full list of validators i
 * The Token side is created with 0 tokens, which effectively locks the CLP.
 * The CLP is linked to whatever blockchain that is reported on in `tcBridgeRegistry` under the correct index.
 
-The blockchain is now bridged from the THORChain side. Even without assets the shuffling process begin:
+The blockchain is now bridged from the THORChain side. Even without assets the shuffling process can begin:
 
 4) Every cycle the proposing validator removes the psuedo-randomly chosen validator from quorum from each bridge, and replaces them with a compliant validator.
 * The `tcBifrost` module orchestrates the update to the states of validators `tcBridgeRegistry`.
-* The `tcSigner` process then collects signatures for the `ethBridge` smart contract to enact the signature shuffling. 
-* The `tcRelayer` process reports the events.
 
 > If the number of bridges exceed `k - m`, then validators will be shuffled through each bridge quorum, before idling in a compliant state. 
 
@@ -127,7 +128,7 @@ The blockchain is now bridged from the THORChain side. Even without assets the s
 1) Insufficient `minAssets` on validator wallets
 >  Validators are required to keep the minimum amount of assets on-chain to pay for gas. If below, the become `non-compliant` with a reason
 
-2) Mismatched/non-existant ChainData reported. 
+2) Mismatched/non-existent ChainData reported. 
 > Validator is removed from quorum on next cycle, and labelled as `non-compliant`. Note - they may still be able to sign transactions. 
 
 
@@ -140,41 +141,72 @@ Once a bridge is registered, it needs to be functionally linked.
 * If validators agree the `ethBridge` contract meets the factory standard (check `factoryContract` bytecode), then they vote to integrate. 
 * The sponsor adds all quorum validators to the `ethBridge` contract.
 
-> Another
+Once the bridge is linked, the cycle will now include the signer and relayer processes:
 
-## User Experience Flow
+* The `tcBifrost` module orchestrates the update to the states of validators `tcBridgeRegistry`.
+* The `tcSigner` process then collects signatures for the `ethBridge` smart contract to enact the signature shuffling. 
+* The `tcRelayer` process reports the events.
 
-1. Alice sends a transaction with 10 Ether and a destination address to the Ethereum smart contract. The destination address is Alice's on THORChain.
+The bridge is ready. 
 
-2. Each relayer detects an Ethereum smart contract event from that transaction, and after the finality threshold (say, 100 blocks) attests to the fact by submitting a THORChain transaction to the oracle module
 
-3. Once `m of n` transactions are received by the oracle, it triggers the Bifrost module kicking off the transfer.
+### Incoming Assets
 
-4. The Bifrost module receives the message and credits the destination address from step 1 with 10 tEth, updating the effective supply tracked by the CLP.
+1. Alice sends a transaction to the bridge contract:
+* Includes the token type, value amount and a destination address to the Ethereum smart contract. The destination address is Alice's on THORChain.
 
-5. Alice receives the 10 tEth on THORChain.
+2. Each relayer detects an Ethereum event from that transaction:
+* After the confirmation threshold attests to the fact by submitting a THORChain transaction to the `tcOracle` module.
+* Once `n` transactions are received by the oracle, it triggers the Bifrost module kicking off the transfer.
 
-6. Alice now sends 4 tEth to Bob on THORChain.
+> Instead of `m`, `n` signatures are chosen since if the bridge is valid, 100% of the subset should be able to attest to the transaction. Additionally, it will be very disruptive to roll an incoming asset transfer back. 
 
-7. Bob now sends those 4 tEth to Ethereum by submitting a transaction to the Bifrost module, which includes his ethereum address and the exit fee `f`.
+4. The Bifrost module receives the message:
+ * Credits the destination address with the asset value
+ * Updates the effective supply tracked by the CLP.
 
-8. The signers each watch for and detect Bob's transaction. When they see it, they generate a signature and submit a transaction signing their approval to the Bifrost module.
+> Alice receives the assets on her THORChain address.
 
-9. Once any relayer sees that `m of n` transactions are received by the Bifrost module, it posts Bob's original message and all signed messages to the Ethereum smart contract. (Note: For these steps 8 and 9, we may want to consider implementing/adapting the oracle module into some kind of 'reverse Oracle' like module that deals with aggregation and pruning of votes outside of the Bifrost module)
+#### Error Handling
+The following are the errors to handle on the smart contract:
+* Non-tracked token -> smart contract to reject
+* Non-valid destination address -> smart contract to reject
+* NaN value transfer -> reject
 
-10. The ethereum smart contract credits Bob with `4 - f` Ether, and `f / n` tEther to each of `n` participating validators.
+On the THORChain side:
+* `m` signatures aren't collected from offline validators -> wait until the bridge is cycled.
+* Incorrect value amount -> should not collect `n` signatures.
+* Incorrect address credited -> should not collect `n` signatures.
 
-Alice started with 10 Ether on Ethereum. She sent all of them to THORChain. There she sent 4 tEth to Bob. Bob then redeemed those 4 tEth back to Ethereum (minus the exit fee).
+> For a deep chain re-org, on-chain governance will be required to socialise losses (or underwrite them from a community fund).
 
-The end result is that Alice holds 6 tEth and 0 Ether and Bob holds `4 - f` Ether and 0 tEth, and `n` validators have `f / n` tEth.
+### Outgoing Assets
 
-### Updating a bridge
+1. Bob now sends assets to Ethereum by submitting a transaction to the Bifrost module, 
+* Includes his destination ethereum address with value `x`
+* Exit fee is set as `f`.
 
-Rotating a validator:
+> Note: this transaction is not finalised until 67% of validators commit it as a valid transaction. This enables fraud-proofs to be published in the next step. 
 
-1) Every `c` blocks on THORChain the `tcBifrost` module removes a validator, and adds a new one from the `tcBridgeRegistry` module. 
-2) All validators sign the process on the `ethBridge` contract
+2. The bridge signers each watch for and detect Bob's transaction:
+* Generate a signature and submit a transaction signing their approval to the Bifrost module.
+* Once any relayer sees that `m of n` transactions are received by the Bifrost module, it posts Bob's original message and all signed messages to the Ethereum smart contract. 
 
+3. The funds are dispersed:
+* The ethereum smart contract credits Bob with `x - f` Ether
+* The Bifrost Module credits `f / n` tEther to each of `n` participating validators.
+
+>Bob holds `x - f` Ether and 0 tEth, and `n` validators have `f / n` tEth.
+
+#### Error Handling
+On the THORChain side:
+* A validator may attempt to spend an invalid transaction -> slash
+* Incorrect ethereum address -> error check first
+* Incorrect value amount -> sanity check first
+
+On smart contract side:
+* Not all validators may have enough gas -> wait until bridge cycle
+* Not all validators may be online -> wait until bridge cycle
 
 
 # Components
@@ -186,11 +218,15 @@ The smart contracts verify updates coming from THORChain using the known keys of
 * `lock` ETH or ERC20 tokens for use in THORChain
 * `unlock` previously-locked (encumbered) ETH or ERC20 tokens
 * `update` signing app set signatures
-* `register` denomination
 
 ### Lock
 
 ```
+    /// @dev User to send incoming assets.
+    /// @param _token Token to transfer (address(0) is ether).
+    /// @param _value Value to transfer.
+    /// @param _tcaddr Address of recipient.
+    
 function lock(address _token, uint256 _value, uint256 _tcaddr) public payable returns(bool){
 
 require(_value > 0, "Must be attempting to send a non zero amount of tokens");
@@ -211,6 +247,61 @@ require(_value > 0, "Must be attempting to send a non zero amount of tokens");
 
 Adaption of the [Gnosis Multsig](https://github.com/gnosis/MultiSigWallet/blob/master/contracts/MultiSigWallet.sol) which checks the number of signatories first before making a transfer. 
 
+Submitting a transaction:
+
+```
+
+    /// @dev Allows an owner to submit and confirm a transaction.
+    /// @param destination Transaction target address.
+    /// @param value Transaction ether value.
+    /// @param data Transaction data payload.
+    /// @return Returns transaction ID.
+    function submitTransaction(address destination, uint value, bytes data)
+        public
+        returns (uint transactionId)
+    {
+        transactionId = addTransaction(destination, value, data);
+        confirmTransaction(transactionId);
+    }
+
+    /// @dev Allows an owner to confirm a transaction.
+    /// @param transactionId Transaction ID.
+    function confirmTransaction(uint transactionId)
+        public
+        ownerExists(msg.sender)
+        transactionExists(transactionId)
+        notConfirmed(transactionId, msg.sender)
+    {
+        confirmations[transactionId][msg.sender] = true;
+        Confirmation(msg.sender, transactionId);
+        executeTransaction(transactionId);
+    }
+
+```
+
+Updating signatories:
+
+```
+    /// @dev Allows to replace an owner with a new owner. Transaction has to be sent by wallet.
+    /// @param owner Address of owner to be replaced.
+    /// @param newOwner Address of new owner.
+    function replaceOwner(address owner, address newOwner)
+        public
+        onlyWallet
+        ownerExists(owner)
+        ownerDoesNotExist(newOwner)
+    {
+        for (uint i=0; i<owners.length; i++)
+            if (owners[i] == owner) {
+                owners[i] = newOwner;
+                break;
+            }
+        isOwner[owner] = false;
+        isOwner[newOwner] = true;
+        OwnerRemoval(owner);
+        OwnerAddition(newOwner);
+    }
+```
 
 ## Oracle and Bifrost modules
 
@@ -225,7 +316,6 @@ The signing apps sign transactions using secp256k1 such that the Ethereum smart 
 ## Relayer component
 
 The relayer process is responsible for communication of state changes between Tendermint and Ethereum. It is stateless, and has at-least-once delivery semantics from one chain to another. If multiple relayers submit the same transaction to Ethereum and collide, they should get an error that informs them that the job is already done. If one relayer submits the same transaction to THORChain more than once, it should get an error informing it that the transaction has already been received. Then, every update delivered to either chain is idempotent.
-
 
 # Implementation steps
  - Quick audit of solidity codebase for Peggy to determine what can be used and what needs to be fixed
@@ -251,25 +341,3 @@ In the short term, improvements like running ethereum full nodes, and distributi
 In the medium term, improvements to deal with potential malicious validator behaviour and unhappy paths in the system, like exploring fraud proofs for some scenarios and considering governance solutions should be explored.
 
 More long term, evolving the Bifrost into the more robust mechansims described in the main Bifrost whitepaper should become a priority (https://github.com/thorchain/Resources/blob/master/Whitepapers/Bifrost-Protocol/whitepaper-en.md). Some valuable additions will be the SPV and gossip network features, and an exploration of using VRFs.
-
-# Appendix
-
-## Example Ethereum Smart Contract External Entry Points (taken from Peggy)
-
-### lock(bytes to, uint64 value, address token) external payable returns (bool)
-
-Locks Ethereum user's ethers/ERC20s in the contract and loggs an event. Called by the users.
-
-* `token` being `0x0` means ethereum; in this case `msg.value` must be same with `value`
-* `event Lock(bytes to, uint64 value, address token)` is logged, seen by the relayers
-
-### unlock(address[2] addressArg, uint64 value, bytes chain, uint16[] signers, uint8[] v, bytes32[] r, bytes32[] s) external returns (bool)
-
-Unlocks Ethereum tokens according to the information from the pegzone. Called by the relayers.
-
-* `addressArg[0]` == `to`, `addressArg[1]` == `token`
-* transfer tokens to `to`
-* hash value for `ecrecover` is calculated as:
-```
-byte(1) + to.Bytes() + value.PutUint64() + chain.length.PutUint256() + chain
-```
