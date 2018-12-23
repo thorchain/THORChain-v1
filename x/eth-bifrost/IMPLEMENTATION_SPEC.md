@@ -1,11 +1,16 @@
-# The THORChain <--> Ethereum Bifrost
+# The THORChain <--> Ethereum Bifrost Specification
 
 ## Introduction
 
 This document acts as a guide to implementors of the THORChain/Ethereum Bifrost to allow for Ethereum and ERC-20 tokens to move between THORChain and Ethereum.
 
 ### Related Reading
-This spec is heavily based on the Cosmos Peggy project spec (https://github.com/cosmos/peggy/blob/master/spec/readme.md) and new Cosmos oracle module (https://github.com/cosmos/cosmos-sdk/blob/master/examples/democoin/x/oracle/README.md). Make sure to read and understand both of those first.
+
+The Main Bifrost Whitepaper: https://github.com/thorchain/Resources/blob/master/Whitepapers/Bifrost-Protocol/whitepaper-en.md
+
+The Bifrost Networking Spec: https://github.com/thorchain/Resources/blob/master/Whitepapers/Bifrost-Protocol/networking-whitepaper-en.md
+
+This spec is also based on the Cosmos Peggy project spec (https://github.com/cosmos/peggy/blob/master/spec/readme.md) and new Cosmos oracle module (https://github.com/cosmos/cosmos-sdk/blob/master/examples/democoin/x/oracle/README.md). 
 
 ## Design Principles
 To ensure the Bifrost Protocol is widely extensible to most other blockchains, the following are the principles that are adhered to:
