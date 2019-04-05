@@ -1,35 +1,33 @@
-# The THORChain <--> Ethereum Bifrost Specification
+# Cosmos <-> Ethereum Bridge Specification
+By [Swish Labs](https://www.swishlabs.com/)
+With contributions from Aidan Musnitzky, Jazear Brooks, Philip Stanislaus, JP Thor and Jessica Watson Miller
 
 ## Introduction
 
-This document acts as a guide to implementors of the THORChain/Ethereum Bifrost to allow for Ethereum and ERC-20 tokens to move between THORChain and Ethereum.
+We present a design for a Cosmos-based decentralized bridge protocol, enabling the transfer of assets between blockchains without the use of a trusted third party such as an exchange. 
 
-### Related Reading
+This document acts as a guide to implementers of the initial Cosmos/Ethereum bridge to allow for Ethereum (and later ERC-20 tokens and Cosmos-based tokens) to move between the Cosmos and Ethereum networks. It describes the initial implementation of a proof-of-concept unidirectional Ethereum -> Cosmos bridge, as well as the further implementation of the complete bidirectional bridge architecture.
 
-The Main Bifrost Whitepaper: https://github.com/thorchain/Resources/blob/master/Whitepapers/Bifrost-Protocol/whitepaper-en.md
-
-The Bifrost Networking Spec: https://github.com/thorchain/Resources/blob/master/Whitepapers/Bifrost-Protocol/networking-whitepaper-en.md
-
-This spec is also based on the Cosmos Peggy project spec (https://github.com/cosmos/peggy/blob/master/spec/readme.md) and new Cosmos oracle module (https://github.com/cosmos/cosmos-sdk/blob/master/examples/democoin/x/oracle/README.md). 
+This spec is partially based on the Cosmos [Peggy project spec](https://github.com/cosmos/peggy/blob/master/spec/readme.md) and the new Cosmos [oracle module](https://github.com/cosmos/cosmos-sdk/blob/master/examples/democoin/x/oracle/README.md). 
 
 ## Design Principles
-To ensure the Bifrost Protocol is widely extensible to most other blockchains, the following are the principles that are adhered to:
+To ensure this bridge protocol is widely extensible to most other blockchains, we apply the following principles:
 
-1) **The protocol is assymetrically complex to THORChain.**
+1) **The protocol is assymetrically complex to Cosmos.**
 
-The modules that govern bridge logic and security are implementated on the THORChain side. All that is required on the blockchain side is an ability to process multi-signatures (bitcoin, monero) or multi-signature emulatations (ethereum). Sponsoring, registering and maintaining a bridge is all completed from THORChain modules. This reduces technical burden and allows bridges to scale to many blockchains.
+The modules that govern bridge logic and security are implementated on the Cosmos side. All that is required on the external blockchain side is an ability to process multi-signatures (Bitcoin, Monero) or multi-signature emulatations (Ethereum). Sponsoring, registering and maintaining a bridge is all completed through Cosmos modules. This reduces the technical burden of implementing a bridge and allows bridges to scale to many blockchains.
 
 2) **The protocol is opt-in.**
 
-Validators on THORChain opt-in to maintain bridges based on economic incentives only. This minimises risk to validators who may or may not want to support bridges from jurisdictional pressure, as well as ensuring the bridges are scalable across many blockchains. 
+Validators on Cosmos opt-in to maintain bridges based only on economic incentives. This minimises the risk to validators who may not want to defend bridges from jurisdictional pressure, as well as ensuring the bridges are scalable across many blockchains by utilizing diverse validator sets. 
 
 3) **Bridges have observable security.**
 
-Continuous liquidity pools allow asset pricing on THORChain which enables validators to preserve security thresholds on each bridge. Bridges with weak security are corrected by diluting the value of escrowed assets across more bridges. 
+Cosmos asset pricing modules allow validators to preserve security thresholds on each bridge. Weak security on a given bridge can be rectified by diluting the value of escrowed assets across more bridges. 
 
 4) **Bridge parties are never trusted.**
 
-An important distinction with the Bifrost Protocol is that it is signed by `m of n of k` signatures, which is a subset to the full validator set. This ensures liveness to the bridge, and allows a dynamic validator set, and by extension, a dynamic signing set. 
+An important distinction with this bridge protocol is that it is signed by `m of n of k` signatures, which is a subset to the full validator set. This ensures the bridge's liveness, and allows a dynamic validator set - and by extension, a dynamic signing set. 
 
 `m` - minimum number of signatures
 
@@ -39,17 +37,19 @@ An important distinction with the Bifrost Protocol is that it is signed by `m of
 
 > As starting defaults we choose `7 of 10 of 15`: 7 signatures required per bridge, quorum size of 10, with 15 cycled through the quorum. 
 
+For the MVP we will adhere to 1) and 4), and relax 2) and 3).
+
 ## Overview
-The Bifrost MVP will add functionality to THORChain that allows the movement of Ether and ERC20 from Ethereum to THORChain and back, where they are represented as ERC20 tokens. For now it will not support movement of RUNE or THORChain native tokens to Ethereum.
+The unidirectional MVP will add functionality to Cosmos that allows the movement of Ether to Cosmos, where they are represented as cETH tokens. For now it will not support the movement of ATOM or Cosmos native tokens to Ethereum, or of ERC20 tokens to Cosmos.
 
 The MVP is split into five components:
- - the Ethereum smart contract for sending tokens into the Bifrost from Ethereum `ethBridge`
- - the current THORChain Full Node and Validator `thorchaind`, with additional bifrost `tcBifrost` and oracle modules `tcOracle`
- - a signer process, that detects Bifrost requests to send to Ethereum, and signs them appropriately for Ethereum `tcSigner`
- - a relayer process, that detects transactions to relay between THORChain and Ethereum `tcRelayer`
- - a datastore containing the registry and configuration for bridges `tcBridgeRegistry`
+ - the Ethereum smart contract for sending tokens into the bridge from Ethereum `ethBridge`
+ - the current Cosmos Full Node and Validator `cosmosd`, with additional bridge `cBridge` and oracle modules `cOracle`
+ - a signer process, that detects bridge requests to send to Ethereum, and signs them appropriately for Ethereum `tcSigner`
+ - a relayer process, that detects transactions to relay between Cosmos and Ethereum `cRelayer`
+ - a datastore containing the registry and configuration for bridges `cBridgeRegistry`
 
-Each validator should run the relayer and signer process along with their THORChain process, which will watch both THORChain (through a local endpoint/socket) and Ethereum to trigger relaying. Validators can elect to run full or remote nodes (such as through infura) and is a optimisation decision only. 
+Each validator should run the relayer and signer process along with their Cosmos process, which will watch both Cosmos (through a local endpoint/socket) and Ethereum to trigger relaying. Validators can elect to run full or remote nodes (such as through Infura); this makes no difference for the bridge and is purely an optimization decision on the part of individual validators. 
 
 ### Prerequisites
 
@@ -57,9 +57,9 @@ Each validator should run the relayer and signer process along with their THORCh
 
 ### Registering a Bridged Blockchain
 
-Validators elect to add blockchains to THORChain's Bifrost. They propose a new blockchain which contains details on how to sync and report on chainstate, as well as deterministic information about the blockchain. 
+Validators elect to add blockchains to a given Cosmos bridge. Their proposal to add a new blockchain contains details on how to sync and report on chainstate, as well as deterministic information about the blockchain. 
 
-1) A sponsoring validator "sponsor" proposes a new entry to `tcBridgeRegistry` with flag `proposed` which contains:
+1) A sponsoring validator "sponsor" proposes a new entry to `cBridgeRegistry` with flag `proposed` which contains:
 
 ```go
 type bridgeProposal struct {
@@ -110,7 +110,7 @@ type relayerData struct {
 
 > If a group of validators disagree with the chaindata, they can propose a corrected proposal. If both proposals are accepted, then two different blockchains are linked - this is fine, since it indicates the external blockchain is forked. 
 
-The quorum list in `tcBridgeRegistry` now contains the full list of validators in the following states:
+The quorum list in `cBridgeRegistry` now contains the full list of validators in the following states:
 
 * `Non-compliant` - reporting outdated chaindata (older than `QuorumBuffer`)
 * `Compliant` - reporting chaindata inside of `QuorumBuffer`
@@ -135,7 +135,7 @@ The blockchain is now bridged from the THORChain side. Even without assets the s
 #### Error Handling
 
 1) Insufficient `minAssets` on validator wallets
->  Validators are required to keep the minimum amount of assets on-chain to pay for gas. If below, the become `non-compliant` with a reason
+>  Validators are required to keep the minimum amount of assets on-chain to pay for gas. If below, they become `non-compliant` with a reason
 
 2) Mismatched/non-existent ChainData reported. 
 > Validator is removed from quorum on next cycle, and labelled as `non-compliant`. Note - they may still be able to sign transactions. 
@@ -145,16 +145,16 @@ The blockchain is now bridged from the THORChain side. Even without assets the s
 
 Once a bridge is registered, it needs to be functionally linked. 
 
-1) A sponsoring validator "sponsor" proposes a new bridge to ethereum, by deploying the factory `ethBridge` contract. 
-* The sponsor proposes the `ethBridge` contract address in the `tcBridgeRegistry` module.
+1) A sponsoring validator "sponsor" proposes a new bridge to Ethereum, by deploying the factory `ethBridge` contract. 
+* The sponsor proposes the `ethBridge` contract address in the `cBridgeRegistry` module.
 * If validators agree the `ethBridge` contract meets the factory standard (check `factoryContract` bytecode), then they vote to integrate. 
 * The sponsor adds all quorum validators to the `ethBridge` contract.
 
 Once the bridge is linked, the cycle will now include the signer and relayer processes:
 
-* The `tcBifrost` module orchestrates the update to the states of validators `tcBridgeRegistry`.
-* The `tcSigner` process then collects signatures for the `ethBridge` smart contract to enact the signature shuffling. 
-* The `tcRelayer` process reports the events.
+* The `cBridge` module orchestrates the update to the states of validators `cBridgeRegistry`.
+* The `cSigner` process then collects signatures for the `ethBridge` smart contract to enact the signature shuffling. 
+* The `cRelayer` process reports the events.
 
 The bridge is ready. 
 
@@ -188,6 +188,10 @@ On the THORChain side:
 * Incorrect address credited -> should not collect `n` signatures.
 
 > For a deep chain re-org, on-chain governance will be required to socialise losses (or underwrite them from a community fund).
+
+### Future work on the bidirectional bridge protocol
+
+?allows the movement of Ether and ERC20 from Ethereum to THORChain and back, where they are represented as ERC20 tokens. For now it will not support movement of RUNE or THORChain native tokens to Ethereum.
 
 ### Outgoing Assets
 
@@ -312,14 +316,14 @@ Updating signatories:
     }
 ```
 
-## THORChain Modules
+## Cosmos Modules
 
 ### Oracle Module
 
 The Oracle module, adapted from Cosmos's existing module, is responsible for accepting transactions from multiple validators and waiting until an `m on n` threshold to then trigger an action in another module.
 
-### Bifrost Module
-The Bifrost module is responsible for accepting actions from the Oracle module which result in creation of new tEth or tERC20 on THORChain, as well as accepting transactions from users who want to send tEth/tERC20 back out the Bifrost into Ethereum. It is responsible for managing transfers, mints/burns, and CLP changes as part of these processes.
+### Bridge Module
+The Bridge module is responsible for accepting actions from the Oracle module which result in creation of new tEth or tERC20 on THORChain, as well as accepting transactions from users who want to send tEth/tERC20 back out the Bifrost into Ethereum. It is responsible for managing transfers, mints/burns, and CLP changes as part of these processes.
 
 #### Fee Sub-module
 The fee component utilises the Relayer process in order to determine the loss of fungibility in the bridge, and uses outgoing transactions to restore it, as well as incentivising validators to be part of quorum. Users are shown the expected fees to exit, as well as choosing a miner fee. Miner fee pays for the gas of the outgoing transaction. 
@@ -347,7 +351,7 @@ The rebalancing module continually tracks the total value of assets based on CLP
 
 #### Fraud-proof Module
 
-The fraud-proof module process fraud-proofs and enables slashing of malicious validators. A user who wishes to exit a bridge performs the following transaction on THORChain, called an `exitRequestTx`:
+The fraud-proof module process fraud-proofs and enables slashing of malicious validators. A user who wishes to exit a bridge performs the following transaction on Cosmos, called an `exitRequestTx`:
 
 `exit[<coin>, <amount>, <bridge>, <destinationAddr>, <fee>]`
 
@@ -397,3 +401,15 @@ In the short term, improvements like running ethereum full nodes, and distributi
 In the medium term, improvements to deal with potential malicious validator behaviour and unhappy paths in the system, like exploring fraud proofs for some scenarios and considering governance solutions should be explored.
 
 More long term, evolving the Bifrost into the more robust mechansims described in the main Bifrost whitepaper should become a priority (https://github.com/thorchain/Resources/blob/master/Whitepapers/Bifrost-Protocol/whitepaper-en.md). Some valuable additions will be the SPV and gossip network features, and an exploration of using VRFs.
+
+# Related reading
+
+THORChain's Bifrost Whitepaper: https://github.com/thorchain/Resources/blob/master/Whitepapers/Bifrost-Protocol/whitepaper-en.md
+
+THORChain's Bifrost Networking Spec: https://github.com/thorchain/Resources/blob/master/Whitepapers/Bifrost-Protocol/networking-whitepaper-en.md
+
+# Additional sections
+
+3) **Bridges have observable security.**
+
+Asset pricing modules allow validators to preserve security thresholds on each bridge. Weak security on a given bridge can be rectified by diluting the value of escrowed assets across more bridges. 
